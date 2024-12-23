@@ -1,4 +1,5 @@
 #include "Core/Log.h"
+#include "ALpch.h"
 #include "spdlog/sinks/stdout_color_sinks.h"
 
 namespace ale

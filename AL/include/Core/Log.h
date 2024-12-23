@@ -2,6 +2,7 @@
 #define LOG_H
 
 #include "Core/Base.h"
+#include "spdlog/fmt/ostr.h"
 #include "spdlog/spdlog.h"
 #include <memory>
 
