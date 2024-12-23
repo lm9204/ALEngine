@@ -3,7 +3,14 @@
 
 // precompiled header
 #include <iostream>
+#include <utility>
 #include <vector>
 
+#include <functional>
+#include <memory>
+#include <sstream>
+#include <string>
+
+#include "Core/Log.h"
 
 #endif
