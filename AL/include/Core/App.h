@@ -2,6 +2,7 @@
 #define APP_H
 
 #include "Core/Base.h"
+#include "Core/LayerStack.h"
 #include "Core/Window.h"
 #include "Events/AppEvent.h"
 #include "Events/Event.h"
@@ -17,11 +18,16 @@ class AL_API App
 	void run();
 	void onEvent(Event &e);
 
+	void pushLayer(Layer *layer);
+	void pushOverlay(Layer *layer);
+
   private:
 	bool onWindowClose(WindowCloseEvent &e);
 	bool onWindowResize(WindowResizeEvent &e);
 
 	std::unique_ptr<Window> m_Window;
+	LayerStack m_LayerStack;
+
 	bool m_Running = true;
 	bool m_Minimized = false;
 };

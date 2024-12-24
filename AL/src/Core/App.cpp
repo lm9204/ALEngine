@@ -15,10 +15,26 @@ App::~App()
 {
 }
 
+void App::pushLayer(Layer *layer)
+{
+	m_LayerStack.pushLayer(layer);
+	// layer->onAttach();
+}
+
+void App::pushOverlay(Layer *layer)
+{
+	m_LayerStack.pushOverlay(layer);
+	// layer->onAttach();
+}
+
 void App::run()
 {
 	while (m_Running)
 	{
+		for (Layer *layer : m_LayerStack)
+		{
+			layer->onUpdate();
+		}
 		m_Window->onUpdate();
 	}
 }
@@ -30,6 +46,13 @@ void App::onEvent(Event &e)
 	// dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(App::onWindowResize));
 
 	AL_CORE_INFO("{0}", e.toString());
+
+	for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
+	{
+		if (e.m_Handled)
+			break;
+		(*it)->onEvent(e);
+	}
 }
 
 bool App::onWindowClose(WindowCloseEvent &e)
