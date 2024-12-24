@@ -22,7 +22,7 @@ enum class EEventType
 	KEY_TYPED, // key
 	MOUSE_BUTTON_PRESSED,
 	MOUSE_BUTTON_RELEASED,
-	MOUSE_MOVED,
+	MOUSE_MOVE,
 	MOUSE_SCROLLED // mouse
 };
 
@@ -58,6 +58,7 @@ enum EEventCategory
 		return category;                                                                                               \
 	}
 
+// Event base class
 class AL_API Event
 {
 	friend class EventDispatcher;
@@ -91,7 +92,7 @@ class EventDispatcher
 	}
 
 	// 콜백 함수
-	template <typename F, typename T> bool dispatch(const F &func)
+	template <typename T, typename F> bool dispatch(const F &func)
 	{
 		// F는 컴파일러에 의해 추론
 		if (m_Event.getEventType() == T::getStaticType())
