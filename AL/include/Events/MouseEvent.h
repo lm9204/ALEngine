@@ -30,7 +30,7 @@ class AL_API MouseMovedEvent : public Event
 		return ss.str();
 	}
 
-	EVENT_CLASS_TYPE(MOUSE_MOVED);
+	EVENT_CLASS_TYPE(MOUSE_MOVE);
 	EVENT_CLASS_CATEGORY(EVENT_CATEGORY_MOUSE | EVENT_CATEGORY_INPUT);
 
   private:

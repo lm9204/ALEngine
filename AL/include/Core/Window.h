@@ -19,6 +19,8 @@ struct WindowProps
 	}
 };
 
+// window base class
+// can be implemented different by platforms
 class AL_API Window
 {
   public:
