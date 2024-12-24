@@ -50,6 +50,7 @@ class AL_API KeyPressedEvent : public KeyEvent
 
 class AL_API KeyReleasedEvent : public KeyEvent
 {
+  public:
 	KeyReleasedEvent(const KeyCode keycode) : KeyEvent(keycode)
 	{
 	}
@@ -66,6 +67,7 @@ class AL_API KeyReleasedEvent : public KeyEvent
 
 class AL_API KeyTypedEvent : public KeyEvent
 {
+  public:
 	KeyTypedEvent(const KeyCode keycode) : KeyEvent(keycode)
 	{
 	}
