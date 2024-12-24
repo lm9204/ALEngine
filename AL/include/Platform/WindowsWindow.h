@@ -6,6 +6,8 @@
 
 namespace ale
 {
+// Window derived class
+// implemented by GLFW - used in Windows platform
 class WindowsWindow : public Window
 {
   public:
@@ -18,6 +20,7 @@ class WindowsWindow : public Window
 	{
 		return m_Data.width;
 	}
+
 	inline uint32_t getHeight() const override
 	{
 		return m_Data.height;
@@ -27,6 +30,7 @@ class WindowsWindow : public Window
 	{
 		m_Data.eventCallback = callback;
 	}
+
 	void setVSync(bool enabled) override;
 	bool isVSync() const override;
 
