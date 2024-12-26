@@ -39,3 +39,16 @@ ExternalProject_Add(
 
 set(DEP_LIST ${DEP_LIST} dep_spdlog)
 set(DEP_LIBS ${DEP_LIBS} spdlogd)
+
+# imgui 추가
+ExternalProject_Add(
+    dep_imgui
+    GIT_REPOSITORY "https://github.com/Very-Real-Engine/imgui.git"
+    GIT_TAG "main"
+    GIT_SHALLOW 1
+    UPDATE_COMMAND "" PATCH_COMMAND "" TEST_COMMAND ""
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${DEP_INSTALL_DIR}
+)
+set(DEP_LIST ${DEP_LIST} dep_imgui)
+set(DEP_LIBS ${DEP_LIBS} imgui)
