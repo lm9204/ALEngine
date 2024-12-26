@@ -79,7 +79,6 @@ class AL_API Event
 		return getCategoryFlags() & category;
 	}
 
-  protected:
 	bool m_Handled = false;
 };
 
