@@ -9,6 +9,11 @@ App::App()
 {
 	m_Window = std::unique_ptr<Window>(Window::create());
 	m_Window->setEventCallback(AL_BIND_EVENT_FN(App::onEvent));
+	renderer = Renderer::createRenderer(m_Window->getWindow());
+	scene = Scene::createScene();
+	renderer->loadScene(scene.get());
+
+	// init renderer
 }
 
 App::~App()
@@ -29,6 +34,7 @@ void App::pushOverlay(Layer *layer)
 
 void App::run()
 {
+	AL_CORE_INFO("App::run");
 	while (m_Running)
 	{
 		for (Layer *layer : m_LayerStack)
@@ -36,7 +42,9 @@ void App::run()
 			layer->onUpdate();
 		}
 		m_Window->onUpdate();
+		renderer->drawFrame(scene.get());
 	}
+	vkDeviceWaitIdle(renderer->getDevice());
 }
 
 void App::onEvent(Event &e)
@@ -53,6 +61,12 @@ void App::onEvent(Event &e)
 			break;
 		(*it)->onEvent(e);
 	}
+}
+
+void App::cleanup()
+{
+	scene->cleanup();
+	renderer->cleanup();
 }
 
 bool App::onWindowClose(WindowCloseEvent &e)
