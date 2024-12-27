@@ -4,6 +4,7 @@
 #include "ALpch.h"
 #include "Core/Base.h"
 #include "Events/Event.h"
+#include <GLFW/glfw3.h>
 
 namespace ale
 {
@@ -13,7 +14,8 @@ struct WindowProps
 	uint32_t width;
 	uint32_t height;
 
-	WindowProps(const std::string &title = "ALEngine", unsigned int width = 1280, unsigned int height = 720)
+	WindowProps(const std::string &title = "ALEngine", unsigned int width = WINDOW_WIDTH,
+				unsigned int height = WINDOW_HEIGHT)
 		: title(title), width(width), height(height)
 	{
 	}
@@ -31,6 +33,7 @@ class AL_API Window
 	virtual void onUpdate() = 0;
 	virtual uint32_t getWidth() const = 0;
 	virtual uint32_t getHeight() const = 0;
+	virtual GLFWwindow *getWindow() const = 0;
 
 	virtual void setEventCallback(const EventCallbackFn &callback) = 0;
 	virtual void setVSync(bool enabled) = 0;
