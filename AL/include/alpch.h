@@ -2,6 +2,8 @@
 #define ALPCH_H
 
 // precompiled header
+#include <algorithm>
+#include <fstream>
 #include <iostream>
 #include <utility>
 #include <vector>
@@ -12,5 +14,16 @@
 #include <string>
 
 #include "Core/Log.h"
+
+// vulkan
+#include <array>
+#include <chrono>
+#include <cstdint>
+#include <cstdlib>
+#include <cstring>
+#include <limits>
+#include <optional>
+#include <set>
+#include <stdexcept>
 
 #endif

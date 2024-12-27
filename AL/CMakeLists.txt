@@ -2,6 +2,12 @@ cmake_minimum_required(VERSION 3.20)
 set(PROJECT_NAME AfterLife)
 project(${PROJECT_NAME})
 
+# Set Macros
+set(WINDOW_NAME "ALEngine")
+set(WINDOW_WIDTH 1920)
+set(WINDOW_HEIGHT 1080)
+
+
 # 의존성 설정
 include(${CMAKE_SOURCE_DIR}/AL/Dependency.cmake)
 
@@ -33,6 +39,10 @@ target_compile_options(${PROJECT_NAME} PUBLIC "/utf-8")
 
 # 매크로 정의
 target_compile_definitions(${PROJECT_NAME} PUBLIC AL_PLATFORM_WINDOWS AL_BUILD_DLL)
+target_compile_definitions(${PROJECT_NAME} PUBLIC
+WINDOW_NAME="${WINDOW_NAME}"
+WINDOW_WIDTH=${WINDOW_WIDTH}
+WINDOW_HEIGHT=${WINDOW_HEIGHT})
 
 # 출력 디렉토리 설정
 set_target_properties(${PROJECT_NAME} PROPERTIES
