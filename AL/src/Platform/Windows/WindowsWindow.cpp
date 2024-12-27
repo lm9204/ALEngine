@@ -1,4 +1,4 @@
-#include "Platform/WindowsWindow.h"
+#include "Platform/Windows/WindowsWindow.h"
 #include "ALpch.h"
 #include "Core/Log.h"
 #include "Events/AppEvent.h"
@@ -35,20 +35,21 @@ void WindowsWindow::init(const WindowProps &props)
 	m_Data.width = props.width;
 	m_Data.height = props.height;
 
-	AL_CORE_INFO("Createing window {0} ({1}, {2})", props.title, props.width, props.height);
+	AL_CORE_INFO("Creating window {0} ({1}, {2})", props.title, props.width, props.height);
 
 	if (!s_GLFWinitialized)
 	{
 		int32_t success = glfwInit();
 		// ASSERT
+		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);
 		glfwSetErrorCallback(GLFWErrorCallback);
 		s_GLFWinitialized = true;
 	}
 
 	m_Window = glfwCreateWindow((int32_t)props.width, (int32_t)props.height, m_Data.title.c_str(), nullptr, nullptr);
-	glfwMakeContextCurrent(m_Window);
+	// glfwMakeContextCurrent(m_Window);
 	glfwSetWindowUserPointer(m_Window, &m_Data);
-	setVSync(true);
+	// setVSync(true);
 
 	// Set GLFW callbacks by lambda functions
 	glfwSetWindowSizeCallback(m_Window, [](GLFWwindow *window, int32_t width, int32_t height) {
@@ -128,6 +129,8 @@ void WindowsWindow::init(const WindowProps &props)
 		MouseMovedEvent event((float)xPos, (float)yPos);
 		data.eventCallback(event);
 	});
+
+	AL_CORE_INFO("Init window end!");
 }
 
 void WindowsWindow::shutDown()
@@ -138,7 +141,7 @@ void WindowsWindow::shutDown()
 void WindowsWindow::onUpdate()
 {
 	glfwPollEvents();
-	glfwSwapBuffers(m_Window);
+	// glfwSwapBuffers(m_Window);
 }
 
 void WindowsWindow::setVSync(bool enabled)

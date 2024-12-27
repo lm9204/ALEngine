@@ -31,6 +31,11 @@ class WindowsWindow : public Window
 		m_Data.eventCallback = callback;
 	}
 
+	inline GLFWwindow *getWindow() const override
+	{
+		return m_Window;
+	}
+
 	void setVSync(bool enabled) override;
 	bool isVSync() const override;
 
