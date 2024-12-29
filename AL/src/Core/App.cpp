@@ -5,13 +5,18 @@
 namespace ale
 {
 
+App *App::s_Instance = nullptr;
+
 App::App()
 {
+	// ASSERT s_Instance
+	s_Instance = this;
+
 	m_Window = std::unique_ptr<Window>(Window::create());
 	m_Window->setEventCallback(AL_BIND_EVENT_FN(App::onEvent));
-	renderer = Renderer::createRenderer(m_Window->getWindow());
-	scene = Scene::createScene();
-	renderer->loadScene(scene.get());
+	m_Renderer = Renderer::createRenderer(m_Window->getWindow());
+	m_Scene = Scene::createScene();
+	m_Renderer->loadScene(m_Scene.get());
 
 	// init renderer
 }
@@ -23,13 +28,13 @@ App::~App()
 void App::pushLayer(Layer *layer)
 {
 	m_LayerStack.pushLayer(layer);
-	// layer->onAttach();
+	layer->onAttach();
 }
 
 void App::pushOverlay(Layer *layer)
 {
 	m_LayerStack.pushOverlay(layer);
-	// layer->onAttach();
+	layer->onAttach();
 }
 
 void App::run()
@@ -42,9 +47,9 @@ void App::run()
 			layer->onUpdate();
 		}
 		m_Window->onUpdate();
-		renderer->drawFrame(scene.get());
+		m_Renderer->drawFrame(m_Scene.get());
 	}
-	vkDeviceWaitIdle(renderer->getDevice());
+	vkDeviceWaitIdle(m_Renderer->getDevice());
 }
 
 void App::onEvent(Event &e)
@@ -65,8 +70,13 @@ void App::onEvent(Event &e)
 
 void App::cleanup()
 {
-	scene->cleanup();
-	renderer->cleanup();
+	m_Scene->cleanup();
+	m_Renderer->cleanup();
+}
+
+App &App::get()
+{
+	return *s_Instance;
 }
 
 bool App::onWindowClose(WindowCloseEvent &e)
