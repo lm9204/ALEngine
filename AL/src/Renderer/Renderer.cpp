@@ -1,5 +1,7 @@
 #include "Renderer/Renderer.h"
 #include "ALpch.h"
+#include "Platform/Vulkan/ImGuiVulkanRenderer.h"
+#include "imgui/imgui.h"
 
 namespace ale
 {
@@ -261,6 +263,10 @@ void Renderer::recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, 
 		m_uniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
 		objects[i]->draw(commandBuffer);
 	}
+
+	// [ImGui commandBuffer 기록]
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
 	/*
 		[렌더 패스 종료]
 		1. 자원의 정리 및 레이아웃 전환 (최종 작업을 위해 attachment에 정의된 finalLayout 설정)
