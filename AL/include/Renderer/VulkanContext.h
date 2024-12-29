@@ -55,6 +55,12 @@ class AL_API VulkanContext
 	{
 		return descriptorPool;
 	}
+	uint32_t getQueueFamily(VkPhysicalDevice device)
+	{
+		QueueFamilyIndices indices = findQueueFamilies(device);
+
+		return indices.graphicsFamily.value();
+	}
 
   private:
 	VulkanContext() = default;
