@@ -487,6 +487,7 @@ void VulkanContext::createDescriptorPool()
 	// 디스크립터 풀을 생성할 때 필요한 설정 정보를 담는 구조체
 	VkDescriptorPoolCreateInfo poolInfo{};
 	poolInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 	poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size()); // 디스크립터 poolSize 구조체 개수
 	poolInfo.pPoolSizes = poolSizes.data();							  // 디스크립터 poolSize 구조체 배열
 	poolInfo.maxSets =

@@ -31,6 +31,11 @@ class AL_API Renderer
 		return device;
 	}
 
+	VkRenderPass getRenderPass()
+	{
+		return renderPass;
+	}
+
   private:
 	Renderer() = default;
 

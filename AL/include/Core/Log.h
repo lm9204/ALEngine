@@ -13,8 +13,8 @@ class AL_API Log
   public:
 	static void init();
 
-	inline static std::shared_ptr<spdlog::logger> &getCoreLogger();
-	inline static std::shared_ptr<spdlog::logger> &getClientLogger();
+	static std::shared_ptr<spdlog::logger> &getCoreLogger();
+	static std::shared_ptr<spdlog::logger> &getClientLogger();
 
   private:
 	static std::shared_ptr<spdlog::logger> s_CoreLogger;

@@ -25,18 +25,31 @@ class AL_API App
 	void pushLayer(Layer *layer);
 	void pushOverlay(Layer *layer);
 
+	Window &getWindow()
+	{
+		return *m_Window;
+	}
+	Renderer &getRenderer()
+	{
+		return *m_Renderer;
+	}
+	static App &get();
+
   private:
 	bool onWindowClose(WindowCloseEvent &e);
 	bool onWindowResize(WindowResizeEvent &e);
 
 	std::unique_ptr<Window> m_Window;
-	std::unique_ptr<Renderer> renderer;
-	std::unique_ptr<Scene> scene;
+	std::unique_ptr<Renderer> m_Renderer;
+	std::unique_ptr<Scene> m_Scene;
 
 	LayerStack m_LayerStack;
 
 	bool m_Running = true;
 	bool m_Minimized = false;
+
+  private:
+	static App *s_Instance;
 };
 
 // To be defined in CLIENT
