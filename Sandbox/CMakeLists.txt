@@ -15,7 +15,6 @@ add_executable(${PROJECT_NAME} ${SOURCES})
 # Sandbox가 AL 라이브러리를 링크하도록 설정
 target_link_libraries(${PROJECT_NAME} PRIVATE AfterLife)
 
-
 # 헤더 파일 경로 추가
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AL/include)
 
