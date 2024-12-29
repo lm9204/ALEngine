@@ -1,6 +1,9 @@
 #ifndef ENTRYPOINT_H
 #define ENTRYPOINT_H
 
+#include "Core/App.h"
+#include "Core/Base.h"
+
 #ifdef AL_PLATFORM_WINDOWS
 
 extern ale::App *ale::createApp();
