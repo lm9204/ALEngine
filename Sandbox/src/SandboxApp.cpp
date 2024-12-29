@@ -1,11 +1,12 @@
 #include "AL.h"
-#include "ALpch.h"
+#include "Core/EntryPoint.h"
 
 class Sandbox : public ale::App
 {
   public:
 	Sandbox()
 	{
+		pushOverlay(new ale::ImGuiLayer());
 	}
 
 	~Sandbox()
