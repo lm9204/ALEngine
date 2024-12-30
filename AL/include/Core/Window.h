@@ -33,7 +33,7 @@ class AL_API Window
 	virtual void onUpdate() = 0;
 	virtual uint32_t getWidth() const = 0;
 	virtual uint32_t getHeight() const = 0;
-	virtual GLFWwindow *getWindow() const = 0;
+	virtual GLFWwindow *getNativeWindow() const = 0;
 
 	virtual void setEventCallback(const EventCallbackFn &callback) = 0;
 	virtual void setVSync(bool enabled) = 0;
