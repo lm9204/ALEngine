@@ -77,7 +77,7 @@
 //  with glslangValidator -x). Null the released resources. 2016-08-27: Vulkan: Fix Vulkan example for use when a depth
 //  buffer is active.
 
-#include "Platform/Vulkan/ImGuiVulkanRenderer.h"
+#include "ImGui/ImGuiVulkanRenderer.h"
 #include "ALpch.h"
 #include <stdio.h>
 

@@ -4,8 +4,12 @@
 #include "Core/Base.h"
 #include "Core/LayerStack.h"
 #include "Core/Window.h"
+
+#include "ImGui/ImGuiLayer.h"
+
 #include "Events/AppEvent.h"
 #include "Events/Event.h"
+
 #include "Renderer/Common.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Scene.h"
@@ -42,6 +46,7 @@ class AL_API App
 	std::unique_ptr<Window> m_Window;
 	std::unique_ptr<Renderer> m_Renderer;
 	std::unique_ptr<Scene> m_Scene;
+	ImGuiLayer *m_ImGuiLayer;
 
 	LayerStack m_LayerStack;
 

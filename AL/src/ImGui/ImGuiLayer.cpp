@@ -1,5 +1,6 @@
 #include "ImGui/ImGuiLayer.h"
 #include "ALpch.h"
+#include "Core/App.h"
 
 #include "Events/AppEvent.h"
 #include "imgui/imgui.h"
@@ -16,7 +17,9 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	init_info.QueueFamily = context.getQueueFamily(init_info.PhysicalDevice); // indices.graphicsFamily.value()
 	init_info.Queue = context.getGraphicsQueue();							  // renderer
 	init_info.PipelineCache = VK_NULL_HANDLE;								  // vk null handle
-	init_info.DescriptorPool = context.getDescriptorPool();					  // renderer
+
+	// gui용 descriptor pool 필요
+	init_info.DescriptorPool = context.getDescriptorPool(); // renderer
 	// >= 2
 	init_info.MinImageCount = 2; // 2
 	// >= MinImageCount
@@ -28,20 +31,36 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 
 void ImGuiLayer::onAttach()
 {
+	AL_CORE_INFO("ImGuiLayer::onAttach");
+
 	ImGui::CreateContext();
-	ImGui::StyleColorsDark();
 
 	ImGuiIO &io = ImGui::GetIO();
-	io.BackendFlags |= ImGuiBackendFlags_HasMouseCursors;
-	io.BackendFlags |= ImGuiBackendFlags_HasSetMousePos;
+	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
+	// io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	// Enable Docking
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
+	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
+	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
+
+	// Setup Dear ImGui style
+	ImGui::StyleColorsDark();
+
+	// When viewports are enabled we tweak WindowRounding/WindowBg so platform windows can look identical to regular
+	// ones.
+	ImGuiStyle &style = ImGui::GetStyle();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		style.WindowRounding = 0.0f;
+		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
+	}
 
 	App &app = App::get();
 	Renderer &renderer = app.getRenderer();
 
 	// ImGui Glfw 초기화
-	ImGui_ImplGlfw_InitForVulkan(app.getWindow().getWindow(), true);
+	ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
-	AL_CORE_INFO("ImGuiLayer::onAttach");
 	// ImGui Vulkan 초기화
 	ImGui_ImplVulkan_Init(&init_info, renderer.getRenderPass());
 
@@ -56,6 +75,8 @@ void ImGuiLayer::onAttach()
 
 	// ImGui Font Object 파괴
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+	// framebuffer
 }
 
 void ImGuiLayer::onDetach()
@@ -65,18 +86,37 @@ void ImGuiLayer::onDetach()
 	ImGui::DestroyContext();
 }
 
-void ImGuiLayer::onUpdate()
+void ImGuiLayer::onImGuiRender()
+{
+	ImGui::ShowDemoWindow();
+}
+
+void ImGuiLayer::onEvent(Event &event)
+{
+}
+
+void ImGuiLayer::begin()
 {
 	ImGui_ImplGlfw_NewFrame();
 	ImGui_ImplVulkan_NewFrame();
 	ImGui::NewFrame();
+}
 
-	ImGui::ShowDemoWindow();
+void ImGuiLayer::renderDrawData(VkCommandBuffer commandBuffer)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	App &app = App::get();
+	// io.DisplaySize = ImVec2((float)app.getWindow().getWidth(), (float)app.getWindow().getHeight());
 
 	ImGui::Render();
-}
-void ImGuiLayer::onEvent(Event &event)
-{
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		AL_CORE_INFO("render draw data");
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
 }
 
 VkCommandBuffer ImGuiLayer::beginSingleTimeCommands()

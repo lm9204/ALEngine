@@ -31,7 +31,7 @@ class WindowsWindow : public Window
 		m_Data.eventCallback = callback;
 	}
 
-	inline GLFWwindow *getWindow() const override
+	inline GLFWwindow *getNativeWindow() const override
 	{
 		return m_Window;
 	}

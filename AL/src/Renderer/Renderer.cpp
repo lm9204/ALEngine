@@ -1,7 +1,6 @@
 #include "Renderer/Renderer.h"
 #include "ALpch.h"
-#include "Platform/Vulkan/ImGuiVulkanRenderer.h"
-#include "imgui/imgui.h"
+#include "ImGui/ImGuiLayer.h"
 
 namespace ale
 {
@@ -265,7 +264,8 @@ void Renderer::recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, 
 	}
 
 	// [ImGui commandBuffer 기록]
-	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+	// ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+	ImGuiLayer::renderDrawData(commandBuffer);
 
 	/*
 		[렌더 패스 종료]

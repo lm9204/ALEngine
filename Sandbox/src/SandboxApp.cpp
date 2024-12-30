@@ -6,7 +6,6 @@ class Sandbox : public ale::App
   public:
 	Sandbox()
 	{
-		pushOverlay(new ale::ImGuiLayer());
 	}
 
 	~Sandbox()
