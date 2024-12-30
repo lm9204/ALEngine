@@ -14,11 +14,15 @@ App::App()
 
 	m_Window = std::unique_ptr<Window>(Window::create());
 	m_Window->setEventCallback(AL_BIND_EVENT_FN(App::onEvent));
-	m_Renderer = Renderer::createRenderer(m_Window->getWindow());
+
+	// init renderer
+	m_Renderer = Renderer::createRenderer(m_Window->getNativeWindow());
 	m_Scene = Scene::createScene();
 	m_Renderer->loadScene(m_Scene.get());
 
-	// init renderer
+	// ImGuiLayer created
+	m_ImGuiLayer = new ImGuiLayer();
+	pushOverlay(m_ImGuiLayer);
 }
 
 App::~App()
@@ -42,9 +46,17 @@ void App::run()
 	AL_CORE_INFO("App::run");
 	while (m_Running)
 	{
+		// layer stack update
 		for (Layer *layer : m_LayerStack)
 		{
 			layer->onUpdate();
+		}
+
+		// layer stack ImGuiRender
+		m_ImGuiLayer->begin();
+		for (Layer *layer : m_LayerStack)
+		{
+			layer->onImGuiRender();
 		}
 		m_Window->onUpdate();
 		m_Renderer->drawFrame(m_Scene.get());
