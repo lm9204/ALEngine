@@ -68,7 +68,7 @@
 //  -FLT_MAX,-FLT_MAX when mouse is unavailable/missing (instead of -1,-1). 2016-10-15: Misc: Added a void* user_data
 //  parameter to Clipboard function handlers.
 
-#include "Platform/Vulkan/ImGuiVulkanGlfw.h"
+#include "ImGui/ImGuiVulkanGlfw.h"
 #include "imgui/imgui.h"
 
 // Clang warnings with -Weverything
