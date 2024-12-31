@@ -1,9 +1,11 @@
 #ifndef TIMESTEP_H
 #define TIMESTEP_H
 
+#include "Core/Base.h"
+
 namespace ale
 {
-class Timestep
+class AL_API Timestep
 {
   public:
 	Timestep(float time = 0.0f) : m_Time(time)

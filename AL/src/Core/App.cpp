@@ -47,11 +47,10 @@ void App::run()
 	while (m_Running)
 	{
 		// set delta time
-		float time = (float)glfwGetTime();
-		Timestep ts = time - m_LastFrameTime;
-		m_LastFrameTime = time;
-
-		AL_CORE_TRACE("Delta time: {0}s ({1}ms))", ts.getSeconds(), ts.getMiliSeconds());
+		// float time = (float)glfwGetTime();
+		// Timestep ts = time - m_LastFrameTime;
+		// m_LastFrameTime = time;
+		// AL_CORE_TRACE("Delta time: {0}s ({1}ms))", ts.getSeconds(), ts.getMiliSeconds());
 
 		// layer stack update
 		for (Layer *layer : m_LayerStack)
