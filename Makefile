@@ -15,7 +15,7 @@ $(NAME)_release:
 	@echo [SUCCESS] $@ compiled successfully without validation layers!
 
 clean:
-	@rm -rf ./build/
+	@if exist build rmdir /s /q build
 	@echo [CLEAN] Build files have been removed!
 
 fclean: clean
