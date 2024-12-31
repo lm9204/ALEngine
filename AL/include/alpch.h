@@ -26,4 +26,8 @@
 #include <set>
 #include <stdexcept>
 
+// glm
+#include <glm/glm.hpp>
+#include <glm/gtc/quaternion.hpp>
+
 #endif
