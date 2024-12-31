@@ -140,17 +140,17 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 		std::string labelPrefix = objects[index]->getName();
 		
 		glm::vec3 &position = objects[index]->getPosition();
-		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f))
+		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f, "%.3f", 0.0001f))
 		{
 			objects[index]->setPosition(position);
 		}
 		glm::vec3 rotation = objects[index]->getRotation();
-		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f))
+		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f, "%.3f", 0.0001f))
 		{
 			objects[index]->setRotation(rotation);
 		}
 		glm::vec3 scale = objects[index]->getScale();
-		if (ImGui::SliderFloat3((labelPrefix + " Scale").c_str(), glm::value_ptr(scale), 0.1f, 10.0f))
+		if (ImGui::SliderFloat3((labelPrefix + " Scale").c_str(), glm::value_ptr(scale), 0.1f, 10.0f, "%.3f", 0.0001f))
 		{
 			objects[index]->setScale(scale);
 		}
