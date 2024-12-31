@@ -3,6 +3,7 @@
 
 #include "Core/Base.h"
 #include "Core/LayerStack.h"
+#include "Core/Timestep.h"
 #include "Core/Window.h"
 
 #include "ImGui/ImGuiLayer.h"
@@ -50,6 +51,7 @@ class AL_API App
 
 	LayerStack m_LayerStack;
 
+	float m_LastFrameTime = 0.0f;
 	bool m_Running = true;
 	bool m_Minimized = false;
 
