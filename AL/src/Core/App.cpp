@@ -19,6 +19,7 @@ App::App()
 	m_Renderer = Renderer::createRenderer(m_Window->getNativeWindow());
 	m_Scene = Scene::createScene();
 	m_Renderer->loadScene(m_Scene.get());
+	m_Window->bindScene(m_Scene.get());
 
 	// ImGuiLayer created
 	m_ImGuiLayer = new ImGuiLayer();
@@ -44,7 +45,7 @@ void App::pushOverlay(Layer *layer)
 void App::run()
 {
 	AL_CORE_INFO("App::run");
-	while (m_Running)
+	while (m_Running && !glfwWindowShouldClose(m_Window->getNativeWindow()))
 	{
 		// set delta time
 		// float time = (float)glfwGetTime();
@@ -65,6 +66,7 @@ void App::run()
 			layer->onImGuiRender();
 		}
 		m_Window->onUpdate();
+		m_Scene->processInput(m_Window->getNativeWindow());
 		m_Renderer->drawFrame(m_Scene.get());
 	}
 	vkDeviceWaitIdle(m_Renderer->getDevice());

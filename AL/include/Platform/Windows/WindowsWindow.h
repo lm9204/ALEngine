@@ -3,6 +3,7 @@
 
 #include "Core/Window.h"
 #include <GLFW/glfw3.h>
+#include "Renderer/Scene.h"
 
 namespace ale
 {
@@ -38,6 +39,7 @@ class WindowsWindow : public Window
 
 	void setVSync(bool enabled) override;
 	bool isVSync() const override;
+	void bindScene(Scene *scene) override;
 
   private:
 	virtual void init(const WindowProps &props);
@@ -51,6 +53,7 @@ class WindowsWindow : public Window
 		std::string title;
 		uint32_t width, height;
 		bool vSync;
+		Scene* scene;
 
 		EventCallbackFn eventCallback;
 	};
