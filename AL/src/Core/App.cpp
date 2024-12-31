@@ -46,6 +46,13 @@ void App::run()
 	AL_CORE_INFO("App::run");
 	while (m_Running)
 	{
+		// set delta time
+		float time = (float)glfwGetTime();
+		Timestep ts = time - m_LastFrameTime;
+		m_LastFrameTime = time;
+
+		AL_CORE_TRACE("Delta time: {0}s ({1}ms))", ts.getSeconds(), ts.getMiliSeconds());
+
 		// layer stack update
 		for (Layer *layer : m_LayerStack)
 		{
@@ -70,7 +77,7 @@ void App::onEvent(Event &e)
 	dispatcher.dispatch<WindowCloseEvent>(AL_BIND_EVENT_FN(App::onWindowClose));
 	// dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(App::onWindowResize));
 
-	AL_CORE_INFO("{0}", e.toString());
+	// AL_CORE_INFO("{0}", e.toString());
 
 	for (auto it = m_LayerStack.rbegin(); it != m_LayerStack.rend(); ++it)
 	{
