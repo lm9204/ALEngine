@@ -383,16 +383,6 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuff
     const std::vector<std::shared_ptr<Object>>& objects = scene->getObjects();
     size_t objectCount = scene->getObjectCount();
 
-    static float x = 0.0f;
-    static float d = 0.005f;
-    if (x > 2.0f) {
-        d = -0.005f;
-    } else if (x < -2.0f) {
-        d = 0.005f;
-    }
-    x += d;
-
-    scene->updateLightPos(glm::vec3(x, 1.5f, 0.0f));
     for (size_t i = 0; i < objectCount; i++) {
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1, &geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
         GeometryPassUniformBufferObject ubo{};
@@ -425,6 +415,8 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuff
     lightingPassUbo.cameraPos = scene->getCamPos();
     lightingPassUniformBuffers[currentFrame]->updateUniformBuffer(&lightingPassUbo, sizeof(lightingPassUbo));
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
+
+	ImGuiLayer::renderDrawData(scene, commandBuffer);
 
     vkCmdEndRenderPass(commandBuffer);
 

@@ -4,6 +4,7 @@
 
 #include "Events/AppEvent.h"
 #include "imgui/imgui.h"
+#include "glm/gtc/type_ptr.hpp"
 
 namespace ale
 {
@@ -17,6 +18,7 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	init_info.QueueFamily = context.getQueueFamily(); // indices.graphicsFamily.value()
 	init_info.Queue = context.getGraphicsQueue();							  // renderer
 	init_info.PipelineCache = VK_NULL_HANDLE;								  // vk null handle
+	init_info.Subpass = 1;
 
 	// gui용 descriptor pool 필요
 	init_info.DescriptorPool = context.getDescriptorPool(); // renderer
@@ -25,7 +27,6 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	// >= MinImageCount
 	init_info.ImageCount = init_info.MinImageCount + 1; // min_ImageCount + 1
 	// >= VK_SAMPLE_COUNT_1_BIT (0 -> default to VK_SAMPLE_COUNT_1_BIT)
-	init_info.MSAASamples = VK_SAMPLE_COUNT_8_BIT; // msaaSample 값 가져오기
 	init_info.Allocator = nullptr;				   // nullptr
 }
 
@@ -88,7 +89,8 @@ void ImGuiLayer::onDetach()
 
 void ImGuiLayer::onImGuiRender()
 {
-	ImGui::ShowDemoWindow();
+	// ImGui::ShowDemoWindow();
+	
 }
 
 void ImGuiLayer::onEvent(Event &event)
@@ -102,11 +104,58 @@ void ImGuiLayer::begin()
 	ImGui::NewFrame();
 }
 
-void ImGuiLayer::renderDrawData(VkCommandBuffer commandBuffer)
+void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 {
 	ImGuiIO &io = ImGui::GetIO();
 	App &app = App::get();
 	// io.DisplaySize = ImVec2((float)app.getWindow().getWidth(), (float)app.getWindow().getHeight());
+
+
+	ImGui::Begin("GUI");
+	auto objects = scene->getObjects();
+	auto lightObject = scene->getLightObject();
+
+	std::string lightLabelPrefix = lightObject->getName();
+	glm::vec3 &lightPosition = lightObject->getPosition();
+	if (ImGui::SliderFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), -10.0f, 10.0f))
+	{
+		lightObject->setPosition(lightPosition);
+		scene->updateLightPos(lightPosition);
+	}
+
+	glm::vec3 &lightRotation = lightObject->getRotation();
+	if (ImGui::SliderFloat3((lightLabelPrefix + " Rotation").c_str(), glm::value_ptr(lightRotation), -180.0f, 180.0f))
+	{
+		lightObject->setRotation(lightRotation);
+	}
+
+	glm::vec3 &lightScale = lightObject->getScale();
+	if (ImGui::SliderFloat3((lightLabelPrefix + " Scale").c_str(), glm::value_ptr(lightScale), 0.1f, 10.0f))
+	{
+		lightObject->setScale(lightScale);
+	}
+
+	for (uint32_t index = 1; index < objects.size(); index++)
+	{
+		std::string labelPrefix = objects[index]->getName();
+		
+		glm::vec3 &position = objects[index]->getPosition();
+		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f))
+		{
+			objects[index]->setPosition(position);
+		}
+		glm::vec3 rotation = objects[index]->getRotation();
+		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f))
+		{
+			objects[index]->setRotation(rotation);
+		}
+		glm::vec3 scale = objects[index]->getScale();
+		if (ImGui::SliderFloat3((labelPrefix + " Scale").c_str(), glm::value_ptr(scale), 0.1f, 10.0f))
+		{
+			objects[index]->setScale(scale);
+		}
+	}
+	ImGui::End();
 
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);

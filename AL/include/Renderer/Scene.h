@@ -24,6 +24,7 @@ public:
 	size_t getObjectCount() { return m_objectCount; }
 	glm::mat4 getViewMatrix();
 	glm::mat4 getProjMatrix(VkExtent2D swapChainExtent);
+	std::shared_ptr<Object> getLightObject() { return m_lightObject; }
 
 	void updateLightPos(glm::vec3 lightPos);
 	

@@ -22,8 +22,8 @@ App::App()
 	m_Window->bindScene(m_Scene.get());
 
 	// ImGuiLayer created
-	// m_ImGuiLayer = new ImGuiLayer();
-	// pushOverlay(m_ImGuiLayer);
+	m_ImGuiLayer = new ImGuiLayer();
+	pushOverlay(m_ImGuiLayer);
 }
 
 App::~App()
@@ -54,17 +54,17 @@ void App::run()
 		// AL_CORE_TRACE("Delta time: {0}s ({1}ms))", ts.getSeconds(), ts.getMiliSeconds());
 
 		// layer stack update
-		// for (Layer *layer : m_LayerStack)
-		// {
-		// 	layer->onUpdate();
-		// }
+		for (Layer *layer : m_LayerStack)
+		{
+			layer->onUpdate();
+		}
 
 		// layer stack ImGuiRender
-		// m_ImGuiLayer->begin();
-		// for (Layer *layer : m_LayerStack)
-		// {
-		// 	layer->onImGuiRender();
-		// }
+		m_ImGuiLayer->begin();
+		for (Layer *layer : m_LayerStack)
+		{
+			layer->onImGuiRender();
+		}
 		m_Window->onUpdate();
 		m_Scene->processInput(m_Window->getNativeWindow());
 		m_Renderer->drawFrame(m_Scene.get());

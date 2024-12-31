@@ -18,6 +18,7 @@ class AL_API Layer
 	virtual void onImGuiRender();
 	virtual void onEvent(Event &event);
 
+
 	const std::string &getName() const
 	{
 		return m_DebugName;

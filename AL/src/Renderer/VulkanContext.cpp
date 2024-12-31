@@ -440,6 +440,7 @@ void VulkanContext::createDescriptorPool() {
     poolInfo.poolSizeCount = static_cast<uint32_t>(poolSizes.size());			// 디스크립터 poolSize 구조체 개수
     poolInfo.pPoolSizes = poolSizes.data();										// 디스크립터 poolSize 구조체 배열
     poolInfo.maxSets = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);				// 풀에 존재할 수 있는 총 디스크립터 셋 개수
+	poolInfo.flags = VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT;
 
     // 디스크립터 풀 생성
     if (vkCreateDescriptorPool(device, &poolInfo, nullptr, &descriptorPool) != VK_SUCCESS) {
