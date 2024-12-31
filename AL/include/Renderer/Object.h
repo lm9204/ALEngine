@@ -10,21 +10,19 @@ namespace ale
 {
 class AL_API Object
 {
-  public:
+public:
 	static std::unique_ptr<Object> createObject(std::shared_ptr<Model> model, std::shared_ptr<Texture> texture,
-												glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
-	~Object() = default;
+	glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
+	~Object() {}
 
 	void draw(VkCommandBuffer commandBuffer);
 
 	glm::mat4 getModelMatrix();
-	const std::shared_ptr<Texture> &getTexture()
-	{
-		return m_texture;
-	}
-
-  private:
-	Object() = default;
+	const std::shared_ptr<Texture>& getTexture() { return m_texture; }
+	void setPosition(glm::vec3 position) { m_position = position; }
+	
+private:
+	Object() {}
 
 	std::shared_ptr<Model> m_model;
 	std::shared_ptr<Texture> m_texture;
@@ -32,8 +30,8 @@ class AL_API Object
 	glm::vec3 m_rotation;
 	glm::vec3 m_scale;
 
-	void initObject(std::shared_ptr<Model> model, std::shared_ptr<Texture> texture, glm::vec3 position,
-					glm::vec3 rotation, glm::vec3 scale);
+	void initObject(std::shared_ptr<Model> model, std::shared_ptr<Texture> texture,
+	glm::vec3 position, glm::vec3 rotation, glm::vec3 scale);
 };
 } // namespace ale
 

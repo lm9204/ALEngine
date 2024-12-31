@@ -14,7 +14,7 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	init_info.Instance = context.getInstance();								  // VulkanContext
 	init_info.PhysicalDevice = context.getPhysicalDevice();					  // renderer
 	init_info.Device = context.getDevice();									  // renderer
-	init_info.QueueFamily = context.getQueueFamily(init_info.PhysicalDevice); // indices.graphicsFamily.value()
+	init_info.QueueFamily = context.getQueueFamily(); // indices.graphicsFamily.value()
 	init_info.Queue = context.getGraphicsQueue();							  // renderer
 	init_info.PipelineCache = VK_NULL_HANDLE;								  // vk null handle
 

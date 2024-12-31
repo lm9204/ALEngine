@@ -10,23 +10,20 @@ namespace ale
 {
 class AL_API RenderPass
 {
-  public:
+public:
 	static std::unique_ptr<RenderPass> createRenderPass(VkFormat swapChainImageFormat);
-
-	~RenderPass()
-	{
-	}
+	static std::unique_ptr<RenderPass> createDeferredRenderPass(VkFormat swapChainImageFormat);
+	~RenderPass() {}
 	void cleanup();
 
-	VkRenderPass getRenderPass()
-	{
-		return renderPass;
-	}
 
-  private:
+	VkRenderPass getRenderPass() { return renderPass; }
+
+private:
 	VkRenderPass renderPass;
 
 	void initRenderPass(VkFormat swapChainImageFormat);
+	void initDeferredRenderPass(VkFormat swapChainImageFormat);
 };
 } // namespace ale
 
