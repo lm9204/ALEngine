@@ -14,6 +14,7 @@
 #include <string>
 
 #include "Core/Log.h"
+#include "Debug/Instrumentor.h"
 
 // vulkan
 #include <array>
