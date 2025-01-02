@@ -33,7 +33,7 @@ class AL_API Renderer
 
 	VkRenderPass getRenderPass()
 	{
-		return deferredRenderPass;
+		return imGuiRenderPass;
 	}
 
   private:
@@ -41,7 +41,7 @@ class AL_API Renderer
 
 	Scene *scene;
 
-	GLFWwindow* window;
+	GLFWwindow *window;
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -57,20 +57,24 @@ class AL_API Renderer
 	std::vector<VkImageView> swapChainImageViews;
 	std::unique_ptr<FrameBuffers> m_swapChainFrameBuffers;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
-	
+
+	std::unique_ptr<FrameBuffers> m_ImGuiSwapChainFrameBuffers;
+	std::vector<VkFramebuffer> imGuiSwapChainFrameBuffers;
+
 	std::unique_ptr<RenderPass> m_renderPass;
 	VkRenderPass renderPass;
 
+	std::unique_ptr<RenderPass> m_ImGuiRenderPass;
+	VkRenderPass imGuiRenderPass;
+
 	std::unique_ptr<RenderPass> m_deferredRenderPass;
 	VkRenderPass deferredRenderPass;
-
 
 	std::unique_ptr<DescriptorSetLayout> m_geometryPassDescriptorSetLayout;
 	VkDescriptorSetLayout geometryPassDescriptorSetLayout;
 
 	std::unique_ptr<DescriptorSetLayout> m_lightingPassDescriptorSetLayout;
 	VkDescriptorSetLayout lightingPassDescriptorSetLayout;
-
 
 	std::unique_ptr<Pipeline> m_geometryPassPipeline;
 	VkPipelineLayout geometryPassPipelineLayout;
@@ -84,11 +88,11 @@ class AL_API Renderer
 
 	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
 	std::vector<VkDescriptorSet> geometryPassDescriptorSets;
-	std::vector< std::shared_ptr<UniformBuffer> > geometryPassUniformBuffers;
-	
+	std::vector<std::shared_ptr<UniformBuffer>> geometryPassUniformBuffers;
+
 	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
 	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
-	std::vector< std::shared_ptr<UniformBuffer> > lightingPassUniformBuffers;
+	std::vector<std::shared_ptr<UniformBuffer>> lightingPassUniformBuffers;
 
 	std::unique_ptr<CommandBuffers> m_commandBuffers;
 
@@ -99,11 +103,10 @@ class AL_API Renderer
 	std::vector<VkFence> inFlightFences;
 	uint32_t currentFrame = 0;
 
-
-
-	void init(GLFWwindow* window);
-	void recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
-	void recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void init(GLFWwindow *window);
+	void recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
 };
 } // namespace ale
 

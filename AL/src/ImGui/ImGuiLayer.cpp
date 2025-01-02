@@ -1,10 +1,10 @@
 #include "ImGui/ImGuiLayer.h"
 #include "ALpch.h"
 #include "Core/App.h"
-
 #include "Events/AppEvent.h"
-#include "imgui/imgui.h"
+
 #include "glm/gtc/type_ptr.hpp"
+#include "imgui/imgui.h"
 
 namespace ale
 {
@@ -12,22 +12,22 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 {
 	auto &context = VulkanContext::getContext();
 	commandPool = context.getCommandPool();
-	init_info.Instance = context.getInstance();								  // VulkanContext
-	init_info.PhysicalDevice = context.getPhysicalDevice();					  // renderer
-	init_info.Device = context.getDevice();									  // renderer
-	init_info.QueueFamily = context.getQueueFamily(); // indices.graphicsFamily.value()
-	init_info.Queue = context.getGraphicsQueue();							  // renderer
-	init_info.PipelineCache = VK_NULL_HANDLE;								  // vk null handle
-	init_info.Subpass = 1;
+	init_info.Instance = context.getInstance();				// VulkanContext
+	init_info.PhysicalDevice = context.getPhysicalDevice(); // renderer
+	init_info.Device = context.getDevice();					// renderer
+	init_info.QueueFamily = context.getQueueFamily();		// indices.graphicsFamily.value()
+	init_info.Queue = context.getGraphicsQueue();			// renderer
+	init_info.PipelineCache = VK_NULL_HANDLE;				// vk null handle
 
 	// gui용 descriptor pool 필요
 	init_info.DescriptorPool = context.getDescriptorPool(); // renderer
 	// >= 2
 	init_info.MinImageCount = 2; // 2
 	// >= MinImageCount
+	// init_info.MSAASamples = VK_SAMPLE_COUNT_8_BIT;
 	init_info.ImageCount = init_info.MinImageCount + 1; // min_ImageCount + 1
 	// >= VK_SAMPLE_COUNT_1_BIT (0 -> default to VK_SAMPLE_COUNT_1_BIT)
-	init_info.Allocator = nullptr;				   // nullptr
+	init_info.Allocator = nullptr; // nullptr
 }
 
 void ImGuiLayer::onAttach()
@@ -37,12 +37,10 @@ void ImGuiLayer::onAttach()
 	ImGui::CreateContext();
 
 	ImGuiIO &io = ImGui::GetIO();
+	io.IniFilename = nullptr;
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
-	// io.ConfigFlags |= ImGuiConfigFlags_NavEnableGamepad;      // Enable Gamepad Controls
-	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	// Enable Docking
-	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable; // Enable Multi-Viewport / Platform Windows
-	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoTaskBarIcons;
-	// io.ConfigFlags |= ImGuiConfigFlags_ViewportsNoMerge;
+	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	  // Enable Docking
+	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;	  // Enable Multi-Viewport / Platform Windows
 
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
@@ -74,9 +72,10 @@ void ImGuiLayer::onAttach()
 	// ImGui CommandBuffer end
 	endSingleTimeCommands(commandBuffer);
 
+	vkDeviceWaitIdle(init_info.Device);
+
 	// ImGui Font Object 파괴
 	ImGui_ImplVulkan_DestroyFontUploadObjects();
-
 	// framebuffer
 }
 
@@ -90,7 +89,6 @@ void ImGuiLayer::onDetach()
 void ImGuiLayer::onImGuiRender()
 {
 	// ImGui::ShowDemoWindow();
-	
 }
 
 void ImGuiLayer::onEvent(Event &event)
@@ -99,17 +97,23 @@ void ImGuiLayer::onEvent(Event &event)
 
 void ImGuiLayer::begin()
 {
-	ImGui_ImplGlfw_NewFrame();
 	ImGui_ImplVulkan_NewFrame();
+	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
+
+	// [Docking Space]
+	ImGuiViewport *viewport = ImGui::GetMainViewport();
+	// DockSpace 플래그 설정
+	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
+	// DockSpace 생성
+	ImGui::DockSpaceOverViewport(0, viewport, dockspace_flags, nullptr);
 }
 
-void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
+void ImGuiLayer::renderDrawData(Scene *scene, VkCommandBuffer commandBuffer)
 {
 	ImGuiIO &io = ImGui::GetIO();
 	App &app = App::get();
-	// io.DisplaySize = ImVec2((float)app.getWindow().getWidth(), (float)app.getWindow().getHeight());
-
+	io.DisplaySize = ImVec2((float)app.getWindow().getWidth(), (float)app.getWindow().getHeight());
 
 	ImGui::Begin("GUI");
 	auto objects = scene->getObjects();
@@ -117,7 +121,7 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 
 	std::string lightLabelPrefix = lightObject->getName();
 	ImGui::Text("Light: %s", lightLabelPrefix.c_str()); // Light object name
-	ImGui::Separator(); // Separator for better visibility
+	ImGui::Separator();									// Separator for better visibility
 
 	glm::vec3 &lightPosition = lightObject->getPosition();
 	if (ImGui::SliderFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), -10.0f, 10.0f))
@@ -142,15 +146,17 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 	{
 		std::string labelPrefix = objects[index]->getName();
 		ImGui::Text("Object: %s", labelPrefix.c_str()); // Object name
-		ImGui::Separator(); // Separator for better visibility
-		
+		ImGui::Separator();								// Separator for better visibility
+
 		glm::vec3 &position = objects[index]->getPosition();
-		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f, "%.3f", 0.0001f))
+		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f, "%.3f",
+								0.0001f))
 		{
 			objects[index]->setPosition(position);
 		}
 		glm::vec3 rotation = objects[index]->getRotation();
-		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f, "%.3f", 0.0001f))
+		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f, "%.3f",
+								0.0001f))
 		{
 			objects[index]->setRotation(rotation);
 		}
@@ -168,7 +174,6 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
-		AL_CORE_INFO("render draw data");
 		ImGui::UpdatePlatformWindows();
 		ImGui::RenderPlatformWindowsDefault();
 	}

@@ -10,24 +10,44 @@ namespace ale
 {
 class AL_API FrameBuffers
 {
-public:
-	static std::unique_ptr<FrameBuffers> createSwapChainFrameBuffers(SwapChain* swapChain, VkRenderPass renderPass);
-	~FrameBuffers() {}
+  public:
+	static std::unique_ptr<FrameBuffers> createSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+
+	~FrameBuffers()
+	{
+	}
 	void cleanup();
 
-	void initSwapChainFrameBuffers(SwapChain* swapChain, VkRenderPass renderPass);
+	void initSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	void initImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 
-	std::vector<VkFramebuffer>& getFramebuffers() { return framebuffers; }
-	VkImageView& getDepthImageView() { return depthImageView; }
-	VkImageView& getPositionImageView() { return positionImageView; }
-	VkImageView& getNormalImageView() { return normalImageView; }
-	VkImageView& getAlbedoImageView() { return albedoImageView; }
+	std::vector<VkFramebuffer> &getFramebuffers()
+	{
+		return framebuffers;
+	}
+	VkImageView &getDepthImageView()
+	{
+		return depthImageView;
+	}
+	VkImageView &getPositionImageView()
+	{
+		return positionImageView;
+	}
+	VkImageView &getNormalImageView()
+	{
+		return normalImageView;
+	}
+	VkImageView &getAlbedoImageView()
+	{
+		return albedoImageView;
+	}
 
-private:
+  private:
 	VkImage depthImage;
 	VkDeviceMemory depthImageMemory;
 	VkImageView depthImageView;
-	
+
 	VkImage positionImage;
 	VkDeviceMemory positionImageMemory;
 	VkImageView positionImageView;

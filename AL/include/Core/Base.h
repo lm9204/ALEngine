@@ -11,6 +11,9 @@
 #error AL only support Windows!
 #endif
 
+#define AL_EXPAND_MACRO(x) x
+#define AL_STRINGIFY_MACRO(x) #x
+
 #define BIT(x) (1 << x)
 
 #define AL_BIND_EVENT_FN(fn)                                                                                           \

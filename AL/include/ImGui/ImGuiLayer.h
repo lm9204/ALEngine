@@ -10,8 +10,8 @@
 #include "ImGui/ImGuiVulkanRenderer.h"
 
 #include "Renderer/Common.h"
-#include "Renderer/VulkanContext.h"
 #include "Renderer/Scene.h"
+#include "Renderer/VulkanContext.h"
 
 namespace ale
 {
@@ -27,7 +27,7 @@ class AL_API ImGuiLayer : public Layer
 	void onImGuiRender() override;
 
 	void begin();
-	static void renderDrawData(Scene* scene, VkCommandBuffer commandBuffer);
+	static void renderDrawData(Scene *scene, VkCommandBuffer commandBuffer);
 
 	bool show_demo_window = false;
 
@@ -38,6 +38,8 @@ class AL_API ImGuiLayer : public Layer
   private:
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	VkCommandPool commandPool;
+
+	// VkDescriptorPool descriptorPool;
 };
 } // namespace ale
 
