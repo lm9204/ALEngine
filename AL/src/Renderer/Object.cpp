@@ -2,11 +2,11 @@
 
 namespace ale
 {
-std::unique_ptr<Object> Object::createObject(std::shared_ptr<Model> model, std::shared_ptr<Texture> texture,
+std::unique_ptr<Object> Object::createObject(std::string name, std::shared_ptr<Model> model, std::shared_ptr<Texture> texture,
 											 glm::vec3 position, glm::vec3 rotation, glm::vec3 scale)
 {
 	std::unique_ptr<Object> object = std::unique_ptr<Object>(new Object());
-	object->initObject(model, texture, position, rotation, scale);
+	object->initObject(name, model, texture, position, rotation, scale);
 	return object;
 }
 
@@ -26,13 +26,14 @@ glm::mat4 Object::getModelMatrix()
 	return model;
 }
 
-void Object::initObject(std::shared_ptr<Model> model, std::shared_ptr<Texture> texture, glm::vec3 position,
+void Object::initObject(std::string name, std::shared_ptr<Model> model, std::shared_ptr<Texture> texture, glm::vec3 position,
 						glm::vec3 rotation, glm::vec3 scale)
 {
+	m_name = name;
 	m_model = model;
 	m_texture = texture;
 	m_position = position;
-	m_rotation = rotation;
+	m_rotation = rotation;	
 	m_scale = scale;
 }
 } // namespace ale
