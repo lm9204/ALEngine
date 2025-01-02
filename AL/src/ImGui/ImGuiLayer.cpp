@@ -116,6 +116,9 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 	auto lightObject = scene->getLightObject();
 
 	std::string lightLabelPrefix = lightObject->getName();
+	ImGui::Text("Light: %s", lightLabelPrefix.c_str()); // Light object name
+	ImGui::Separator(); // Separator for better visibility
+
 	glm::vec3 &lightPosition = lightObject->getPosition();
 	if (ImGui::SliderFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), -10.0f, 10.0f))
 	{
@@ -138,6 +141,8 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 	for (uint32_t index = 1; index < objects.size(); index++)
 	{
 		std::string labelPrefix = objects[index]->getName();
+		ImGui::Text("Object: %s", labelPrefix.c_str()); // Object name
+		ImGui::Separator(); // Separator for better visibility
 		
 		glm::vec3 &position = objects[index]->getPosition();
 		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f, "%.3f", 0.0001f))
@@ -154,6 +159,7 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 		{
 			objects[index]->setScale(scale);
 		}
+		ImGui::Separator(); // Additional separator after each object
 	}
 	ImGui::End();
 
