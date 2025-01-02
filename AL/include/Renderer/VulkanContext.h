@@ -8,64 +8,29 @@ namespace ale
 {
 class AL_API VulkanContext
 {
-  public:
-	static VulkanContext &getContext();
-	~VulkanContext() = default;
+public:
+	static VulkanContext& getContext();
+	~VulkanContext() {}
 	void cleanup();
-	void initContext(GLFWwindow *window);
-	void createSurface(GLFWwindow *window);
+	void initContext(GLFWwindow* window);
+	void createSurface(GLFWwindow* window);
 
-	VkInstance getInstance()
-	{
-		return instance;
-	}
-	VkDebugUtilsMessengerEXT getDebugMessenger()
-	{
-		return debugMessenger;
-	}
-	VkPhysicalDevice getPhysicalDevice()
-	{
-		return physicalDevice;
-	}
-	VkDevice getDevice()
-	{
-		return device;
-	}
-	VkQueue getGraphicsQueue()
-	{
-		return graphicsQueue;
-	}
-	VkQueue getPresentQueue()
-	{
-		return presentQueue;
-	}
-	VkCommandPool getCommandPool()
-	{
-		return commandPool;
-	}
-	VkSurfaceKHR getSurface()
-	{
-		return surface;
-	}
-	VkSampleCountFlagBits getMsaaSamples()
-	{
-		return msaaSamples;
-	}
-	VkDescriptorPool getDescriptorPool()
-	{
-		return descriptorPool;
-	}
-	uint32_t getQueueFamily(VkPhysicalDevice device)
-	{
-		QueueFamilyIndices indices = findQueueFamilies(device);
+	VkInstance getInstance() { return instance; }
+	VkDebugUtilsMessengerEXT getDebugMessenger() { return debugMessenger; }
+	VkPhysicalDevice getPhysicalDevice() { return physicalDevice; }
+	VkDevice getDevice() { return device; }
+	VkQueue getGraphicsQueue() { return graphicsQueue; }
+	VkQueue getPresentQueue() { return presentQueue; }
+	VkCommandPool getCommandPool() { return commandPool; }
+	VkSurfaceKHR getSurface() { return surface; }
+	VkSampleCountFlagBits getMsaaSamples() { return msaaSamples; }
+	VkDescriptorPool getDescriptorPool() { return descriptorPool; }
+	uint32_t getQueueFamily();
 
-		return indices.graphicsFamily.value();
-	}
-
-  private:
-	VulkanContext() = default;
-	VulkanContext(VulkanContext const &) = delete;
-	void operator=(VulkanContext const &) = delete;
+private:
+	VulkanContext() { }
+	VulkanContext(VulkanContext const&) = delete;
+	void operator=(VulkanContext const&) = delete;
 
 	VkInstance instance;
 	VkDebugUtilsMessengerEXT debugMessenger;
@@ -80,9 +45,9 @@ class AL_API VulkanContext
 
 	void createInstance();
 	bool checkValidationLayerSupport();
-	std::vector<const char *> getRequiredExtensions();
+	std::vector<const char*> getRequiredExtensions();
 	void setupDebugMessenger();
-	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT &createInfo);
+	void populateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& createInfo);
 	void pickPhysicalDevice();
 	void createLogicalDevice();
 	void createCommandPool();
@@ -93,10 +58,10 @@ class AL_API VulkanContext
 	QueueFamilyIndices findQueueFamilies(VkPhysicalDevice device);
 	void createDescriptorPool();
 
-	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	static VKAPI_ATTR VkBool32 VKAPI_CALL debugCallback( VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 														VkDebugUtilsMessageTypeFlagsEXT messageType,
-														const VkDebugUtilsMessengerCallbackDataEXT *pCallbackData,
-														void *pUserData);
+														const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
+														void* pUserData);
 };
 } // namespace ale
 

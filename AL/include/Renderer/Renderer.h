@@ -33,13 +33,15 @@ class AL_API Renderer
 
 	VkRenderPass getRenderPass()
 	{
-		return renderPass;
+		return deferredRenderPass;
 	}
 
   private:
 	Renderer() = default;
 
-	GLFWwindow *window;
+	Scene *scene;
+
+	GLFWwindow* window;
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
 	VkSampleCountFlagBits msaaSamples = VK_SAMPLE_COUNT_1_BIT;
@@ -55,24 +57,41 @@ class AL_API Renderer
 	std::vector<VkImageView> swapChainImageViews;
 	std::unique_ptr<FrameBuffers> m_swapChainFrameBuffers;
 	std::vector<VkFramebuffer> swapChainFramebuffers;
+	
 	std::unique_ptr<RenderPass> m_renderPass;
 	VkRenderPass renderPass;
-	std::unique_ptr<DescriptorSetLayout> m_descriptorSetLayout;
-	VkDescriptorSetLayout descriptorSetLayout;
-	std::unique_ptr<Pipeline> m_pipeline;
-	VkPipelineLayout pipelineLayout;
-	VkPipeline graphicsPipeline;
-	VkImage colorImage;
-	VkDeviceMemory colorImageMemory;
-	VkImageView colorImageView;
-	VkImage depthImage;
-	VkDeviceMemory depthImageMemory;
-	VkImageView depthImageView;
-	std::vector<std::shared_ptr<UniformBuffer>> m_uniformBuffers;
+
+	std::unique_ptr<RenderPass> m_deferredRenderPass;
+	VkRenderPass deferredRenderPass;
+
+
+	std::unique_ptr<DescriptorSetLayout> m_geometryPassDescriptorSetLayout;
+	VkDescriptorSetLayout geometryPassDescriptorSetLayout;
+
+	std::unique_ptr<DescriptorSetLayout> m_lightingPassDescriptorSetLayout;
+	VkDescriptorSetLayout lightingPassDescriptorSetLayout;
+
+
+	std::unique_ptr<Pipeline> m_geometryPassPipeline;
+	VkPipelineLayout geometryPassPipelineLayout;
+	VkPipeline geometryPassGraphicsPipeline;
+
+	std::unique_ptr<Pipeline> m_lightingPassPipeline;
+	VkPipelineLayout lightingPassPipelineLayout;
+	VkPipeline lightingPassGraphicsPipeline;
+
 	VkDescriptorPool descriptorPool;
-	std::vector<VkDescriptorSet> descriptorSets;
-	std::unique_ptr<ShaderResourceManager> m_shaderResourceManager;
+
+	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
+	std::vector<VkDescriptorSet> geometryPassDescriptorSets;
+	std::vector< std::shared_ptr<UniformBuffer> > geometryPassUniformBuffers;
+	
+	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
+	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
+	std::vector< std::shared_ptr<UniformBuffer> > lightingPassUniformBuffers;
+
 	std::unique_ptr<CommandBuffers> m_commandBuffers;
+
 	std::vector<VkCommandBuffer> commandBuffers;
 	std::unique_ptr<SyncObjects> m_syncObjects;
 	std::vector<VkSemaphore> imageAvailableSemaphores;
@@ -80,8 +99,11 @@ class AL_API Renderer
 	std::vector<VkFence> inFlightFences;
 	uint32_t currentFrame = 0;
 
-	void init(GLFWwindow *window);
-	void recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+
+
+	void init(GLFWwindow* window);
+	void recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
 };
 } // namespace ale
 

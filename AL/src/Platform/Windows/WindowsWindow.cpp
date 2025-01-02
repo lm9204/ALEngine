@@ -71,6 +71,11 @@ void WindowsWindow::init(const WindowProps &props)
 	glfwSetKeyCallback(m_Window, [](GLFWwindow *window, int key, int scancode, int action, int mods) {
 		WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
 
+		if (key == GLFW_KEY_ESCAPE && action == GLFW_PRESS)
+		{
+			glfwSetWindowShouldClose(window, GLFW_TRUE);
+		}
+
 		switch (action)
 		{
 		case GLFW_PRESS: {
@@ -100,17 +105,20 @@ void WindowsWindow::init(const WindowProps &props)
 
 	glfwSetMouseButtonCallback(m_Window, [](GLFWwindow *window, int32_t button, int32_t action, int32_t mods) {
 		WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
-
+		double xPos, yPos;
+		glfwGetCursorPos(window, &xPos, &yPos);
 		switch (action)
 		{
 		case GLFW_PRESS: {
 			MouseButtonPressedEvent event(button);
 			data.eventCallback(event);
+			data.scene->mouseButton(button, action, xPos, yPos);
 			break;
 		}
 		case GLFW_RELEASE: {
 			MouseButtonReleasedEvent event(button);
 			data.eventCallback(event);
+			data.scene->mouseButton(button, action, xPos, yPos);
 			break;
 		}
 		}
@@ -125,9 +133,9 @@ void WindowsWindow::init(const WindowProps &props)
 
 	glfwSetCursorPosCallback(m_Window, [](GLFWwindow *window, double xPos, double yPos) {
 		WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
-
 		MouseMovedEvent event((float)xPos, (float)yPos);
 		data.eventCallback(event);
+		data.scene->mouseMove(xPos, yPos);
 	});
 
 	AL_CORE_INFO("Init window end!");
@@ -160,5 +168,10 @@ void WindowsWindow::setVSync(bool enabled)
 bool WindowsWindow::isVSync() const
 {
 	return m_Data.vSync;
+}
+
+void WindowsWindow::bindScene(Scene *scene)
+{
+	m_Data.scene = scene;
 }
 } // namespace ale

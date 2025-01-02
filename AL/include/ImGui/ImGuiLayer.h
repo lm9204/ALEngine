@@ -11,6 +11,7 @@
 
 #include "Renderer/Common.h"
 #include "Renderer/VulkanContext.h"
+#include "Renderer/Scene.h"
 
 namespace ale
 {
@@ -26,7 +27,7 @@ class AL_API ImGuiLayer : public Layer
 	void onImGuiRender() override;
 
 	void begin();
-	static void renderDrawData(VkCommandBuffer commandBuffer);
+	static void renderDrawData(Scene* scene, VkCommandBuffer commandBuffer);
 
 	bool show_demo_window = false;
 
