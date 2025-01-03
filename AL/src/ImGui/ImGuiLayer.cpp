@@ -10,6 +10,8 @@ namespace ale
 {
 ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 {
+	App &app = App::get();
+	Renderer &renderer = app.getRenderer();
 	auto &context = VulkanContext::getContext();
 	commandPool = context.getCommandPool();
 	init_info.Instance = context.getInstance();				// VulkanContext
@@ -17,7 +19,8 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	init_info.Device = context.getDevice();					// renderer
 	init_info.QueueFamily = context.getQueueFamily();		// indices.graphicsFamily.value()
 	init_info.Queue = context.getGraphicsQueue();			// renderer
-	init_info.PipelineCache = VK_NULL_HANDLE;				// vk null handle
+	init_info.PipelineCache = VK_NULL_HANDLE;
+	init_info.RenderPass = renderer.getRenderPass(); // vk null handle
 
 	// gui용 descriptor pool 필요
 	init_info.DescriptorPool = context.getDescriptorPool(); // renderer
@@ -42,6 +45,31 @@ void ImGuiLayer::onAttach()
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	  // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;	  // Enable Multi-Viewport / Platform Windows
 
+	// Platform_CreateVkSurface 핸들러 등록
+	ImGuiPlatformIO &platform_io = ImGui::GetPlatformIO();
+	platform_io.Platform_CreateWindow = [](ImGuiViewport *viewport) {
+		AL_CORE_INFO("Platform_CreateWindow called for viewport ID: {}", viewport->ID);
+		GLFWwindow *window =
+			glfwCreateWindow((int)viewport->Size.x, (int)viewport->Size.y, "ImGui Viewport", nullptr, nullptr);
+		viewport->PlatformHandle = window;
+		viewport->PlatformHandleRaw = window;
+	};
+	platform_io.Platform_CreateVkSurface = [](ImGuiViewport *vp, ImU64 vk_inst, const void *vk_allocators,
+											  ImU64 *out_vk_surface) -> int {
+		AL_CORE_INFO("Platform_CreateVkSurface called for viewport ID: {}", vp->ID);
+		GLFWwindow *window = (GLFWwindow *)vp->PlatformHandle;
+		VkInstance instance = (VkInstance)vk_inst;
+		VkSurfaceKHR surface;
+		if (glfwCreateWindowSurface(instance, window, (const VkAllocationCallbacks *)vk_allocators, &surface) !=
+			VK_SUCCESS)
+		{
+			AL_CORE_ERROR("Failed to create Vulkan surface!");
+			return 0;
+		}
+		*out_vk_surface = (ImU64)surface;
+		return 1;
+	};
+
 	// Setup Dear ImGui style
 	ImGui::StyleColorsDark();
 
@@ -50,6 +78,7 @@ void ImGuiLayer::onAttach()
 	ImGuiStyle &style = ImGui::GetStyle();
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
+		AL_CORE_INFO("style ImGuiConfigFlags_ViewportsEnable");
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}
@@ -61,22 +90,10 @@ void ImGuiLayer::onAttach()
 	ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
 
 	// ImGui Vulkan 초기화
-	ImGui_ImplVulkan_Init(&init_info, renderer.getRenderPass());
-
-	// ImGui CommandBuffer begin
-	VkCommandBuffer commandBuffer = beginSingleTimeCommands();
+	ImGui_ImplVulkan_Init(&init_info);
 
 	// ImGui Font 생성
-	ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
-
-	// ImGui CommandBuffer end
-	endSingleTimeCommands(commandBuffer);
-
-	vkDeviceWaitIdle(init_info.Device);
-
-	// ImGui Font Object 파괴
-	ImGui_ImplVulkan_DestroyFontUploadObjects();
-	// framebuffer
+	ImGui_ImplVulkan_CreateFontsTexture();
 }
 
 void ImGuiLayer::onDetach()
