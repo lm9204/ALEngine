@@ -61,6 +61,15 @@ void Scene::initScene() {
     m_catTexture = Texture::createTexture("textures/cat.bmp");
     m_karinaTexture = Texture::createTexture("textures/karina.jpg");
 
+    m_material = Material::createMaterial(
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_sampleTexture, true},
+        {nullptr, false},
+        {0.5f, nullptr, false},
+        {0.0f, nullptr, false},
+        {1.0f, nullptr, false},
+        {0.0f, nullptr, false}
+    );
+
     m_lightObject = Object::createObject("light", m_sphereModel, m_sampleTexture, m_lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f));
     m_objects.push_back(m_lightObject);
 

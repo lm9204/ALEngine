@@ -24,7 +24,9 @@ fclean: clean
 	@rm -rf $(NAME)_debug $(NAME)_release
 	@echo [FCLEAN] Executable files have been fully removed!
 
-re: fclean all
+re: 
+	make fclean 
+	make all
 
 shader :
 	@mkdir -p ./spvs

@@ -4,6 +4,7 @@
 #include "Core/Base.h"
 #include "Renderer/Common.h"
 #include "Renderer/Object.h"
+#include "Renderer/Material.h"
 
 namespace ale
 {
@@ -50,6 +51,8 @@ private:
 
 	std::vector< std::shared_ptr<Object> > m_objects;
 	std::shared_ptr<Object> m_lightObject;
+
+	std::shared_ptr<Material> m_material;
 
 
 	bool m_cameraControl { false };

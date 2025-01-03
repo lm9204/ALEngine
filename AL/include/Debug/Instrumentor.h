@@ -227,3 +227,4 @@ template <size_t N, size_t K> constexpr auto cleanupOutputString(const char (&ex
 #define AL_PROFILE_FUNCTION()
 
 #endif
+#endif
