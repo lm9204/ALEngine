@@ -22,6 +22,8 @@ void Scene::cleanup() {
     m_sampleTexture->cleanup();
     m_catTexture->cleanup();
     m_karinaTexture->cleanup();
+    m_defaultTexture->cleanup();
+    m_defaultSingleChannelTexture->cleanup();
 }
 
 
@@ -60,9 +62,11 @@ void Scene::initScene() {
     m_sampleTexture = Texture::createTexture("textures/texture.png");
     m_catTexture = Texture::createTexture("textures/cat.bmp");
     m_karinaTexture = Texture::createTexture("textures/karina.jpg");
+    m_defaultTexture = Texture::createDefaultTexture(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    m_defaultSingleChannelTexture = Texture::createDefaultSingleChannelTexture(1.0f);
 
     m_material = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_sampleTexture, true},
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_defaultTexture, true},
         {nullptr, false},
         {0.5f, nullptr, false},
         {0.0f, nullptr, false},

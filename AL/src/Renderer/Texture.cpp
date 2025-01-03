@@ -88,4 +88,134 @@ void Texture::createTextureSampler()
 	}
 }
 
+std::shared_ptr<Texture> Texture::createDefaultTexture(glm::vec4 color)
+{
+	std::shared_ptr<Texture> texture = std::shared_ptr<Texture>(new Texture());
+	texture->initDefaultTexture(color);
+	return texture;
+}
+
+void Texture::initDefaultTexture(glm::vec4 color)
+{
+	m_imageBuffer = ImageBuffer::createDefaultImageBuffer(color);
+	mipLevels = m_imageBuffer->getMipLevels();
+	createDefaultTextureImageView();
+	createDefaultTextureSampler();
+}
+
+void Texture::createDefaultTextureImageView()
+{
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+
+	textureImageView = VulkanUtil::createImageView(
+        m_imageBuffer->getImage(),
+        VK_FORMAT_R8G8B8A8_UNORM, // Default Texture는 UNORM 포맷 사용
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        mipLevels
+    );
+
+    if (!textureImageView) {
+		throw std::runtime_error("Failed to create default texture image view!");
+	}
+}
+
+void Texture::createDefaultTextureSampler()
+{
+	auto& context = VulkanContext::getContext();
+    auto device = context.getDevice();
+    auto physicalDevice = context.getPhysicalDevice();
+
+	VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = static_cast<float>(mipLevels);
+    samplerInfo.mipLodBias = 0.0f;
+
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create default texture sampler!");
+    }
+}
+
+std::shared_ptr<Texture> Texture::createDefaultSingleChannelTexture(float value)
+{
+	std::shared_ptr<Texture> texture = std::shared_ptr<Texture>(new Texture());
+	texture->initDefaultSingleChannelTexture(value);
+	return texture;
+}
+
+void Texture::initDefaultSingleChannelTexture(float value)
+{
+	m_imageBuffer = ImageBuffer::createDefaultSingleChannelImageBuffer(value);
+	mipLevels = m_imageBuffer->getMipLevels();
+	createDefaultSingleChannelTextureImageView();
+	createDefaultSingleChannelTextureSampler();
+}
+
+void Texture::createDefaultSingleChannelTextureImageView()
+{
+	auto &context = VulkanContext::getContext();
+    auto device = context.getDevice();
+
+    textureImageView = VulkanUtil::createImageView(
+        m_imageBuffer->getImage(),
+        VK_FORMAT_R8_UNORM, // 단일 채널 포맷
+        VK_IMAGE_ASPECT_COLOR_BIT,
+        mipLevels
+    );
+
+    if (!textureImageView) {
+        throw std::runtime_error("Failed to create default single channel texture image view!");
+    }
+}
+
+void Texture::createDefaultSingleChannelTextureSampler()
+{
+	auto &context = VulkanContext::getContext();
+    auto device = context.getDevice();
+    auto physicalDevice = context.getPhysicalDevice();
+
+    VkPhysicalDeviceProperties properties{};
+    vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+    VkSamplerCreateInfo samplerInfo{};
+    samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+    samplerInfo.magFilter = VK_FILTER_LINEAR;
+    samplerInfo.minFilter = VK_FILTER_LINEAR;
+    samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+    samplerInfo.anisotropyEnable = VK_TRUE;
+    samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy;
+    samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+    samplerInfo.unnormalizedCoordinates = VK_FALSE;
+    samplerInfo.compareEnable = VK_FALSE;
+    samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;
+    samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+    samplerInfo.minLod = 0.0f;
+    samplerInfo.maxLod = static_cast<float>(mipLevels);
+    samplerInfo.mipLodBias = 0.0f;
+
+    if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+    {
+        throw std::runtime_error("Failed to create default single channel texture sampler!");
+    }
+}
+
 } // namespace ale

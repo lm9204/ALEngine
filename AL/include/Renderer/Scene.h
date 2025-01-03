@@ -48,6 +48,8 @@ private:
 	std::shared_ptr<Texture> m_sampleTexture;
 	std::shared_ptr<Texture> m_catTexture;
 	std::shared_ptr<Texture> m_karinaTexture;
+	std::shared_ptr<Texture> m_defaultTexture;
+	std::shared_ptr<Texture> m_defaultSingleChannelTexture;
 
 	std::vector< std::shared_ptr<Object> > m_objects;
 	std::shared_ptr<Object> m_lightObject;
