@@ -469,10 +469,7 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	lightingPassUniformBuffers[currentFrame]->updateUniformBuffer(&lightingPassUbo, sizeof(lightingPassUbo));
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
-	// ImGuiLayer::renderDrawData(scene, commandBuffer);
-
 	vkCmdEndRenderPass(commandBuffer);
-
 	// if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
 	// {
 	// 	throw std::runtime_error("failed to record deferred renderpass command buffer!");
