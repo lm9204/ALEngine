@@ -12,12 +12,12 @@ Roughness roughness, Metallic metallic, AOMap aoMap, HeightMap heightMap) {
 
 void Material::initMaterial(Albedo albedo, NormalMap normalMap, 
     Roughness roughness, Metallic metallic, AOMap aoMap, HeightMap heightMap) {
-    this->albedo = albedo;
-    this->normalMap = normalMap;
-    this->roughness = roughness;
-    this->metallic = metallic;
-    this->aoMap = aoMap;
-    this->heightMap = heightMap;
+    m_albedo = albedo;
+    m_normalMap = normalMap;
+    m_roughness = roughness;
+    m_metallic = metallic;
+    m_aoMap = aoMap;
+    m_heightMap = heightMap;
 }
 
 }

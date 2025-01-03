@@ -53,7 +53,9 @@ private:
 	std::shared_ptr<Object> m_lightObject;
 
 	std::shared_ptr<Material> m_material;
-
+	std::shared_ptr<Material> m_karinaMaterial;
+	std::shared_ptr<Material> m_catMaterial;
+	std::shared_ptr<Material> m_vikingMaterial;
 
 	bool m_cameraControl { false };
 	glm::vec2 m_prevMousePos { 0.0f, 0.0f };

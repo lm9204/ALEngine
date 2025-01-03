@@ -125,6 +125,14 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 };
 
+struct Transform
+{
+	glm::vec3 position;
+	glm::vec3 rotation;
+	glm::vec3 scale;
+};
+
+
 struct GeometryPassUniformBufferObject {
 	alignas(16) glm::mat4 model;
 	alignas(16) glm::mat4 view;

@@ -70,26 +70,54 @@ void Scene::initScene() {
         {0.0f, nullptr, false}
     );
 
-    m_lightObject = Object::createObject("light", m_sphereModel, m_sampleTexture, m_lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f));
+    m_karinaMaterial = Material::createMaterial(
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_karinaTexture, true},
+        {nullptr, false},
+        {0.5f, nullptr, false},
+        {0.0f, nullptr, false},
+        {1.0f, nullptr, false},
+        {0.0f, nullptr, false}
+    );
+
+    m_catMaterial = Material::createMaterial(
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_catTexture, true},
+        {nullptr, false},
+        {0.5f, nullptr, false},
+        {0.0f, nullptr, false},
+        {1.0f, nullptr, false},
+        {0.0f, nullptr, false}
+    );
+
+    m_vikingMaterial = Material::createMaterial(
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_vikingTexture, true},
+        {nullptr, false},
+        {0.5f, nullptr, false},
+        {0.0f, nullptr, false},
+        {1.0f, nullptr, false},
+        {0.0f, nullptr, false}
+    );
+
+    m_lightObject = Object::createObject("light", m_sphereModel, m_material, 
+    Transform{m_lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f)});
     m_objects.push_back(m_lightObject);
 
-    m_objects.push_back(Object::createObject("karina", m_planeModel, m_karinaTexture, 
-    glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 180.0f), glm::vec3(5.0f * 0.74f, 5.0f, 1.0f)));
+    m_objects.push_back(Object::createObject("karina", m_planeModel, m_karinaMaterial, 
+    Transform{glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 180.0f), glm::vec3(5.0f * 0.74f, 5.0f, 1.0f)}));
 
-    m_objects.push_back(Object::createObject("box1", m_boxModel, m_sampleTexture, 
-    glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)));
+    m_objects.push_back(Object::createObject("box1", m_boxModel, m_material, 
+    Transform{glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
 
-    m_objects.push_back(Object::createObject("viking", m_vikingModel, m_vikingTexture, 
-    glm::vec3(0.0f, -0.3f, 0.0f), glm::vec3(-90.0f, 0.0f, -90.0f), glm::vec3(1.0f, 1.0f, 1.0f)));
+    m_objects.push_back(Object::createObject("viking", m_vikingModel, m_vikingMaterial, 
+    Transform{glm::vec3(0.0f, -0.3f, 0.0f), glm::vec3(-90.0f, 0.0f, -90.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
 
-    m_objects.push_back(Object::createObject("sphere", m_sphereModel, m_vikingTexture, 
-    glm::vec3(0.3f, 1.3f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)));
+    m_objects.push_back(Object::createObject("sphere", m_sphereModel, m_material, 
+    Transform{glm::vec3(0.3f, 1.3f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
     
-    m_objects.push_back(Object::createObject("cat", m_catModel, m_catTexture, 
-    glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(-90.0f, 0.0f, 45.0f), glm::vec3(0.01f, 0.01f, 0.01f)));
+    m_objects.push_back(Object::createObject("cat", m_catModel, m_catMaterial, 
+    Transform{glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(-90.0f, 0.0f, 45.0f), glm::vec3(0.01f, 0.01f, 0.01f)}));
 
-    m_objects.push_back(Object::createObject("box2", m_boxModel, m_sampleTexture,
-    glm::vec3(2.0f, -0.5f, 0.0f), glm::vec3(30.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)));
+    m_objects.push_back(Object::createObject("box2", m_boxModel, m_material, 
+    Transform{glm::vec3(2.0f, -0.5f, 0.0f), glm::vec3(30.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
 
     m_objectCount = m_objects.size();
 }

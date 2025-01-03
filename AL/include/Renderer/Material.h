@@ -3,7 +3,7 @@
 
 #include "Core/Base.h"
 #include "Renderer/Common.h"
-#include "Renderer/Object.h"
+#include "Renderer/Texture.h"
 
 namespace ale
 {
@@ -50,22 +50,22 @@ public:
 
     ~Material() {}
 
-    Albedo& getAlbedo() { return albedo; }
-    NormalMap& getNormalMap() { return normalMap; }
-    Roughness& getRoughness() { return roughness; }
-    Metallic& getMetallic() { return metallic; }
-    AOMap& getAOMap() { return aoMap; }
-    HeightMap& getHeightMap() { return heightMap; }
+    Albedo& getAlbedo() { return m_albedo; }
+    NormalMap& getNormalMap() { return m_normalMap; }
+    Roughness& getRoughness() { return m_roughness; }
+    Metallic& getMetallic() { return m_metallic; }
+    AOMap& getAOMap() { return m_aoMap; }
+    HeightMap& getHeightMap() { return m_heightMap; }
 
 private:
     Material() = default;
 
-    Albedo albedo;
-    NormalMap normalMap;
-    Roughness roughness;
-    Metallic metallic;
-    AOMap aoMap;
-    HeightMap heightMap;
+    Albedo m_albedo;
+    NormalMap m_normalMap;
+    Roughness m_roughness;
+    Metallic m_metallic;
+    AOMap m_aoMap;
+    HeightMap m_heightMap;
 
     void initMaterial(Albedo albedo, NormalMap normalMap, 
     Roughness roughness, Metallic metallic, AOMap aoMap, HeightMap heightMap);
