@@ -417,22 +417,23 @@ QueueFamilyIndices VulkanContext::findQueueFamilies(VkPhysicalDevice device) {
 void VulkanContext::createDescriptorPool() {
     size_t MAX_OBJECTS = 1000;
 
-    // 디스크립터 풀의 타입별 디스크립터 개수를 설정하는 구조체
-    std::array<VkDescriptorPoolSize, 5> poolSizes{};
-    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;							// 유니폼 버퍼 설정
-    poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);		// 유니폼 버퍼 디스크립터 최대 개수 설정
-    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;					// 샘플러 설정
-    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);		// 샘플러 디스크립터 최대 개수 설정
-    poolSizes[2].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);
-    poolSizes[3].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    poolSizes[3].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);
-    // image input attachment
-    poolSizes[4].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-    poolSizes[4].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 100);
+    std::array<VkDescriptorPoolSize, 4> poolSizes{};
 
+    // Uniform Buffers (Vertex & Fragment UBOs)
+    poolSizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[0].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS * 3); 
 
+    // Combined Image Samplers (Geometry Pass Textures)
+    poolSizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    poolSizes[1].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS * 6); 
 
+    // Input Attachments (Lighting Pass)
+    poolSizes[2].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
+    poolSizes[2].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS * 4); 
+
+    // Additional Buffers for Safety (여유 공간)
+    poolSizes[3].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+    poolSizes[3].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS * 2);
 
     // 디스크립터 풀을 생성할 때 필요한 설정 정보를 담는 구조체
     VkDescriptorPoolCreateInfo poolInfo{};

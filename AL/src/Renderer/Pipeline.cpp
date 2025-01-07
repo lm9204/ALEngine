@@ -112,7 +112,7 @@ void Pipeline::initGeometryPassPipeline(VkRenderPass renderPass, VkDescriptorSet
     depthStencil.stencilTestEnable = VK_FALSE;			// 스텐실 테스트 활성화 여부를 지정
 
 
-    std::array<VkPipelineColorBlendAttachmentState, 3> colorBlendAttachments = {};
+    std::array<VkPipelineColorBlendAttachmentState, 4> colorBlendAttachments = {};
     // position attachment
     colorBlendAttachments[0].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachments[0].blendEnable = VK_FALSE;
@@ -124,6 +124,10 @@ void Pipeline::initGeometryPassPipeline(VkRenderPass renderPass, VkDescriptorSet
     // albedo attachment
     colorBlendAttachments[2].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     colorBlendAttachments[2].blendEnable = VK_FALSE;
+
+    // pbr attachment
+    colorBlendAttachments[3].colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+    colorBlendAttachments[3].blendEnable = VK_FALSE;
 
     VkPipelineColorBlendStateCreateInfo colorBlending{};
     colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;

@@ -10,7 +10,14 @@ std::unique_ptr<Scene> Scene::createScene() {
 
 
 // object는 cleanup 해줄 필요 없지만 model과 texture는 해줘야함
-void Scene::cleanup() { 
+void Scene::cleanup() {
+    m_defaultTextures.albedo->cleanup();
+    m_defaultTextures.normal->cleanup();
+    m_defaultTextures.roughness->cleanup();
+    m_defaultTextures.metallic->cleanup();
+    m_defaultTextures.ao->cleanup();
+    m_defaultTextures.height->cleanup();
+
     m_boxModel->cleanup();
     m_sphereModel->cleanup();
     m_planeModel->cleanup();
@@ -44,32 +51,62 @@ glm::mat4 Scene::getProjMatrix(VkExtent2D swapChainExtent) {
 
 
 void Scene::updateLightPos(glm::vec3 lightPos) {
-    m_lightPos = lightPos;
+    m_lightInfo.lightPos = lightPos;
+    m_lightInfo.lightDirection = glm::normalize(-lightPos);
     m_lightObject->setPosition(lightPos);
 }
 
 
 void Scene::initScene() {
+
+    m_defaultTextures.albedo = Texture::createDefaultTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    m_defaultTextures.normal = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    m_defaultTextures.roughness = Texture::createDefaultTexture(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
+    m_defaultTextures.metallic = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+    m_defaultTextures.ao = Texture::createDefaultTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+    m_defaultTextures.height = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    m_lightInfo.lightPos = glm::vec3(0.0f, 1.0f, 5.0f);
+    m_lightInfo.lightDirection = glm::normalize(-m_lightInfo.lightPos);
+    m_lightInfo.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
+    m_lightInfo.intensity = 1.0f;
+    m_lightInfo.ambientStrength = 0.1f;
+
+    m_cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
+    m_cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
+    m_cameraUp = glm::vec3(0.0f, 1.0f, 0.0f);
+    m_cameraPitch = 0.0f;
+    m_cameraYaw = 0.0f;
+
+
+
     m_boxModel = Model::createBoxModel();
     m_sphereModel = Model::createSphereModel();
     m_planeModel = Model::createPlaneModel();
 
     m_vikingModel = Model::createModel("models/viking_room.obj");
     m_catModel = Model::createModel("models/cat.obj");
+    m_backpackModel = Model::createModel("models/backpack/backpack.obj");
 
-    //texture 해야함
+
+    m_backpackAlbedo = Texture::createTexture("models/backpack/diffuse.jpg", true);
+    m_backpackNormal = Texture::createTexture("models/backpack/normal.png", true);
+    m_backpackRoughness = Texture::createTexture("models/backpack/roughness.jpg", true);
+    m_backpackMetallic = Texture::createTexture("models/backpack/specular.jpg", true);
+    m_backpackAo = Texture::createTexture("models/backpack/ao.jpg", true);
+
     m_vikingTexture = Texture::createTexture("textures/viking_room.png");
     m_sampleTexture = Texture::createTexture("textures/texture.png");
     m_catTexture = Texture::createTexture("textures/cat.bmp");
     m_karinaTexture = Texture::createTexture("textures/karina.jpg");
-    m_defaultTexture = Texture::createDefaultTexture(glm::vec4(1.0f, 0.0f, 0.0f, 1.0f));
+    m_defaultTexture = Texture::createDefaultTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
     m_defaultSingleChannelTexture = Texture::createDefaultSingleChannelTexture(1.0f);
 
     m_material = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_defaultTexture, true},
+        {glm::vec3(1.0f, 1.0f, 0.0f), m_defaultTexture, false},
         {nullptr, false},
         {0.5f, nullptr, false},
-        {0.0f, nullptr, false},
+        {1.0f, nullptr, false},
         {1.0f, nullptr, false},
         {0.0f, nullptr, false}
     );
@@ -96,13 +133,24 @@ void Scene::initScene() {
         {glm::vec3(1.0f, 1.0f, 1.0f), m_vikingTexture, true},
         {nullptr, false},
         {0.5f, nullptr, false},
-        {0.0f, nullptr, false},
+        {0.8f, nullptr, false},
         {1.0f, nullptr, false},
         {0.0f, nullptr, false}
     );
 
+
+
+    m_backpackMaterial = Material::createMaterial(
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_backpackAlbedo, true},
+        {m_backpackNormal, true},
+        {0.5f, m_backpackRoughness, true},
+        {0.8f, m_backpackMetallic, true},
+        {1.0f, m_backpackAo, true},
+        {0.0f, nullptr, false}
+    );
+
     m_lightObject = Object::createObject("light", m_sphereModel, m_material, 
-    Transform{m_lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f)});
+    Transform{m_lightInfo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f)});
     m_objects.push_back(m_lightObject);
 
     m_objects.push_back(Object::createObject("karina", m_planeModel, m_karinaMaterial, 
@@ -122,6 +170,9 @@ void Scene::initScene() {
 
     m_objects.push_back(Object::createObject("box2", m_boxModel, m_material, 
     Transform{glm::vec3(2.0f, -0.5f, 0.0f), glm::vec3(30.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
+
+    m_objects.push_back(Object::createObject("backpack", m_backpackModel, m_backpackMaterial, 
+    Transform{glm::vec3(-1.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.3f, 0.3f, 0.3f)}));
 
     m_objectCount = m_objects.size();
 }

@@ -84,11 +84,12 @@ class AL_API Renderer
 
 	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
 	std::vector<VkDescriptorSet> geometryPassDescriptorSets;
-	std::vector< std::shared_ptr<UniformBuffer> > geometryPassUniformBuffers;
+	std::vector< std::shared_ptr<UniformBuffer> > geometryPassVertexUniformBuffers;
+	std::vector< std::shared_ptr<UniformBuffer> > geometryPassFragmentUniformBuffers;
 	
 	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
 	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
-	std::vector< std::shared_ptr<UniformBuffer> > lightingPassUniformBuffers;
+	std::vector< std::shared_ptr<UniformBuffer> > lightingPassFragmentUniformBuffers;
 
 	std::unique_ptr<CommandBuffers> m_commandBuffers;
 
@@ -98,8 +99,6 @@ class AL_API Renderer
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 	uint32_t currentFrame = 0;
-
-
 
 	void init(GLFWwindow* window);
 	void recordCommandBuffer(Scene* scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);

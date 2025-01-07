@@ -22,6 +22,7 @@ public:
 	VkImageView& getPositionImageView() { return positionImageView; }
 	VkImageView& getNormalImageView() { return normalImageView; }
 	VkImageView& getAlbedoImageView() { return albedoImageView; }
+	VkImageView& getPbrImageView() { return pbrImageView; }
 
 private:
 	VkImage depthImage;
@@ -39,6 +40,10 @@ private:
 	VkImage albedoImage;
 	VkDeviceMemory albedoImageMemory;
 	VkImageView albedoImageView;
+
+	VkImage pbrImage;
+	VkDeviceMemory pbrImageMemory;
+	VkImageView pbrImageView;
 
 	std::vector<VkFramebuffer> framebuffers;
 };

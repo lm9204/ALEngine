@@ -116,51 +116,76 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 	auto lightObject = scene->getLightObject();
 
 	std::string lightLabelPrefix = lightObject->getName();
-	ImGui::Text("Light: %s", lightLabelPrefix.c_str()); // Light object name
-	ImGui::Separator(); // Separator for better visibility
+	ImGui::Text("Light: %s", lightLabelPrefix.c_str());
+	ImGui::Separator();
 
 	glm::vec3 &lightPosition = lightObject->getPosition();
 	if (ImGui::SliderFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), -10.0f, 10.0f))
 	{
-		lightObject->setPosition(lightPosition);
 		scene->updateLightPos(lightPosition);
 	}
+	auto& lightInfo = scene->getLightInfo();
+	ImGui::ColorEdit3("Color", glm::value_ptr(lightInfo.lightColor));
+	ImGui::SliderFloat("Intensity", &lightInfo.intensity, 0.0f, 1.0f);
+	ImGui::SliderFloat("Ambient Strength", &lightInfo.ambientStrength, 0.0f, 1.0f);
 
-	glm::vec3 &lightRotation = lightObject->getRotation();
-	if (ImGui::SliderFloat3((lightLabelPrefix + " Rotation").c_str(), glm::value_ptr(lightRotation), -180.0f, 180.0f))
-	{
-		lightObject->setRotation(lightRotation);
-	}
+    for (uint32_t index = 1; index < objects.size(); index++) {
+        std::string label = "Object: " + objects[index]->getName();
 
-	glm::vec3 &lightScale = lightObject->getScale();
-	if (ImGui::SliderFloat3((lightLabelPrefix + " Scale").c_str(), glm::value_ptr(lightScale), 0.1f, 10.0f))
-	{
-		lightObject->setScale(lightScale);
-	}
+        if (ImGui::TreeNode(label.c_str())) {
+            glm::vec3& position = objects[index]->getPosition();
+            if (ImGui::SliderFloat3("Position", glm::value_ptr(position), -10.0f, 10.0f)) {
+            }
 
-	for (uint32_t index = 1; index < objects.size(); index++)
-	{
-		std::string labelPrefix = objects[index]->getName();
-		ImGui::Text("Object: %s", labelPrefix.c_str()); // Object name
-		ImGui::Separator(); // Separator for better visibility
-		
-		glm::vec3 &position = objects[index]->getPosition();
-		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f, "%.3f", 0.0001f))
-		{
-			objects[index]->setPosition(position);
-		}
-		glm::vec3 rotation = objects[index]->getRotation();
-		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f, "%.3f", 0.0001f))
-		{
-			objects[index]->setRotation(rotation);
-		}
-		glm::vec3 scale = objects[index]->getScale();
-		if (ImGui::SliderFloat3((labelPrefix + " Scale").c_str(), glm::value_ptr(scale), 0.1f, 10.0f, "%.3f", 0.0001f))
-		{
-			objects[index]->setScale(scale);
-		}
-		ImGui::Separator(); // Additional separator after each object
-	}
+            glm::vec3& rotation = objects[index]->getRotation();
+            if (ImGui::SliderFloat3("Rotation", glm::value_ptr(rotation), -180.0f, 180.0f)) {
+            }
+
+            glm::vec3& scale = objects[index]->getScale();
+            if (ImGui::SliderFloat3("Scale", glm::value_ptr(scale), 0.1f, 10.0f)) {
+            }
+
+            // 🛠️ Material Settings
+            if (ImGui::CollapsingHeader("Material Settings")) {
+                auto& albedo = objects[index]->getAlbedo();
+                if (ImGui::Checkbox("Albedo Flag", &albedo.flag)) {
+				}
+                if (!albedo.flag) {
+                    ImGui::ColorEdit3("Albedo Color", glm::value_ptr(albedo.albedo));
+                }
+
+                auto& normalMap = objects[index]->getNormalMap();
+                if (ImGui::Checkbox("NormalMap Flag", &normalMap.flag)) {
+				}
+
+                auto& roughness = objects[index]->getRoughness();
+                if (ImGui::Checkbox("Roughness Flag", &roughness.flag)) {}
+                if (!roughness.flag) {
+                    ImGui::SliderFloat("Roughness Value", &roughness.roughness, 0.0f, 1.0f);
+                }
+
+                auto& metallic = objects[index]->getMetallic();
+                if (ImGui::Checkbox("Metallic Flag", &metallic.flag)) {}
+                if (!metallic.flag) {
+                    ImGui::SliderFloat("Metallic Value", &metallic.metallic, 0.0f, 1.0f);
+                }
+
+                auto& ao = objects[index]->getAOMap();
+                if (ImGui::Checkbox("AO Flag", &ao.flag)) {}
+                if (!ao.flag) {
+                    ImGui::SliderFloat("AO Value", &ao.ao, 0.0f, 1.0f);
+                }
+
+                auto& height = objects[index]->getHeightMap();
+                if (ImGui::Checkbox("Height Flag", &height.flag)) {}
+                if (!height.flag) {
+                    ImGui::SliderFloat("Height Value", &height.height, 0.0f, 1.0f);
+                }
+            }
+
+            ImGui::TreePop();
+        }
+    }
 	ImGui::End();
 
 	ImGui::Render();

@@ -57,6 +57,13 @@ public:
     AOMap& getAOMap() { return m_aoMap; }
     HeightMap& getHeightMap() { return m_heightMap; }
 
+    void setAlbedo(Albedo albedo) { m_albedo = albedo; }
+    void setNormalMap(NormalMap normalMap) { m_normalMap = normalMap; }
+    void setRoughness(Roughness roughness) { m_roughness = roughness; }
+    void setMetallic(Metallic metallic) { m_metallic = metallic; }
+    void setAOMap(AOMap aoMap) { m_aoMap = aoMap; }
+    void setHeightMap(HeightMap heightMap) { m_heightMap = heightMap; }
+
 private:
     Material() = default;
 

@@ -70,9 +70,9 @@ void Model::loadModel(std::string path)
 {
 	Assimp::Importer importer;
 	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
-
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
+		std::cerr << "failed to load model!" << std::endl;
 		throw std::runtime_error("failed to load model!");
 	}
 
@@ -102,7 +102,14 @@ std::shared_ptr<Mesh> Model::processMesh(aiMesh *mesh, const aiScene *scene)
 	{
 		Vertex vertex{};
 		vertex.pos = {mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z};
-		vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
+		if (mesh->mNormals)
+		{
+			vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
+		}
+		else
+		{
+			vertex.normal = {0.0f, 0.0f, 0.0f};
+		}
 		if (mesh->mTextureCoords[0])
 		{
 			vertex.texCoord = {mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};

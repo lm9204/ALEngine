@@ -30,6 +30,10 @@ void FrameBuffers::cleanup() {
     vkDestroyImage(device, albedoImage, nullptr);
     vkFreeMemory(device, albedoImageMemory, nullptr);
 
+    vkDestroyImageView(device, pbrImageView, nullptr);
+    vkDestroyImage(device, pbrImage, nullptr);
+    vkFreeMemory(device, pbrImageMemory, nullptr);
+
     for (auto framebuffer : framebuffers) {
         vkDestroyFramebuffer(device, framebuffer, nullptr);
     }
@@ -68,6 +72,14 @@ void FrameBuffers::initSwapChainFrameBuffers(SwapChain* swapChain, VkRenderPass 
         albedoImage, albedoImageMemory);
     albedoImageView = VulkanUtil::createImageView(albedoImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
+    VulkanUtil::createImage(
+        extent.width, extent.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, 
+        VK_IMAGE_TILING_OPTIMAL,
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT,
+        VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT,
+        pbrImage, pbrImageMemory);
+    pbrImageView = VulkanUtil::createImageView(pbrImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
     VkFormat depthFormat = VulkanUtil::findDepthFormat();
     VulkanUtil::createImage(
         extent.width, extent.height, 1, VK_SAMPLE_COUNT_1_BIT, depthFormat, 
@@ -80,10 +92,11 @@ void FrameBuffers::initSwapChainFrameBuffers(SwapChain* swapChain, VkRenderPass 
     framebuffers.resize(swapChainImageViews.size());
 
     for (size_t i = 0; i < swapChainImageViews.size(); i++) {
-        std::array<VkImageView, 5> attachments = {
+        std::array<VkImageView, 6> attachments = {
             positionImageView,
             normalImageView,
             albedoImageView,
+            pbrImageView,
             depthImageView,
             swapChainImageViews[i]
         };

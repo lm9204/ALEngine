@@ -28,6 +28,7 @@ class AL_API Mesh
 	std::unique_ptr<IndexBuffer> m_indexBuffer;
 
 	void initMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices);
+	void calculateTangents(std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
 };
 } // namespace ale
 

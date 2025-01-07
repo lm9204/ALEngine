@@ -200,10 +200,10 @@ void IndexBuffer::initIndexBuffer(std::vector<uint32_t> &indices)
 	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 }
 
-std::unique_ptr<ImageBuffer> ImageBuffer::createImageBuffer(std::string path)
+std::unique_ptr<ImageBuffer> ImageBuffer::createImageBuffer(std::string path, bool flipVertically)
 {
 	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
-	imageBuffer->initImageBuffer(path);
+	imageBuffer->initImageBuffer(path, flipVertically);
 	return imageBuffer;
 }
 
@@ -213,7 +213,7 @@ void ImageBuffer::cleanup()
 	vkFreeMemory(m_device, textureImageMemory, nullptr);
 }
 
-void ImageBuffer::initImageBuffer(std::string path)
+void ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
 {
 	auto &context = VulkanContext::getContext();
 	m_device = context.getDevice();
@@ -222,6 +222,7 @@ void ImageBuffer::initImageBuffer(std::string path)
 	m_graphicsQueue = context.getGraphicsQueue();
 
 	int texWidth, texHeight, texChannels;
+	stbi_set_flip_vertically_on_load(flipVertically);
 	stbi_uc *pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 

@@ -10,8 +10,22 @@ std::unique_ptr<ShaderResourceManager> ShaderResourceManager::createGeometryPass
 
 
 void ShaderResourceManager::cleanup() {
-    for (size_t i = 0; i < m_uniformBuffers.size(); i++) {
-        m_uniformBuffers[i]->cleanup();
+    if (!m_uniformBuffers.empty()) {
+        for (size_t i = 0; i < m_uniformBuffers.size(); i++) {
+            m_uniformBuffers[i]->cleanup();
+        }
+    }
+
+    if (!m_vertexUniformBuffers.empty()) {
+        for (size_t i = 0; i < m_vertexUniformBuffers.size(); i++) {
+            m_vertexUniformBuffers[i]->cleanup();
+        }
+    }
+
+    if (!m_fragmentUniformBuffers.empty()) {
+        for (size_t i = 0; i < m_fragmentUniformBuffers.size(); i++) {
+            m_fragmentUniformBuffers[i]->cleanup();
+        }
     }
 }
 
@@ -28,14 +42,17 @@ void ShaderResourceManager::createGeometryPassUniformBuffers(Scene* scene) {
         throw std::runtime_error("failed to create uniform buffers!");
     }
     // 유니폼 버퍼에 저장 될 구조체의 크기
-    VkDeviceSize bufferSize = sizeof(GeometryPassUniformBufferObject);
-
+    VkDeviceSize vertexBufferSize = sizeof(GeometryPassVertexUniformBufferObject);
+    VkDeviceSize fragmentBufferSize = sizeof(GeometryPassFragmentUniformBufferObject);
+    
     // 각 요소들을 동시에 처리 가능한 최대 프레임 수만큼 만들어 둔다.
-    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT * objectCount);
+    m_vertexUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT * objectCount);
+    m_fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT * objectCount);
 
     for (size_t i = 0; i < objectCount; i++) {
         for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-            m_uniformBuffers[i * MAX_FRAMES_IN_FLIGHT + j] = UniformBuffer::createUniformBuffer(bufferSize);
+            m_vertexUniformBuffers[i * MAX_FRAMES_IN_FLIGHT + j] = UniformBuffer::createUniformBuffer(vertexBufferSize);
+            m_fragmentUniformBuffers[i * MAX_FRAMES_IN_FLIGHT + j] = UniformBuffer::createUniformBuffer(fragmentBufferSize);
         }
     }
 }
@@ -48,6 +65,7 @@ void ShaderResourceManager::createGeometryPassDescriptorSets(Scene* scene, VkDes
 
     size_t objectCount = scene->getObjectCount();
     std::vector<std::shared_ptr<Object>> objects = scene->getObjects();
+    DefaultTextures defaultTextures = scene->getDefaultTextures();
 
     if (objectCount == 0) {
         throw std::runtime_error("failed to create descriptor sets!");
@@ -69,41 +87,115 @@ void ShaderResourceManager::createGeometryPassDescriptorSets(Scene* scene, VkDes
         throw std::runtime_error("failed to allocate descriptor sets!");
     }
 
-
     for (size_t i = 0; i < objectCount; i++) {
         for (size_t j = 0; j < MAX_FRAMES_IN_FLIGHT; j++) {
-            // 디스크립터 셋에 바인딩할 버퍼 정보 
-            VkDescriptorBufferInfo bufferInfo{};
-            bufferInfo.buffer = m_uniformBuffers[i * MAX_FRAMES_IN_FLIGHT + j]->getBuffer();			// 바인딩할 버퍼
-            bufferInfo.offset = 0;												// 버퍼에서 데이터 시작 위치 offset
-            bufferInfo.range = sizeof(GeometryPassUniformBufferObject);						// 셰이더가 접근할 버퍼 크기
+            auto& object = scene->getObjects()[i];
+            size_t index = i * MAX_FRAMES_IN_FLIGHT + j;
 
-            std::shared_ptr<Texture> texture = objects[i]->getTexture();
-            VkDescriptorImageInfo imageInfo{};								
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;	// 이미지의 레이아웃
-            imageInfo.imageView = texture->getImageView();						// 셰이더에서 사용할 이미지 뷰
-            imageInfo.sampler = texture->getSampler();							// 이미지 샘플링에 사용할 샘플러 설정
-            
-            // 디스크립터 셋 바인딩 및 업데이트
-            std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+            // Vertex Uniform Buffer
+            VkDescriptorBufferInfo vertexBufferInfo{};
+            vertexBufferInfo.buffer = m_vertexUniformBuffers[index]->getBuffer();
+            vertexBufferInfo.offset = 0;
+            vertexBufferInfo.range = sizeof(GeometryPassVertexUniformBufferObject);
 
-            descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[0].dstSet = descriptorSets[i * MAX_FRAMES_IN_FLIGHT + j];					// 업데이트 할 디스크립터 셋
-            descriptorWrites[0].dstBinding = 0;													// 업데이트 할 바인딩 포인트
-            descriptorWrites[0].dstArrayElement = 0;											// 업데이트 할 디스크립터가 배열 타입인 경우 해당 배열의 원하는 index 부터 업데이트 가능 (배열 아니면 0으로 지정)
-            descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;				// 업데이트 할 디스크립터 타입
-            descriptorWrites[0].descriptorCount = 1;											// 업데이트 할 디스크립터 개수
-            descriptorWrites[0].pBufferInfo = &bufferInfo;										// 업데이트 할 버퍼 디스크립터 정보 구조체 배열
+            // Fragment Uniform Buffer
+            VkDescriptorBufferInfo fragmentBufferInfo{};
+            fragmentBufferInfo.buffer = m_fragmentUniformBuffers[index]->getBuffer();
+            fragmentBufferInfo.offset = 0;
+            fragmentBufferInfo.range = sizeof(GeometryPassFragmentUniformBufferObject);
 
-            descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites[1].dstSet = descriptorSets[i * MAX_FRAMES_IN_FLIGHT + j];					// 업데이트 할 디스크립터 셋
-            descriptorWrites[1].dstBinding = 1;													// 업데이트 할 바인딩 포인트
-            descriptorWrites[1].dstArrayElement = 0;											// 업데이트 할 디스크립터가 배열 타입인 경우 해당 배열의 원하는 index 부터 업데이트 가능 (배열 아니면 0으로 지정)
-            descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;		// 업데이트 할 디스크립터 타입
-            descriptorWrites[1].descriptorCount = 1;											// 업데이트 할 디스크립터 개수
-            descriptorWrites[1].pImageInfo = &imageInfo;										// 업데이트 할 버퍼 디스크립터 정보 구조체 배열
 
-            // 디스크립터 셋을 업데이트 하여 사용할 리소스 바인딩
+            Albedo albedo = object->getAlbedo();
+            NormalMap normalMap = object->getNormalMap();
+            Roughness roughness = object->getRoughness();
+            Metallic metallic = object->getMetallic();
+            AOMap aoMap = object->getAOMap();
+            HeightMap heightMap = object->getHeightMap();
+
+            // Texture 정보 업데이트
+            auto updateImageInfo = [](std::shared_ptr<Texture>& texture, std::shared_ptr<Texture>& defaultTexture) -> VkDescriptorImageInfo {
+                VkDescriptorImageInfo info{};
+                if (texture && texture->getImageView() && texture->getSampler()) {
+                    info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    info.imageView = texture->getImageView();
+                    info.sampler = texture->getSampler();
+                } else {
+                    info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    info.imageView = defaultTexture->getImageView();
+                    info.sampler = defaultTexture->getSampler();
+                }
+                return info;
+            };
+
+            std::array<VkDescriptorImageInfo, 6> imageInfos{
+                updateImageInfo(normalMap.flag ? normalMap.normalTexture : nullptr, defaultTextures.normal),
+                updateImageInfo(roughness.flag ? roughness.roughnessTexture : nullptr, defaultTextures.roughness),
+                updateImageInfo(metallic.flag ? metallic.metallicTexture : nullptr, defaultTextures.metallic),
+                updateImageInfo(aoMap.flag ? aoMap.aoTexture : nullptr, defaultTextures.ao),
+                updateImageInfo(albedo.flag ? albedo.albedoTexture : nullptr, defaultTextures.albedo),
+                updateImageInfo(heightMap.flag ? heightMap.heightTexture : nullptr, defaultTextures.height)
+            };
+            // Descriptor Writes
+            std::array<VkWriteDescriptorSet, 8> descriptorWrites{};
+
+
+            // Vertex UBO
+            descriptorWrites[0] = {
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                nullptr,
+                descriptorSets[index],
+                0,
+                0,
+                1,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                nullptr,
+                &vertexBufferInfo,
+                nullptr
+            };
+
+            // Vertex Height Map
+            descriptorWrites[1] = {
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                nullptr,
+                descriptorSets[index],
+                1,
+                0,
+                1,
+                VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                &imageInfos[5],
+                nullptr,
+                nullptr
+            };
+
+            // Fragment UBO
+            descriptorWrites[2] = {
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                nullptr,
+                descriptorSets[index],
+                2,
+                0,
+                1,
+                VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,
+                nullptr,
+                &fragmentBufferInfo,
+                nullptr
+            };
+
+            for (size_t k = 0; k < 5; k++) {
+                descriptorWrites[3 + k] = {
+                    VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                    nullptr,
+                    descriptorSets[index],
+                    static_cast<uint32_t>(3 + k),
+                    0,
+                    1,
+                    VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                    &imageInfos[k],
+                    nullptr,
+                    nullptr
+                };
+            }
+			 // Descriptor Set 업데이트
             vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
         }
     }
@@ -111,31 +203,31 @@ void ShaderResourceManager::createGeometryPassDescriptorSets(Scene* scene, VkDes
 
 
 std::unique_ptr<ShaderResourceManager> ShaderResourceManager::createLightingPassShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, 
-    VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView) {
+    VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView, VkImageView pbrImageView) {
     std::unique_ptr<ShaderResourceManager> shaderResourceManager = std::unique_ptr<ShaderResourceManager>(new ShaderResourceManager());
-    shaderResourceManager->initLightingPassShaderResourceManager(descriptorSetLayout, positionImageView, normalImageView, albedoImageView);
+    shaderResourceManager->initLightingPassShaderResourceManager(descriptorSetLayout, positionImageView, normalImageView, albedoImageView, pbrImageView);
     return shaderResourceManager;
 }
 
 
 void ShaderResourceManager::initLightingPassShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, 
-    VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView) {
+    VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView, VkImageView pbrImageView) {
     createLightingPassUniformBuffers();
-    createLightingPassDescriptorSets(descriptorSetLayout, positionImageView, normalImageView, albedoImageView);
+    createLightingPassDescriptorSets(descriptorSetLayout, positionImageView, normalImageView, albedoImageView, pbrImageView);
 }
 
 void ShaderResourceManager::createLightingPassUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(LightingPassUniformBufferObject);
 
-    m_uniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
+    m_fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
-        m_uniformBuffers[i] = UniformBuffer::createUniformBuffer(bufferSize);
+        m_fragmentUniformBuffers[i] = UniformBuffer::createUniformBuffer(bufferSize);
     }
 }
 
 void ShaderResourceManager::createLightingPassDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, 
-    VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView) {
+    VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView, VkImageView pbrImageView) {
     auto& context = VulkanContext::getContext();
     VkDevice device = context.getDevice();
     VkDescriptorPool descriptorPool = context.getDescriptorPool();
@@ -171,12 +263,17 @@ void ShaderResourceManager::createLightingPassDescriptorSets(VkDescriptorSetLayo
         albedoImageInfo.imageView = albedoImageView;
         albedoImageInfo.sampler = VK_NULL_HANDLE;
 
+        VkDescriptorImageInfo pbrImageInfo{};
+        pbrImageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+        pbrImageInfo.imageView = pbrImageView;
+        pbrImageInfo.sampler = VK_NULL_HANDLE;
+
         VkDescriptorBufferInfo bufferInfo{};
-        bufferInfo.buffer = m_uniformBuffers[i]->getBuffer();
+        bufferInfo.buffer = m_fragmentUniformBuffers[i]->getBuffer();
         bufferInfo.offset = 0;
         bufferInfo.range = sizeof(LightingPassUniformBufferObject);
 
-        std::array<VkWriteDescriptorSet, 4> descriptorWrites{};
+        std::array<VkWriteDescriptorSet, 5> descriptorWrites{};
 
         descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[0].dstSet = descriptorSets[i];
@@ -202,9 +299,16 @@ void ShaderResourceManager::createLightingPassDescriptorSets(VkDescriptorSetLayo
         descriptorWrites[3].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
         descriptorWrites[3].dstSet = descriptorSets[i];
         descriptorWrites[3].dstBinding = 3;
-        descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[3].descriptorType = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
         descriptorWrites[3].descriptorCount = 1;
-        descriptorWrites[3].pBufferInfo = &bufferInfo;
+        descriptorWrites[3].pImageInfo = &pbrImageInfo;
+
+        descriptorWrites[4].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+        descriptorWrites[4].dstSet = descriptorSets[i];
+        descriptorWrites[4].dstBinding = 4;
+        descriptorWrites[4].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        descriptorWrites[4].descriptorCount = 1;
+        descriptorWrites[4].pBufferInfo = &bufferInfo;
 
         vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0, nullptr);
     }

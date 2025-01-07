@@ -74,6 +74,7 @@ struct Vertex
 	glm::vec3 pos;
 	glm::vec3 normal;
 	glm::vec2 texCoord;
+	glm::vec3 tangent;
 
 	// 정점 데이터가 전달되는 방법을 알려주는 구조체 반환하는 함수
 	static VkVertexInputBindingDescription getBindingDescription()
@@ -90,10 +91,10 @@ struct Vertex
 	}
 
 	// 정점 속성별 데이터 형식과 위치를 지정하는 구조체 반환하는 함수
-	static std::array<VkVertexInputAttributeDescription, 3> getAttributeDescriptions()
+	static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions()
 	{
 		// 정점 속성의 데이터 형식과 위치를 지정하는 구조체
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
 
 		// pos 속성 정보 입력
 		attributeDescriptions[0].binding = 0;  // 버텍스 버퍼의 바인딩 포인트
@@ -102,7 +103,7 @@ struct Vertex
 			VK_FORMAT_R32G32B32_SFLOAT; // 저장되는 데이터 형식 (VK_FORMAT_R32G32B32_SFLOAT = vec3)
 		attributeDescriptions[0].offset = offsetof(Vertex, pos); // 버텍스 구조체에서 해당 속성이 시작되는 위치
 
-		// color 속성 정보 입력
+		// normal 속성 정보 입력
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -113,6 +114,12 @@ struct Vertex
 		attributeDescriptions[2].location = 2;
 		attributeDescriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
 		attributeDescriptions[2].offset = offsetof(Vertex, texCoord);
+
+		// tangent 속성 정보 입력
+		attributeDescriptions[3].binding = 0;
+		attributeDescriptions[3].location = 3;
+		attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescriptions[3].offset = offsetof(Vertex, tangent);
 
 		return attributeDescriptions;
 	}
@@ -133,16 +140,40 @@ struct Transform
 };
 
 
-struct GeometryPassUniformBufferObject {
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
+struct GeometryPassVertexUniformBufferObject {
+    alignas(16) glm::mat4 model;      // 64바이트
+    alignas(16) glm::mat4 view;       // 64바이트
+    alignas(16) glm::mat4 proj;       // 64바이트
+    alignas(4) bool heightFlag;       // 4바이트
+    alignas(4) float heightScale;     // 4바이트
+    alignas(8) glm::vec2 padding;     // 8바이트 (패딩)
 };
 
+
+struct GeometryPassFragmentUniformBufferObject {
+    alignas(16) glm::vec4 albedoValue; // 16바이트 (정렬 우선순위)
+    alignas(4) float roughnessValue;
+    alignas(4) float metallicValue;
+    alignas(4) float aoValue;
+
+    alignas(4) bool albedoFlag;
+    alignas(4) bool normalFlag;
+    alignas(4) bool roughnessFlag;
+    alignas(4) bool metallicFlag;
+    alignas(4) bool aoFlag;
+    alignas(8) glm::vec2 padding; // 패딩 추가 (8바이트)
+};
+
+
+
 struct LightingPassUniformBufferObject {
-	alignas(16) glm::vec3 lightPos;
-	alignas(16) glm::vec3 lightColor;
-	alignas(16) glm::vec3 cameraPos;
+    alignas(16) glm::vec3 lightPos;       // 16바이트
+    alignas(16) glm::vec3 lightDirection; // 16바이트
+    alignas(16) glm::vec3 lightColor;     // 16바이트
+    alignas(16) glm::vec3 cameraPos;      // 16바이트
+    alignas(4) float intensity;           // 4바이트
+    alignas(4) float ambientStrength;     // 4바이트
+    alignas(8) glm::vec2 padding;         // 8바이트 (패딩)
 };
 
 } // namespace ale

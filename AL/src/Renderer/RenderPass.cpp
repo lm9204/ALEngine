@@ -165,6 +165,9 @@ void RenderPass::initDeferredRenderPass(VkFormat swapChainImageFormat) {
     albedoAttachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     albedoAttachment.finalLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
 
+    // PBR Attachment
+    VkAttachmentDescription pbrAttachment = albedoAttachment;
+
     // Depth Attachment
     VkAttachmentDescription depthAttachment{};
     depthAttachment.format = VulkanUtil::findDepthFormat();
@@ -189,13 +192,14 @@ void RenderPass::initDeferredRenderPass(VkFormat swapChainImageFormat) {
     VkAttachmentReference positionRef{0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
     VkAttachmentReference normalRef{1, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
     VkAttachmentReference albedoRef{2, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
-    VkAttachmentReference depthRef{3, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference pbrRef{3, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference depthRef{4, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL};
 
-    VkAttachmentReference geometryAttachments[] = {positionRef, normalRef, albedoRef};
+    VkAttachmentReference geometryAttachments[] = {positionRef, normalRef, albedoRef, pbrRef};
 
     VkSubpassDescription subpass1{};
     subpass1.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass1.colorAttachmentCount = 3;
+    subpass1.colorAttachmentCount = 4;
     subpass1.pColorAttachments = geometryAttachments;
     subpass1.pDepthStencilAttachment = &depthRef;
 
@@ -203,13 +207,14 @@ void RenderPass::initDeferredRenderPass(VkFormat swapChainImageFormat) {
     VkAttachmentReference positionInputRef{0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     VkAttachmentReference normalInputRef{1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
     VkAttachmentReference albedoInputRef{2, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
-    VkAttachmentReference swapChainRef{4, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
+    VkAttachmentReference pbrInputRef{3, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL};
+    VkAttachmentReference swapChainRef{5, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL};
 
-    VkAttachmentReference inputAttachments[] = {positionInputRef, normalInputRef, albedoInputRef};
+    VkAttachmentReference inputAttachments[] = {positionInputRef, normalInputRef, albedoInputRef, pbrInputRef};
 
     VkSubpassDescription subpass2{};
     subpass2.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-    subpass2.inputAttachmentCount = 3;
+    subpass2.inputAttachmentCount = 4;
     subpass2.pInputAttachments = inputAttachments;
     subpass2.colorAttachmentCount = 1;
     subpass2.pColorAttachments = &swapChainRef;
@@ -231,8 +236,8 @@ void RenderPass::initDeferredRenderPass(VkFormat swapChainImageFormat) {
     dependencies[1].dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
     // Render Pass 생성
-    std::array<VkAttachmentDescription, 5> attachments = {
-        positionAttachment, normalAttachment, albedoAttachment,
+    std::array<VkAttachmentDescription, 6> attachments = {
+        positionAttachment, normalAttachment, albedoAttachment, pbrAttachment,
         depthAttachment, swapChainAttachment
     };
 

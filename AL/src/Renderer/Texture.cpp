@@ -3,10 +3,10 @@
 namespace ale
 {
 
-std::shared_ptr<Texture> Texture::createTexture(std::string path)
+std::shared_ptr<Texture> Texture::createTexture(std::string path, bool flipVertically)
 {
 	std::shared_ptr<Texture> texture = std::shared_ptr<Texture>(new Texture());
-	texture->initTexture(path);
+	texture->initTexture(path, flipVertically);
 	return texture;
 }
 
@@ -20,14 +20,14 @@ void Texture::cleanup()
 	m_imageBuffer->cleanup();
 }
 
-void Texture::initTexture(std::string path)
+void Texture::initTexture(std::string path, bool flipVertically)
 {
-	loadTexture(path);
+	loadTexture(path, flipVertically);
 }
 
-void Texture::loadTexture(std::string path)
+void Texture::loadTexture(std::string path, bool flipVertically)
 {
-	m_imageBuffer = ImageBuffer::createImageBuffer(path);
+	m_imageBuffer = ImageBuffer::createImageBuffer(path, flipVertically);
 	mipLevels = m_imageBuffer->getMipLevels();
 	createTextureImageView();
 	createTextureSampler();

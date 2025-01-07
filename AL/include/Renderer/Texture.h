@@ -11,7 +11,7 @@ namespace ale
 class AL_API Texture : public Buffer
 {
   public:
-	static std::shared_ptr<Texture> createTexture(std::string path);
+	static std::shared_ptr<Texture> createTexture(std::string path, bool flipVertically = false);
 	static std::shared_ptr<Texture> createDefaultTexture(glm::vec4 color);
 	static std::shared_ptr<Texture> createDefaultSingleChannelTexture(float value);
 
@@ -36,8 +36,8 @@ class AL_API Texture : public Buffer
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 
-	void initTexture(std::string path);
-	void loadTexture(std::string path);
+	void initTexture(std::string path, bool flipVertically = false);
+	void loadTexture(std::string path, bool flipVertically = false);
 	void createTextureImageView();
 	void createTextureSampler();
 
@@ -49,6 +49,16 @@ class AL_API Texture : public Buffer
 	void createDefaultSingleChannelTextureImageView();
 	void createDefaultSingleChannelTextureSampler();
 };
+
+struct DefaultTextures {
+	std::shared_ptr<Texture> albedo;
+	std::shared_ptr<Texture> normal;
+	std::shared_ptr<Texture> roughness;
+	std::shared_ptr<Texture> metallic;
+	std::shared_ptr<Texture> ao;
+	std::shared_ptr<Texture> height;
+};
+
 
 } // namespace ale
 
