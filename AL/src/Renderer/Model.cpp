@@ -69,7 +69,16 @@ void Model::initPlaneModel()
 void Model::loadModel(std::string path)
 {
 	Assimp::Importer importer;
-	const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	// const aiScene *scene = importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs);
+	const aiScene* scene = importer.ReadFile(path,
+    aiProcess_Triangulate |
+    aiProcess_FlipUVs |
+    aiProcess_CalcTangentSpace |
+    aiProcess_GenSmoothNormals |
+    aiProcess_JoinIdenticalVertices |
+    aiProcess_RemoveRedundantMaterials |
+    aiProcess_OptimizeMeshes |
+    aiProcess_OptimizeGraph);
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cerr << "failed to load model!" << std::endl;

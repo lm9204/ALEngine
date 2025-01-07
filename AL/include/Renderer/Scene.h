@@ -57,6 +57,8 @@ private:
 	std::shared_ptr<Model> m_catModel;
 	std::shared_ptr<Model> m_backpackModel;
 
+	std::shared_ptr<Model> m_cameraModel;
+
 	std::shared_ptr<Texture> m_backpackAlbedo;
 	std::shared_ptr<Texture> m_backpackNormal;
 	std::shared_ptr<Texture> m_backpackRoughness;
@@ -73,14 +75,20 @@ private:
 	std::shared_ptr<Texture> m_defaultTexture;
 	std::shared_ptr<Texture> m_defaultSingleChannelTexture;
 
+
+
+	std::shared_ptr<Texture> m_groundDiffuseTexture;
+	std::shared_ptr<Texture> m_groundNormalTexture;
+
 	std::vector< std::shared_ptr<Object> > m_objects;
 	std::shared_ptr<Object> m_lightObject;
 
-	std::shared_ptr<Material> m_material;
+	std::shared_ptr<Material> m_defaultMaterial;
 	std::shared_ptr<Material> m_karinaMaterial;
 	std::shared_ptr<Material> m_catMaterial;
 	std::shared_ptr<Material> m_vikingMaterial;
 	std::shared_ptr<Material> m_backpackMaterial;
+	std::shared_ptr<Material> m_groundMaterial;
 
 	bool m_cameraControl { false };
 	glm::vec2 m_prevMousePos { 0.0f, 0.0f };

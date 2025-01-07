@@ -65,7 +65,7 @@ void ShaderResourceManager::createGeometryPassDescriptorSets(Scene* scene, VkDes
 
     size_t objectCount = scene->getObjectCount();
     std::vector<std::shared_ptr<Object>> objects = scene->getObjects();
-    DefaultTextures defaultTextures = scene->getDefaultTextures();
+    DefaultTextures& defaultTextures = scene->getDefaultTextures();
 
     if (objectCount == 0) {
         throw std::runtime_error("failed to create descriptor sets!");

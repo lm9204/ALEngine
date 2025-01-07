@@ -147,6 +147,9 @@ void Mesh::calculateTangents(std::vector<Vertex>& vertices, const std::vector<ui
         glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;
 
         float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+		if (std::isnan(f)) {
+			f = 0.0f;
+		}
 
         glm::vec3 tangent;
         tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
