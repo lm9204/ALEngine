@@ -8,10 +8,11 @@
 
 namespace ale
 {
-class AL_API FrameBuffers
+class FrameBuffers
 {
   public:
 	static std::unique_ptr<FrameBuffers> createSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createFinalFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 
 	~FrameBuffers()
@@ -20,6 +21,7 @@ class AL_API FrameBuffers
 	void cleanup();
 
 	void initSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	void initFinalFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 	void initImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 
 	std::vector<VkFramebuffer> &getFramebuffers()
@@ -42,6 +44,14 @@ class AL_API FrameBuffers
 	{
 		return albedoImageView;
 	}
+	VkImageView &getFinalImageView()
+	{
+		return finalImageView;
+	}
+	VkImage &getFinalImage()
+	{
+		return finalImage;
+	}
 
   private:
 	VkImage depthImage;
@@ -59,6 +69,10 @@ class AL_API FrameBuffers
 	VkImage albedoImage;
 	VkDeviceMemory albedoImageMemory;
 	VkImageView albedoImageView;
+
+	VkImage finalImage;
+	VkDeviceMemory finalMemory;
+	VkImageView finalImageView;
 
 	std::vector<VkFramebuffer> framebuffers;
 };
