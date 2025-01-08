@@ -8,8 +8,12 @@
 
 namespace ale
 {
+CameraController *CameraController::s_Instance = nullptr;
+
 CameraController::CameraController()
 {
+	s_Instance = this;
+
 	m_AspectRatio = WINDOW_WIDTH / (float)WINDOW_HEIGHT;
 	m_Camera.setProjMatrix(glm::radians(45.0f), m_AspectRatio, 0.01f, 100.0f);
 }
@@ -21,21 +25,23 @@ void CameraController::onUpdate(Timestep ts)
 
 	if (Input::isKeyPressed(Key::W))
 	{
-		// set camera front
+		m_CameraPos += m_CameraFront * m_Speed * ts.getMiliSeconds();
 	}
 	if (Input::isKeyPressed(Key::S))
 	{
-		// set camera back
+		m_CameraPos -= m_CameraFront * m_Speed * ts.getMiliSeconds();
 	}
 
+	auto cameraRight = glm::normalize(glm::cross(m_CameraUp, -m_CameraFront));
 	if (Input::isKeyPressed(Key::A))
 	{
-		// set camera left
+		m_CameraPos -= cameraRight * m_Speed * ts.getMiliSeconds();
 	}
 	if (Input::isKeyPressed(Key::D))
 	{
-		// set camera right
+		m_CameraPos += cameraRight * m_Speed * ts.getMiliSeconds();
 	}
+	m_Camera.setPosition(m_CameraPos);
 }
 
 void CameraController::onEvent(Event &e)
@@ -68,11 +74,24 @@ void CameraController::setCamera(VkExtent2D swapChainExtent, float fov, float _n
 	m_Camera.setProjMatrix(fov, m_AspectRatio, _near, _far);
 }
 
+glm::mat4 CameraController::getViewMatrix()
+{
+	m_CameraFront = glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+					glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraPitch), glm::vec3(1.0f, 0.0f, 0.0f)) *
+					glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+	m_CameraPos = m_Camera.getPosition();
+	return glm::lookAt(m_CameraPos, m_CameraPos + m_CameraFront, m_CameraUp);
+}
+
+glm::mat4 CameraController::getProjMatrix(VkExtent2D swapChainExtent)
+{
+	return glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float)swapChainExtent.height, 0.1f, 100.0f);
+}
+
 bool CameraController::onMousePressed(MouseButtonPressedEvent &e)
 {
 	if (e.getMouseButton() == Mouse::ButtonRight)
 	{
-		AL_CORE_INFO("CameraController::onMousePressed");
 		m_CameraControl = true;
 
 		double xPos, yPos;
@@ -84,7 +103,6 @@ bool CameraController::onMousePressed(MouseButtonPressedEvent &e)
 
 bool CameraController::onMouseReleased(MouseButtonReleasedEvent &e)
 {
-	AL_CORE_INFO("CameraController::onMouseReleased");
 	m_CameraControl = false;
 	return false;
 }
@@ -98,15 +116,31 @@ bool CameraController::onMouseMoved(MouseMovedEvent &e)
 {
 	if (m_CameraControl)
 	{
-		AL_CORE_INFO("CameraController::onMouseMoved");
 
 		glm::vec2 pos = glm::vec2(e.getX(), e.getY());
 		glm::vec2 deltaPos = pos - m_prevMousePos;
 
 		// set camera rotation
+		m_CameraYaw -= deltaPos.x * m_RotSpeed;
+		m_CameraPitch -= deltaPos.y * m_RotSpeed;
+
+		if (m_CameraYaw < 0.0f)
+			m_CameraYaw += 360.0f;
+		if (m_CameraYaw > 360.0f)
+			m_CameraYaw -= 360.0f;
+
+		if (m_CameraPitch > 89.0f)
+			m_CameraPitch = 89.0f;
+		if (m_CameraPitch < -89.0f)
+			m_CameraPitch = -89.0f;
 		m_prevMousePos = pos;
 	}
 	return false;
+}
+
+CameraController &CameraController::get()
+{
+	return *s_Instance;
 }
 
 } // namespace ale
