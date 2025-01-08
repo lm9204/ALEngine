@@ -1,6 +1,7 @@
 #include "Renderer/Renderer.h"
 #include "ALpch.h"
 #include "ImGui/ImGuiLayer.h"
+#include "Renderer/CameraController.h"
 
 namespace ale
 {
@@ -50,6 +51,9 @@ void Renderer::init(GLFWwindow *window)
 	m_ImGuiSwapChainFrameBuffers = FrameBuffers::createImGuiFrameBuffers(m_swapChain.get(), imGuiRenderPass);
 	imGuiSwapChainFrameBuffers = m_ImGuiSwapChainFrameBuffers->getFramebuffers();
 
+	m_FinalFrameBuffers = FrameBuffers::createFinalFrameBuffers(m_swapChain.get(), deferredRenderPass);
+	finalFrameBuffers = m_FinalFrameBuffers->getFramebuffers();
+
 	m_geometryPassDescriptorSetLayout = DescriptorSetLayout::createGeometryPassDescriptorSetLayout();
 	geometryPassDescriptorSetLayout = m_geometryPassDescriptorSetLayout->getDescriptorSetLayout();
 
@@ -77,6 +81,7 @@ void Renderer::init(GLFWwindow *window)
 void Renderer::cleanup()
 {
 	m_swapChainFrameBuffers->cleanup();
+	m_FinalFrameBuffers->cleanup();
 	m_swapChain->cleanup();
 
 	m_geometryPassPipeline->cleanup();
@@ -307,12 +312,13 @@ void Renderer::recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, 
 
 	for (size_t i = 0; i < objectCount; i++)
 	{
+		CameraController &controller = CameraController::get();
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1,
 								&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
 		GeometryPassUniformBufferObject ubo{};
 		ubo.model = objects[i]->getModelMatrix();
-		ubo.view = scene->getViewMatrix();
-		ubo.proj = scene->getProjMatrix(swapChainExtent);
+		ubo.view = controller.getViewMatrix();
+		ubo.proj = controller.getProjMatrix(swapChainExtent);
 		ubo.proj[1][1] *= -1;
 		// memcpy(uniformBuffersMapped[currentFrame * objectCount + i], &ubo, sizeof(ubo));
 		geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
@@ -444,12 +450,13 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 
 	for (size_t i = 0; i < objectCount; i++)
 	{
+		CameraController &controller = CameraController::get();
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1,
 								&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
 		GeometryPassUniformBufferObject ubo{};
 		ubo.model = objects[i]->getModelMatrix();
-		ubo.view = scene->getViewMatrix();
-		ubo.proj = scene->getProjMatrix(swapChainExtent);
+		ubo.view = controller.getViewMatrix();
+		ubo.proj = controller.getProjMatrix(swapChainExtent);
 		ubo.proj[1][1] *= -1;
 		geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
 		objects[i]->draw(commandBuffer);

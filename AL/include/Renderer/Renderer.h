@@ -15,7 +15,7 @@
 
 namespace ale
 {
-class AL_API Renderer
+class Renderer
 {
   public:
 	static std::unique_ptr<Renderer> createRenderer(GLFWwindow *window);
@@ -60,6 +60,11 @@ class AL_API Renderer
 
 	std::unique_ptr<FrameBuffers> m_ImGuiSwapChainFrameBuffers;
 	std::vector<VkFramebuffer> imGuiSwapChainFrameBuffers;
+
+	std::unique_ptr<FrameBuffers> m_FinalFrameBuffers;
+	std::vector<VkFramebuffer> finalFrameBuffers;
+	std::vector<VkImageView> finalImageViews;
+	std::vector<VkImage> finalImages;
 
 	std::unique_ptr<RenderPass> m_renderPass;
 	VkRenderPass renderPass;
