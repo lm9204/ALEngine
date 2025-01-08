@@ -1,11 +1,16 @@
 #include "AL.h"
 #include "Core/EntryPoint.h"
 
-class Sandbox : public ale::App
+#include "EditorLayer.h"
+
+namespace ale
+{
+class Sandbox : public App
 {
   public:
 	Sandbox()
 	{
+		pushLayer(new EditorLayer());
 	}
 
 	~Sandbox()
@@ -13,7 +18,9 @@ class Sandbox : public ale::App
 	}
 };
 
-ale::App *ale::createApp()
+App *createApp()
 {
 	return new Sandbox();
 }
+
+} // namespace ale
