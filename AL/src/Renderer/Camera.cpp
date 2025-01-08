@@ -8,16 +8,14 @@ void Camera::setProjMatrix(float fov, float aspect, float _near, float _far)
 	m_ProjMatrix = glm::perspective(fov, aspect, _near, _far);
 }
 
-glm::mat4 Camera::getViewMatrix()
+void Camera::setPosition(glm::vec3 &pos)
 {
-	m_CameraFront = glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
-					glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraPitch), glm::vec3(1.0f, 0.0f, 0.0f)) *
-					glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-	return glm::lookAt(m_Position, m_Position + m_CameraFront, m_CameraUp);
+	m_Position = pos;
 }
 
-glm::mat4 Camera::getProjMatrix()
+glm::vec3 &Camera::getPosition()
 {
-	return m_ProjMatrix;
+	return m_Position;
 }
+
 } // namespace ale
