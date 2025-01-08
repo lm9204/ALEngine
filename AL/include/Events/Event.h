@@ -59,7 +59,7 @@ enum EEventCategory
 	}
 
 // Event base class
-class AL_API Event
+class Event
 {
 	friend class EventDispatcher;
 

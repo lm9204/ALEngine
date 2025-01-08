@@ -16,7 +16,7 @@ void Layer::onDetach()
 {
 }
 
-void Layer::onUpdate()
+void Layer::onUpdate(Timestep ts)
 {
 }
 

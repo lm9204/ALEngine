@@ -2,20 +2,22 @@
 #define CAMERA_H
 
 #include "Core/Base.h"
+#include "Core/Timestep.h"
 #include <glm/glm.hpp>
 
 namespace ale
 {
 
-class AL_API Camera
+class Camera
 {
   public:
 	Camera() = default;
 	// void move(bool pressW, bool pressS, bool pressD, bool pressA, bool pressE, bool pressQ);
 	// void rotate(glm::vec2 &pos);
 	void setProjMatrix(float fov, float aspect, float _near, float _far);
-	glm::mat4 getViewMatrix();
-	glm::mat4 getProjMatrix();
+
+	void setPosition(glm::vec3 &pos);
+	glm::vec3 &getPosition();
 
   private:
 	glm::mat4 m_ProjMatrix;

@@ -12,7 +12,7 @@
 
 namespace ale
 {
-class AL_API CameraController
+class CameraController
 {
   public:
 	CameraController();
@@ -24,6 +24,10 @@ class AL_API CameraController
 	Camera &getCamera();
 	void setCamera(VkExtent2D swapChainExtent, float fov, float _near, float _far);
 
+	static CameraController &get();
+	glm::mat4 getViewMatrix();
+	glm::mat4 getProjMatrix(VkExtent2D swapChainExtent);
+
   private:
 	bool onMousePressed(MouseButtonPressedEvent &e);
 	bool onMouseReleased(MouseButtonReleasedEvent &e);
@@ -32,9 +36,18 @@ class AL_API CameraController
 
   private:
 	Camera m_Camera;
+	glm::vec3 m_CameraPos{0.0f, 0.0f, 10.0f};
 	glm::vec2 m_prevMousePos{0.0f, 0.0f};
 	bool m_CameraControl{false};
 	float m_AspectRatio;
+	glm::vec3 m_CameraFront{0.0f, 0.0f, -1.0f};
+	glm::vec3 m_CameraUp{0.0f, 1.0f, 0.0f};
+	const float m_Speed{0.05f};
+	const float m_RotSpeed{0.8f};
+	float m_CameraPitch{0.0f};
+	float m_CameraYaw{0.0f};
+
+	static CameraController *s_Instance;
 };
 
 } // namespace ale

@@ -8,7 +8,7 @@
 
 namespace ale
 {
-class AL_API Scene
+class Scene
 {
   public:
 	static std::unique_ptr<Scene> createScene();

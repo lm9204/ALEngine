@@ -10,8 +10,7 @@ namespace ale
 {
 ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 {
-	App &app = App::get();
-	Renderer &renderer = app.getRenderer();
+	Renderer &renderer = App::get().getRenderer();
 	auto &context = VulkanContext::getContext();
 	commandPool = context.getCommandPool();
 	init_info.Instance = context.getInstance();				// VulkanContext
@@ -21,6 +20,7 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	init_info.Queue = context.getGraphicsQueue();			// renderer
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.RenderPass = renderer.getRenderPass(); // vk null handle
+	// init_info.Subpass = 1;
 
 	// gui용 descriptor pool 필요
 	init_info.DescriptorPool = context.getDescriptorPool(); // renderer
@@ -83,11 +83,8 @@ void ImGuiLayer::onAttach()
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}
 
-	App &app = App::get();
-	Renderer &renderer = app.getRenderer();
-
 	// ImGui Glfw 초기화
-	ImGui_ImplGlfw_InitForVulkan(app.getWindow().getNativeWindow(), true);
+	ImGui_ImplGlfw_InitForVulkan(App::get().getWindow().getNativeWindow(), true);
 
 	// ImGui Vulkan 초기화
 	ImGui_ImplVulkan_Init(&init_info);
@@ -108,82 +105,96 @@ void ImGuiLayer::onImGuiRender()
 	// ImGui::ShowDemoWindow();
 }
 
-void ImGuiLayer::onEvent(Event &event)
+void ImGuiLayer::onEvent(Event &e)
 {
+	if (m_BlockEvents)
+	{
+		ImGuiIO &io = ImGui::GetIO();
+		e.m_Handled |= e.isInCategory(EVENT_CATEGORY_MOUSE) & io.WantCaptureMouse;
+		e.m_Handled |= e.isInCategory(EVENT_CATEGORY_KEYBOARD) & io.WantCaptureKeyboard;
+	}
 }
 
 void ImGuiLayer::begin()
 {
+
 	ImGui_ImplVulkan_NewFrame();
 	ImGui_ImplGlfw_NewFrame();
 	ImGui::NewFrame();
-
-	// [Docking Space]
-	ImGuiViewport *viewport = ImGui::GetMainViewport();
-	// DockSpace 플래그 설정
-	ImGuiDockNodeFlags dockspace_flags = ImGuiDockNodeFlags_PassthruCentralNode;
-	// DockSpace 생성
-	ImGui::DockSpaceOverViewport(0, viewport, dockspace_flags, nullptr);
 }
 
 void ImGuiLayer::renderDrawData(Scene *scene, VkCommandBuffer commandBuffer)
 {
+
 	ImGuiIO &io = ImGui::GetIO();
-	App &app = App::get();
-	io.DisplaySize = ImVec2((float)app.getWindow().getWidth(), (float)app.getWindow().getHeight());
 
-	ImGui::Begin("GUI");
-	auto objects = scene->getObjects();
-	auto lightObject = scene->getLightObject();
+	// {
+	// 	App &app = App::get();
+	// 	io.DisplaySize = ImVec2((float)app.getWindow().getWidth(), (float)app.getWindow().getHeight());
 
-	std::string lightLabelPrefix = lightObject->getName();
-	ImGui::Text("Light: %s", lightLabelPrefix.c_str()); // Light object name
-	ImGui::Separator();									// Separator for better visibility
+	// 	ImGui::Begin("GUI");
+	// 	auto objects = scene->getObjects();
+	// 	auto lightObject = scene->getLightObject();
 
-	glm::vec3 &lightPosition = lightObject->getPosition();
-	if (ImGui::SliderFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), -10.0f, 10.0f))
-	{
-		lightObject->setPosition(lightPosition);
-		scene->updateLightPos(lightPosition);
-	}
+	// 	std::string lightLabelPrefix = lightObject->getName();
+	// 	ImGui::Text("Light: %s", lightLabelPrefix.c_str()); // Light object name
+	// 	ImGui::Separator();									// Separator for better visibility
 
-	glm::vec3 &lightRotation = lightObject->getRotation();
-	if (ImGui::SliderFloat3((lightLabelPrefix + " Rotation").c_str(), glm::value_ptr(lightRotation), -180.0f, 180.0f))
-	{
-		lightObject->setRotation(lightRotation);
-	}
+	// 	glm::vec3 &lightPosition = lightObject->getPosition();
+	// 	if (ImGui::SliderFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), -10.0f, 10.0f))
+	// 	{
+	// 		lightObject->setPosition(lightPosition);
+	// 		scene->updateLightPos(lightPosition);
+	// 	}
 
-	glm::vec3 &lightScale = lightObject->getScale();
-	if (ImGui::SliderFloat3((lightLabelPrefix + " Scale").c_str(), glm::value_ptr(lightScale), 0.1f, 10.0f))
-	{
-		lightObject->setScale(lightScale);
-	}
+	// 	glm::vec3 &lightRotation = lightObject->getRotation();
+	// 	if (ImGui::SliderFloat3((lightLabelPrefix + " Rotation").c_str(), glm::value_ptr(lightRotation), -180.0f,
+	// 							180.0f))
+	// 	{
+	// 		lightObject->setRotation(lightRotation);
+	// 	}
 
-	for (uint32_t index = 1; index < objects.size(); index++)
-	{
-		std::string labelPrefix = objects[index]->getName();
-		ImGui::Text("Object: %s", labelPrefix.c_str()); // Object name
-		ImGui::Separator();								// Separator for better visibility
+	// 	glm::vec3 &lightScale = lightObject->getScale();
+	// 	if (ImGui::SliderFloat3((lightLabelPrefix + " Scale").c_str(), glm::value_ptr(lightScale), 0.1f, 10.0f))
+	// 	{
+	// 		lightObject->setScale(lightScale);
+	// 	}
 
-		glm::vec3 &position = objects[index]->getPosition();
-		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f, "%.3f",
-								0.0001f))
-		{
-			objects[index]->setPosition(position);
-		}
-		glm::vec3 rotation = objects[index]->getRotation();
-		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f, "%.3f",
-								0.0001f))
-		{
-			objects[index]->setRotation(rotation);
-		}
-		glm::vec3 scale = objects[index]->getScale();
-		if (ImGui::SliderFloat3((labelPrefix + " Scale").c_str(), glm::value_ptr(scale), 0.1f, 10.0f, "%.3f", 0.0001f))
-		{
-			objects[index]->setScale(scale);
-		}
-		ImGui::Separator(); // Additional separator after each object
-	}
+	// 	for (uint32_t index = 1; index < objects.size(); index++)
+	// 	{
+	// 		std::string labelPrefix = objects[index]->getName();
+	// 		ImGui::Text("Object: %s", labelPrefix.c_str()); // Object name
+	// 		ImGui::Separator();								// Separator for better visibility
+
+	// 		glm::vec3 &position = objects[index]->getPosition();
+	// 		if (ImGui::SliderFloat3((labelPrefix + " Position").c_str(), glm::value_ptr(position), -10.0f, 10.0f,
+	// 								"%.3f", 0.0001f))
+	// 		{
+	// 			objects[index]->setPosition(position);
+	// 		}
+	// 		glm::vec3 rotation = objects[index]->getRotation();
+	// 		if (ImGui::SliderFloat3((labelPrefix + " Rotation").c_str(), glm::value_ptr(rotation), -180.0f, 180.0f,
+	// 								"%.3f", 0.0001f))
+	// 		{
+	// 			objects[index]->setRotation(rotation);
+	// 		}
+	// 		glm::vec3 scale = objects[index]->getScale();
+	// 		if (ImGui::SliderFloat3((labelPrefix + " Scale").c_str(), glm::value_ptr(scale), 0.1f, 10.0f, "%.3f",
+	// 								0.0001f))
+	// 		{
+	// 			objects[index]->setScale(scale);
+	// 		}
+	// 		ImGui::Separator(); // Additional separator after each object
+	// 	}
+	// 	ImGui::End();
+	// }
+
+	// VkDescriptorSet ImGui_ImplVulkan_AddTexture(VkSampler sampler, VkImageView image_view, VkImageLayout
+	// image_layout)
+
+	ImGui::Begin("ALENGINE TEST");
+	// ImGui::Image();
+
 	ImGui::End();
 
 	ImGui::Render();
@@ -239,6 +250,27 @@ void ImGuiLayer::endSingleTimeCommands(VkCommandBuffer commandBuffer)
 	vkQueueWaitIdle(init_info.Queue);								// 그래픽스 큐 작업 종료 대기
 
 	vkFreeCommandBuffers(init_info.Device, commandPool, 1, &commandBuffer); // 커맨드 버퍼 제거
+}
+
+void ImGuiLayer::renderTest(VkDescriptorSet descriptorSet, VkCommandBuffer commandBuffer)
+{
+	auto &context = VulkanContext::getContext();
+
+	ImGui::Begin("ALENGINE TEST");
+
+	ImGui::Image(reinterpret_cast<ImTextureID>(descriptorSet), ImVec2{640, 360});
+
+	ImGui::End();
+
+	ImGui::Render();
+	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
+
+	ImGuiIO &io = ImGui::GetIO();
+	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
+	{
+		ImGui::UpdatePlatformWindows();
+		ImGui::RenderPlatformWindowsDefault();
+	}
 }
 
 } // namespace ale

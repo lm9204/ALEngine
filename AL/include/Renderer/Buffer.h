@@ -8,7 +8,7 @@
 
 namespace ale
 {
-class AL_API Buffer
+class Buffer
 {
   public:
 	virtual ~Buffer()

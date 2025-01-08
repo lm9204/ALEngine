@@ -6,7 +6,7 @@
 
 namespace ale
 {
-class AL_API MouseMovedEvent : public Event
+class MouseMovedEvent : public Event
 {
   public:
 	MouseMovedEvent(const float x, const float y) : m_MouseX(x), m_MouseY(y)
@@ -37,7 +37,7 @@ class AL_API MouseMovedEvent : public Event
 	float m_MouseX, m_MouseY;
 };
 
-class AL_API MouseScrolledEvent : public Event
+class MouseScrolledEvent : public Event
 {
   public:
 	MouseScrolledEvent(const float xOffset, const float yOffset) : m_XOffset(xOffset), m_YOffset(yOffset)
@@ -68,7 +68,7 @@ class AL_API MouseScrolledEvent : public Event
 	float m_XOffset, m_YOffset;
 };
 
-class AL_API MouseButtonEvent : public Event
+class MouseButtonEvent : public Event
 {
   public:
 	MouseCode getMouseButton() const
@@ -86,7 +86,7 @@ class AL_API MouseButtonEvent : public Event
 	MouseCode m_Button;
 };
 
-class AL_API MouseButtonPressedEvent : public MouseButtonEvent
+class MouseButtonPressedEvent : public MouseButtonEvent
 {
   public:
 	MouseButtonPressedEvent(const MouseCode button) : MouseButtonEvent(button)
@@ -103,7 +103,7 @@ class AL_API MouseButtonPressedEvent : public MouseButtonEvent
 	EVENT_CLASS_TYPE(MOUSE_BUTTON_PRESSED);
 };
 
-class AL_API MouseButtonReleasedEvent : public MouseButtonEvent
+class MouseButtonReleasedEvent : public MouseButtonEvent
 {
   public:
 	MouseButtonReleasedEvent(const MouseCode button) : MouseButtonEvent(button)

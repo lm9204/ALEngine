@@ -7,7 +7,7 @@
 
 namespace ale
 {
-class AL_API VulkanUtil
+class VulkanUtil
 {
   public:
 	static void createImage(uint32_t width, uint32_t height, uint32_t mipLevels, VkSampleCountFlagBits numSamples,
@@ -20,6 +20,16 @@ class AL_API VulkanUtil
 	static VkFormat findSupportedFormat(const std::vector<VkFormat> &candidates, VkImageTiling tiling,
 										VkFormatFeatureFlags features);
 	static std::vector<char> readFile(const std::string &filename);
+	static void insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage image, VkAccessFlags srcAccessMask,
+										 VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout,
+										 VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
+										 VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange);
+
+	static VkCommandBuffer beginSingleTimeCommands(VkDevice device, VkCommandPool commandpool);
+	static void endSingleTimeCommands(VkDevice device, VkQueue queue, VkCommandPool commandPool,
+									  VkCommandBuffer commandBuffer);
+
+	static VkSampler createSampler();
 };
 } // namespace ale
 

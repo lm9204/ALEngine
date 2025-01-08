@@ -8,7 +8,7 @@
 
 namespace ale
 {
-class AL_API SwapChain
+class SwapChain
 {
   public:
 	static std::unique_ptr<SwapChain> createSwapChain(GLFWwindow *window);

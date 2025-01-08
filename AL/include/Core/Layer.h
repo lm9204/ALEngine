@@ -2,11 +2,13 @@
 #define LAYER_H
 
 #include "Core/Base.h"
+#include "Core/Timestep.h"
+
 #include "Events/Event.h"
 
 namespace ale
 {
-class AL_API Layer
+class Layer
 {
   public:
 	Layer(const std::string &name = "Layer");
@@ -14,10 +16,9 @@ class AL_API Layer
 
 	virtual void onAttach();
 	virtual void onDetach();
-	virtual void onUpdate();
+	virtual void onUpdate(Timestep ts);
 	virtual void onImGuiRender();
 	virtual void onEvent(Event &event);
-
 
 	const std::string &getName() const
 	{

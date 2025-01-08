@@ -15,7 +15,4 @@
 // ImGui
 #include "ImGui/ImGuiLayer.h"
 
-// Entry Point
-#include "Core/EntryPoint.h"
-
 #endif

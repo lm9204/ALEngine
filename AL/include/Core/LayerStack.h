@@ -8,7 +8,7 @@
 
 namespace ale
 {
-class AL_API LayerStack
+class LayerStack
 {
   public:
 	LayerStack() = default;

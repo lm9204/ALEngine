@@ -72,6 +72,7 @@ uint32_t VulkanUtil::findMemoryType(uint32_t typeFilter, VkMemoryPropertyFlags p
 		// typeFilter & (1 << i) : GPU의 메모리 유형중 버퍼와 호환되는 것인지 판단
 		// memProperties.memoryTypes[i].propertyFlags & properties : GPU 메모리 유형의 속성이 properties와 일치하는지
 		// 판단
+
 		if ((typeFilter & (1 << i)) && (memProperties.memoryTypes[i].propertyFlags & properties) == properties)
 		{
 			// 해당 메모리 유형 반환
@@ -166,4 +167,114 @@ std::vector<char> VulkanUtil::readFile(const std::string &filename)
 
 	return buffer;
 }
+
+void VulkanUtil::insertImageMemoryBarrier(VkCommandBuffer cmdbuffer, VkImage image, VkAccessFlags srcAccessMask,
+										  VkAccessFlags dstAccessMask, VkImageLayout oldImageLayout,
+										  VkImageLayout newImageLayout, VkPipelineStageFlags srcStageMask,
+										  VkPipelineStageFlags dstStageMask, VkImageSubresourceRange subresourceRange)
+{
+	VkImageMemoryBarrier imageMemoryBarrier{};
+	imageMemoryBarrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	imageMemoryBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	imageMemoryBarrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+	imageMemoryBarrier.srcAccessMask = srcAccessMask;
+	imageMemoryBarrier.dstAccessMask = dstAccessMask;
+	imageMemoryBarrier.oldLayout = oldImageLayout;
+	imageMemoryBarrier.newLayout = newImageLayout;
+	imageMemoryBarrier.image = image;
+	imageMemoryBarrier.subresourceRange = subresourceRange;
+
+	vkCmdPipelineBarrier(cmdbuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1, &imageMemoryBarrier);
+}
+
+VkCommandBuffer VulkanUtil::beginSingleTimeCommands(VkDevice device, VkCommandPool commandpool)
+{
+	// 커맨드 버퍼 할당을 위한 구조체
+	VkCommandBufferAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+	allocInfo.level =
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY; // PRIMARY LEVEL 등록 (해당 커맨드 버퍼가 큐에 단독으로 제출될 수 있음)
+	allocInfo.commandPool = commandpool; // 커맨드 풀 지정
+	allocInfo.commandBufferCount = 1;	 // 커맨드 버퍼 개수 지정
+
+	// 커맨드 버퍼 생성
+	VkCommandBuffer commandBuffer;
+	vkAllocateCommandBuffers(device, &allocInfo, &commandBuffer);
+
+	// 커맨드 버퍼 기록을 위한 정보 객체
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+	beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT; // 커맨드 버퍼를 1번만 제출
+
+	// GPU에 필요한 작업을 모두 커맨드 버퍼에 기록하기 시작
+	vkBeginCommandBuffer(commandBuffer, &beginInfo);
+
+	return commandBuffer;
+}
+
+void VulkanUtil::endSingleTimeCommands(VkDevice device, VkQueue queue, VkCommandPool commandPool,
+									   VkCommandBuffer commandBuffer)
+{
+	// 커맨드 버퍼 기록 중지
+	vkEndCommandBuffer(commandBuffer);
+
+	// 복사 커맨드 버퍼 제출 정보 객체 생성
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+	submitInfo.commandBufferCount = 1;			 // 커맨드 버퍼 개수
+	submitInfo.pCommandBuffers = &commandBuffer; // 커맨드 버퍼 등록
+
+	vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE); // 커맨드 버퍼 큐에 제출
+	vkQueueWaitIdle(queue);								  // 그래픽스 큐 작업 종료 대기
+
+	vkFreeCommandBuffers(device, commandPool, 1, &commandBuffer); // 커맨드 버퍼 제거
+}
+
+VkSampler VulkanUtil::createSampler()
+{
+	VkSampler textureSampler;
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+	auto physicalDevice = context.getPhysicalDevice();
+
+	// GPU의 속성 정보를 가져오는 함수
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+	// 샘플러 생성시 필요한 구조체
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR; // 확대시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
+	samplerInfo.minFilter = VK_FILTER_LINEAR; // 축소시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 U축(너비)에서 범위를 벗어난 경우 래핑
+															   // 모드 설정 (현재 반복 설정)
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 V축(높이)에서 범위를 벗어난 경우 래핑
+															   // 모드 설정 (현재 반복 설정)
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 W축(깊이)에서 범위를 벗어난 경우 래핑
+															   // 모드 설정 (현재 반복 설정)
+	samplerInfo.anisotropyEnable =
+		VK_TRUE; // 이방성 필터링 적용 여부 설정 (경사진 곳이나 먼 곳의 샘플을 늘려 좀 더 정확한 값을 가져오는 방법)
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // GPU가 지원하는 최대의 이방성 필터링 제한 설정
+	samplerInfo.borderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK; // 래핑 모드가 VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+																// 일때 텍스처 외부 색 지정
+	samplerInfo.unnormalizedCoordinates =
+		VK_FALSE; // VK_TRUE로 설정시 텍스처 좌표가 0 ~ 1의 정규화된 좌표가 아닌 실제 텍셀의 좌표 범위로 바뀜
+	samplerInfo.compareEnable =
+		VK_FALSE; // 비교 연산 사용할지 결정 (보통 쉐도우 맵같은 경우 깊이 비교 샘플링에서 사용됨)
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS; // 비교 연산에 사용할 연산 지정
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; // mipmap 사용시 mipmap 간 보간 방식 결정 (현재 선형 보간)
+	samplerInfo.minLod = 0.0f; // 최소 level을 0으로 설정 (가장 높은 해상도의 mipmap 을 사용가능하게 허용)
+	samplerInfo.maxLod = 1.0f; // 최대 level을 mipLevel로 설정 (VK_LOD_CLAMP_NONE 설정시 제한 해제)
+	samplerInfo.mipLodBias =
+		0.0f; // Mipmap 레벨 오프셋(Bias)을 설정
+			  // Mipmap을 일부러 더 높은(더 큰) 레벨로 사용하거나 낮은(더 작은) 레벨로 사용하고 싶을 때 사용.
+
+	// 샘플러 생성
+	if (vkCreateSampler(device, &samplerInfo, nullptr, &textureSampler) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create texture sampler!");
+	}
+	return textureSampler;
+}
+
 } // namespace ale

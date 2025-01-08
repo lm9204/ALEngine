@@ -8,7 +8,7 @@
 
 namespace ale
 {
-class AL_API Texture : public Buffer
+class Texture : public Buffer
 {
   public:
 	static std::shared_ptr<Texture> createTexture(std::string path);

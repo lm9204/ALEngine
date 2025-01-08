@@ -5,7 +5,7 @@
 
 namespace ale
 {
-class AL_API WindowResizeEvent : public Event
+class WindowResizeEvent : public Event
 {
   public:
 	WindowResizeEvent(unsigned int width, unsigned int height) : m_Width(width), m_Height(height)
@@ -36,7 +36,7 @@ class AL_API WindowResizeEvent : public Event
 	unsigned int m_Width, m_Height;
 };
 
-class AL_API WindowCloseEvent : public Event
+class WindowCloseEvent : public Event
 {
   public:
 	WindowCloseEvent() = default;
@@ -45,7 +45,7 @@ class AL_API WindowCloseEvent : public Event
 	EVENT_CLASS_CATEGORY(EVENT_CATEGORY_APP);
 };
 
-class AL_API AppTickEvent : public Event
+class AppTickEvent : public Event
 {
   public:
 	AppTickEvent() = default;
@@ -54,7 +54,7 @@ class AL_API AppTickEvent : public Event
 	EVENT_CLASS_CATEGORY(EVENT_CATEGORY_APP);
 };
 
-class AL_API AppUpdateEvent : public Event
+class AppUpdateEvent : public Event
 {
   public:
 	AppUpdateEvent() = default;
@@ -63,7 +63,7 @@ class AL_API AppUpdateEvent : public Event
 	EVENT_CLASS_CATEGORY(EVENT_CATEGORY_APP);
 };
 
-class AL_API AppRenderEvent : public Event
+class AppRenderEvent : public Event
 {
   public:
 	AppRenderEvent() = default;

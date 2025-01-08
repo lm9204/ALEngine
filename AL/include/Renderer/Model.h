@@ -9,7 +9,7 @@
 #include <assimp/scene.h>
 namespace ale
 {
-class AL_API Model
+class Model
 {
   public:
 	static std::shared_ptr<Model> createModel(std::string path);
