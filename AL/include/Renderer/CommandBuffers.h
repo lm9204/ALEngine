@@ -7,7 +7,7 @@
 
 namespace ale
 {
-class AL_API CommandBuffers
+class CommandBuffers
 {
   public:
 	static std::unique_ptr<CommandBuffers> createCommandBuffers();

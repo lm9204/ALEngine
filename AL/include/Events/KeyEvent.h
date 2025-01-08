@@ -6,7 +6,7 @@
 
 namespace ale
 {
-class AL_API KeyEvent : public Event
+class KeyEvent : public Event
 {
   public:
 	KeyCode getKeyCode()
@@ -23,7 +23,7 @@ class AL_API KeyEvent : public Event
 	KeyCode m_KeyCode;
 };
 
-class AL_API KeyPressedEvent : public KeyEvent
+class KeyPressedEvent : public KeyEvent
 {
   public:
 	KeyPressedEvent(const KeyCode keycode, bool isRepeat = false) : KeyEvent(keycode), m_IsRepeat(isRepeat)
@@ -48,7 +48,7 @@ class AL_API KeyPressedEvent : public KeyEvent
 	bool m_IsRepeat;
 };
 
-class AL_API KeyReleasedEvent : public KeyEvent
+class KeyReleasedEvent : public KeyEvent
 {
   public:
 	KeyReleasedEvent(const KeyCode keycode) : KeyEvent(keycode)
@@ -65,7 +65,7 @@ class AL_API KeyReleasedEvent : public KeyEvent
 	EVENT_CLASS_TYPE(KEY_RELEASED)
 };
 
-class AL_API KeyTypedEvent : public KeyEvent
+class KeyTypedEvent : public KeyEvent
 {
   public:
 	KeyTypedEvent(const KeyCode keycode) : KeyEvent(keycode)

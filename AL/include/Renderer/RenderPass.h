@@ -8,7 +8,7 @@
 
 namespace ale
 {
-class AL_API RenderPass
+class RenderPass
 {
   public:
 	static std::unique_ptr<RenderPass> createRenderPass(VkFormat swapChainImageFormat);

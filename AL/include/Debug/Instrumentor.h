@@ -32,7 +32,7 @@ struct InstrumentationSession
 	std::string Name;
 };
 
-class AL_API Instrumentor
+class Instrumentor
 {
   public:
 	Instrumentor(const Instrumentor &) = delete;
@@ -148,7 +148,7 @@ class AL_API Instrumentor
 	std::ofstream m_OutputStream;
 };
 
-class AL_API InstrumentationTimer
+class InstrumentationTimer
 {
   public:
 	InstrumentationTimer(const char *name) : m_Name(name), m_Stopped(false)

@@ -7,7 +7,7 @@
 
 namespace ale
 {
-class AL_API DescriptorSetLayout
+class DescriptorSetLayout
 {
   public:
 	static std::unique_ptr<DescriptorSetLayout> createDescriptorSetLayout();

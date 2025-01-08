@@ -7,7 +7,7 @@
 
 namespace ale
 {
-class AL_API SyncObjects
+class SyncObjects
 {
   public:
 	static std::unique_ptr<SyncObjects> createSyncObjects();

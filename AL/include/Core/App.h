@@ -17,7 +17,7 @@
 
 namespace ale
 {
-class AL_API App
+class App
 {
   public:
 	App();

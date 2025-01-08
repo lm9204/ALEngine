@@ -4,8 +4,8 @@
 #include "ALpch.h"
 #include "Core/Base.h"
 #include "Events/Event.h"
-#include <GLFW/glfw3.h>
 #include "Renderer/Scene.h"
+#include <GLFW/glfw3.h>
 
 namespace ale
 {
@@ -24,7 +24,7 @@ struct WindowProps
 
 // window base class
 // can be implemented different by platforms
-class AL_API Window
+class Window
 {
   public:
 	using EventCallbackFn = std::function<void(Event &)>;
