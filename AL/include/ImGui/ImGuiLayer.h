@@ -15,7 +15,7 @@
 
 namespace ale
 {
-class AL_API ImGuiLayer : public Layer
+class ImGuiLayer : public Layer
 {
   public:
 	ImGuiLayer();
@@ -28,6 +28,12 @@ class AL_API ImGuiLayer : public Layer
 
 	void begin();
 	static void renderDrawData(Scene *scene, VkCommandBuffer commandBuffer);
+	static void renderTest(VkDescriptorSet descriptorSet, VkCommandBuffer commandBuffer);
+
+	void blockEvents(bool block)
+	{
+		m_BlockEvents = block;
+	}
 
 	bool show_demo_window = false;
 
@@ -38,6 +44,7 @@ class AL_API ImGuiLayer : public Layer
   private:
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	VkCommandPool commandPool;
+	bool m_BlockEvents = false; // true default
 
 	// VkDescriptorPool descriptorPool;
 };
