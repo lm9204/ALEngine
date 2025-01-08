@@ -112,13 +112,13 @@ void WindowsWindow::init(const WindowProps &props)
 		case GLFW_PRESS: {
 			MouseButtonPressedEvent event(button);
 			data.eventCallback(event);
-			data.scene->mouseButton(button, action, xPos, yPos);
+			// data.scene->mouseButton(button, action, xPos, yPos);
 			break;
 		}
 		case GLFW_RELEASE: {
 			MouseButtonReleasedEvent event(button);
 			data.eventCallback(event);
-			data.scene->mouseButton(button, action, xPos, yPos);
+			// data.scene->mouseButton(button, action, xPos, yPos);
 			break;
 		}
 		}
@@ -135,7 +135,7 @@ void WindowsWindow::init(const WindowProps &props)
 		WindowData &data = *(WindowData *)glfwGetWindowUserPointer(window);
 		MouseMovedEvent event((float)xPos, (float)yPos);
 		data.eventCallback(event);
-		data.scene->mouseMove(xPos, yPos);
+		// data.scene->mouseMove(xPos, yPos);
 	});
 
 	AL_CORE_INFO("Init window end!");
