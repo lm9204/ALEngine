@@ -4,8 +4,8 @@ project(${PROJECT_NAME})
 
 # Set Macros
 set(WINDOW_NAME "ALEngine")
-set(WINDOW_WIDTH 1920)
-set(WINDOW_HEIGHT 1080)
+set(WINDOW_WIDTH 1280)
+set(WINDOW_HEIGHT 720)
 
 
 # 의존성 설정
@@ -16,7 +16,7 @@ file(GLOB_RECURSE SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/src/*.cpp")
 file(GLOB_RECURSE HEADERS "${CMAKE_CURRENT_SOURCE_DIR}/include/*.h")
 
 # AL 라이브러리 생성
-add_library(${PROJECT_NAME} SHARED ${SOURCES}) # SOURCES만 전달
+add_library(${PROJECT_NAME} STATIC ${SOURCES}) # SOURCES만 전달
 
 # PCH 설정
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/alpch.h)
@@ -38,7 +38,6 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${DEP_LIBS})
 target_compile_options(${PROJECT_NAME} PUBLIC "/utf-8")
 
 # 매크로 정의
-target_compile_definitions(${PROJECT_NAME} PUBLIC AL_PLATFORM_WINDOWS AL_BUILD_DLL)
 target_compile_definitions(${PROJECT_NAME} PUBLIC
 WINDOW_NAME="${WINDOW_NAME}"
 WINDOW_WIDTH=${WINDOW_WIDTH}
