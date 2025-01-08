@@ -48,25 +48,25 @@ void App::run()
 	while (m_Running && !glfwWindowShouldClose(m_Window->getNativeWindow()))
 	{
 		// set delta time
-		// float time = (float)glfwGetTime();
-		// Timestep ts = time - m_LastFrameTime;
-		// m_LastFrameTime = time;
+		float time = (float)glfwGetTime();
+		Timestep ts = time - m_LastFrameTime;
+		m_LastFrameTime = time;
 		// AL_CORE_TRACE("Delta time: {0}s ({1}ms))", ts.getSeconds(), ts.getMiliSeconds());
 
 		// layer stack update
 		for (Layer *layer : m_LayerStack)
 		{
-			layer->onUpdate();
+			layer->onUpdate(ts);
 		}
 
 		// layer stack ImGuiRender
-		m_ImGuiLayer->begin();
+		m_ImGuiLayer->begin(); // ImGui begin new frame
 		for (Layer *layer : m_LayerStack)
 		{
 			layer->onImGuiRender();
 		}
 		m_Window->onUpdate();
-		m_Scene->processInput(m_Window->getNativeWindow());
+		// m_Scene->processInput(m_Window->getNativeWindow());
 		m_Renderer->drawFrame(m_Scene.get());
 	}
 	vkDeviceWaitIdle(m_Renderer->getDevice());
