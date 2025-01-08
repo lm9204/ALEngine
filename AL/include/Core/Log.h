@@ -8,13 +8,19 @@
 
 namespace ale
 {
-class AL_API Log
+class Log
 {
   public:
 	static void init();
 
-	static std::shared_ptr<spdlog::logger> &getCoreLogger();
-	static std::shared_ptr<spdlog::logger> &getClientLogger();
+	static std::shared_ptr<spdlog::logger> &getCoreLogger()
+	{
+		return s_CoreLogger;
+	}
+	static std::shared_ptr<spdlog::logger> &getClientLogger()
+	{
+		return s_ClientLogger;
+	}
 
   private:
 	static std::shared_ptr<spdlog::logger> s_CoreLogger;

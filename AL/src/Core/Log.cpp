@@ -16,14 +16,4 @@ void Log::init()
 	s_ClientLogger = spdlog::stdout_color_mt("App");
 	s_ClientLogger->set_level(spdlog::level::trace);
 }
-
-inline std::shared_ptr<spdlog::logger> &Log::getCoreLogger()
-{
-	return s_CoreLogger;
-}
-
-inline std::shared_ptr<spdlog::logger> &Log::getClientLogger()
-{
-	return s_ClientLogger;
-}
 } // namespace ale
