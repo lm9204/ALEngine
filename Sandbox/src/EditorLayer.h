@@ -18,6 +18,14 @@ class EditorLayer : public Layer
 	void onImGuiRender() override;
 	void onEvent(Event &e) override;
 
+	void setDockingSpace();
+
+  private:
+	void showHierarchyWindow();
+	void showSceneWindow();
+	void showInspectorWindow();
+	void showProjectWindow();
+
   private:
 	CameraController m_CameraController;
 };

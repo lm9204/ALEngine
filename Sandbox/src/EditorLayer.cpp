@@ -18,7 +18,21 @@ void EditorLayer::onUpdate(Timestep ts)
 {
 	m_CameraController.onUpdate(ts);
 }
+
 void EditorLayer::onImGuiRender()
+{
+	setDockingSpace();
+
+	// viewport
+	// texture descriptor set을 가져올 수 있는 방법 있으면 좋을듯
+}
+
+void EditorLayer::onEvent(Event &e)
+{
+	m_CameraController.onEvent(e);
+}
+
+void EditorLayer::setDockingSpace()
 {
 	static bool opt_fullscreen = true;
 	static bool opt_padding = false;
@@ -59,19 +73,49 @@ void EditorLayer::onImGuiRender()
 	}
 
 	ImGui::End();
-
-	// setting ui
-	ImGui::Begin("EditorLayer TEST");
-	ImGui::Text("hello");
-	ImGui::End();
-
-	// viewport
-	// texture descriptor set을 가져올 수 있는 방법 있으면 좋을듯
 }
 
-void EditorLayer::onEvent(Event &e)
+// Hierarchy 창
+void EditorLayer::showHierarchyWindow()
 {
-	m_CameraController.onEvent(e);
+	if (ImGui::CollapsingHeader("Root Object"))
+	{
+		ImGui::Text("Child Object 1");
+		ImGui::Text("Child Object 2");
+	}
+}
+
+// Scene 창
+void EditorLayer::showSceneWindow()
+{
+	ImGui::Text("Scene View");
+	ImGui::Text("Render the 2D/3D scene here.");
+	// 여기에 2D/3D 렌더링 코드를 추가
+}
+
+// Inspector 창
+void EditorLayer::showInspectorWindow()
+{
+	ImGui::Text("Inspector");
+	static float position[3] = {0.0f, 0.0f, 0.0f};
+	ImGui::InputFloat3("Position", position);
+	static float rotation[3] = {0.0f, 0.0f, 0.0f};
+	ImGui::InputFloat3("Rotation", rotation);
+	static float scale[3] = {1.0f, 1.0f, 1.0f};
+	ImGui::InputFloat3("Scale", scale);
+}
+
+// Project 창
+void EditorLayer::showProjectWindow()
+{
+	ImGui::Text("Project Files");
+	if (ImGui::TreeNode("Assets"))
+	{
+		ImGui::Text("Material.mat");
+		ImGui::Text("Model.fbx");
+		ImGui::Text("Script.cs");
+		ImGui::TreePop();
+	}
 }
 
 } // namespace ale
