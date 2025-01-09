@@ -17,6 +17,8 @@ target_link_libraries(${PROJECT_NAME} PRIVATE AfterLife)
 
 # 헤더 파일 경로 추가
 target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/AL/include)
+target_include_directories(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/Sandbox/src)
+
 
 # 매크로 정의
 target_compile_definitions(${PROJECT_NAME} PUBLIC AL_PLATFORM_WINDOWS)

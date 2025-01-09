@@ -192,11 +192,6 @@ void ImGuiLayer::renderDrawData(Scene *scene, VkCommandBuffer commandBuffer)
 	// VkDescriptorSet ImGui_ImplVulkan_AddTexture(VkSampler sampler, VkImageView image_view, VkImageLayout
 	// image_layout)
 
-	ImGui::Begin("ALENGINE TEST");
-	// ImGui::Image();
-
-	ImGui::End();
-
 	ImGui::Render();
 	ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
 
