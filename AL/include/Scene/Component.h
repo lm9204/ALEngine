@@ -1,6 +1,9 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "Renderer/Model.h"
+#include "Renderer/Texture.h"
+
 #include "Scene/SceneCamera.h"
 
 #include <glm/glm.hpp>
@@ -45,10 +48,18 @@ struct TransformComponent
 // RENDERER
 struct ModelComponent
 {
-	// maybe mesh pointer or vector
+	std::shared_ptr<Model> m_Model;
 
 	ModelComponent() = default;
 	ModelComponent(const ModelComponent &) = default;
+};
+
+struct TextureComponent
+{
+	std::shared_ptr<Texture> m_Texture;
+
+	TextureComponent() = default;
+	TextureComponent(const TextureComponent &) = default;
 };
 
 struct CamerComponent
@@ -90,6 +101,35 @@ struct CylinderColliderComponent
 {
 	CylinderColliderComponent() = default;
 	CylinderColliderComponent(const CylinderColliderComponent &) = default;
+};
+
+// SCRIPTS
+struct ScriptComponent
+{
+	std::string m_ClassName;
+
+	ScriptComponent() = default;
+	ScriptComponent(const ScriptComponent &) = default;
+};
+
+class ScriptableEntity;
+
+struct NativeScriptComponent
+{
+	ScriptableEntity *instance = nullptr;
+
+	ScriptableEntity *(*instantiateScript)();
+	void (*destroyScript)(NativeScriptComponent *);
+
+	template <typename T> void bind()
+	{
+		instantiateScript = []() {
+			return static_cast<ScriptableEntity *>(new T());
+		} destroyScript = [](NativeScriptComponent *nsc) {
+			delete nsc->instance;
+			nsc->instance = nullptr;
+		}
+	}
 };
 
 } // namespace ale

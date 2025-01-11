@@ -39,7 +39,7 @@ class Renderer
   private:
 	Renderer() = default;
 
-	Scene *scene;
+	// Scene *scene;
 
 	GLFWwindow *window;
 	VkSurfaceKHR surface;

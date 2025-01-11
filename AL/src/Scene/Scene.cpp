@@ -1,15 +1,21 @@
 #include "Scene/Scene.h"
 #include "Scene/Component.h"
 #include "Scene/Entity.h"
+#include "Scene/ScriptableEntity.h"
+
+#include "Core/App.h"
 
 namespace ale
 {
-Scene::Scene()
+Scene::~Scene()
 {
 }
 
-Scene::~Scene()
+std::unique_ptr<Scene> Scene::createScene()
 {
+	std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
+	// scene->initScene();
+	return scene;
 }
 
 Entity Scene::createEntity(const std::string &name)
@@ -30,6 +36,21 @@ void Scene::onUpdate(Timestep ts)
 	{
 		// update scripts
 		{
+			auto view = m_Registry.view<ScriptComponent>();
+			for (auto e : view)
+			{
+				Entity entity = {e, this};
+				// update entity
+			}
+			m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto &nsc) {
+				if (!nsc.instance)
+				{
+					nsc.instance = nsc.instantiateScript();
+					nsc.instance->m_Entity = Entity{entity, this};
+					nsc.instance->onCreate();
+				}
+				nsc.instance->onUpdate(ts);
+			});
 		}
 		// Do Physics
 		{
@@ -42,7 +63,7 @@ void Scene::onUpdate(Timestep ts)
 
 	// if main Camera exists
 	{
-		// Renderer draw frame
+		renderScene();
 	}
 }
 
@@ -59,6 +80,13 @@ void Scene::onViewportResize(uint32_t width, uint32_t height)
 		if (!cameraComponent.m_FixedAspectRatio)
 			cameraComponent.m_Camera.setViewportSize(width, height); // set viewport size
 	}
+}
+
+void Scene::renderScene()
+{
+	Renderer &renderer = App::get().getRenderer();
+	// Draw Models
+	renderer.drawFrame(this);
 }
 
 } // namespace ale

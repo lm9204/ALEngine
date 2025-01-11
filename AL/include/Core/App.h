@@ -13,7 +13,6 @@
 
 #include "Renderer/Common.h"
 #include "Renderer/Renderer.h"
-#include "Renderer/Scene.h"
 
 namespace ale
 {
@@ -46,7 +45,6 @@ class App
 
 	std::unique_ptr<Window> m_Window;
 	std::unique_ptr<Renderer> m_Renderer;
-	std::unique_ptr<Scene> m_Scene;
 	ImGuiLayer *m_ImGuiLayer;
 
 	LayerStack m_LayerStack;

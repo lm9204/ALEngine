@@ -4,8 +4,10 @@
 #include "Core/Base.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/Common.h"
-#include "Renderer/Scene.h"
 #include "Renderer/VulkanContext.h"
+
+#include "Scene/Component.h"
+#include "Scene/Scene.h"
 
 namespace ale
 {

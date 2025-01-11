@@ -27,6 +27,10 @@ class CameraController
 	static CameraController &get();
 	glm::mat4 getViewMatrix();
 	glm::mat4 getProjMatrix(VkExtent2D swapChainExtent);
+	glm::vec3 &getPosition()
+	{
+		return m_Camera.getPosition();
+	}
 
   private:
 	bool onMousePressed(MouseButtonPressedEvent &e);

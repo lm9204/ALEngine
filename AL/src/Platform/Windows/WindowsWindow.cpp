@@ -170,8 +170,4 @@ bool WindowsWindow::isVSync() const
 	return m_Data.vSync;
 }
 
-void WindowsWindow::bindScene(Scene *scene)
-{
-	m_Data.scene = scene;
-}
 } // namespace ale

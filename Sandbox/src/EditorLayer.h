@@ -21,13 +21,8 @@ class EditorLayer : public Layer
 	void setDockingSpace();
 
   private:
-	void showHierarchyWindow();
-	void showSceneWindow();
-	void showInspectorWindow();
-	void showProjectWindow();
-
-  private:
 	CameraController m_CameraController;
+	std::unique_ptr<Scene> m_Scene;
 };
 
 } // namespace ale
