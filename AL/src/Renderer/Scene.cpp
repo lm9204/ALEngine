@@ -2,12 +2,12 @@
 
 namespace ale
 {
-std::unique_ptr<Scene> Scene::createScene()
-{
-	std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
-	scene->initScene();
-	return scene;
-}
+// std::unique_ptr<Scene> Scene::createScene()
+// {
+// 	std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
+// 	scene->initScene();
+// 	return scene;
+// }
 
 // object는 cleanup 해줄 필요 없지만 model과 texture는 해줘야함
 void Scene::cleanup()

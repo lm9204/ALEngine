@@ -11,7 +11,7 @@ namespace ale
 class Scene
 {
   public:
-	static std::unique_ptr<Scene> createScene();
+	// static std::unique_ptr<Scene> createScene();
 	~Scene()
 	{
 	}
