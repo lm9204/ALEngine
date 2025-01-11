@@ -17,9 +17,8 @@ App::App()
 
 	// init renderer
 	m_Renderer = Renderer::createRenderer(m_Window->getNativeWindow());
-	m_Scene = Scene::createScene();
-	m_Renderer->loadScene(m_Scene.get());
-	m_Window->bindScene(m_Scene.get());
+	// m_Scene = Scene::createScene();
+	// m_Renderer->loadScene(m_Scene.get());
 
 	// ImGuiLayer created
 	m_ImGuiLayer = new ImGuiLayer();
@@ -54,20 +53,19 @@ void App::run()
 		// AL_CORE_TRACE("Delta time: {0}s ({1}ms))", ts.getSeconds(), ts.getMiliSeconds());
 
 		// layer stack update
-		for (Layer *layer : m_LayerStack)
-		{
-			layer->onUpdate(ts);
-		}
+		m_ImGuiLayer->beginFrame();
 
 		// layer stack ImGuiRender
-		m_ImGuiLayer->begin(); // ImGui begin new frame
 		for (Layer *layer : m_LayerStack)
 		{
 			layer->onImGuiRender();
 		}
+
+		for (Layer *layer : m_LayerStack)
+		{
+			layer->onUpdate(ts);
+		}
 		m_Window->onUpdate();
-		// m_Scene->processInput(m_Window->getNativeWindow());
-		m_Renderer->drawFrame(m_Scene.get());
 	}
 	vkDeviceWaitIdle(m_Renderer->getDevice());
 }
@@ -90,7 +88,7 @@ void App::onEvent(Event &e)
 
 void App::cleanup()
 {
-	m_Scene->cleanup();
+	// m_Scene->cleanup();
 	m_Renderer->cleanup();
 }
 
