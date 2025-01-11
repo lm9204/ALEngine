@@ -8,23 +8,72 @@ EditorLayer::EditorLayer() : Layer("EditorLayer")
 
 void EditorLayer::onAttach()
 {
+	// Editor에 필요한 texture들 create
+	// Play, Stop, Pause etc.
+
+	AL_INFO("EditorLayer::onAttach");
+	// scene 생성
+	{
+		// 아마 이런 흐름으로 작성
+		{
+			// Open Project File - 인자로 받아온 파일 경로
+			// Script Engine Init
+			// Open Scene File -> Parse Scene (Entity - Component)
+		}
+		// Temp - 지금 renderer 형식에 맞게
+		m_Scene = Scene::createScene();
+
+		// Entity 생성 - 적절한 Component를 Add 해야 함.
+		auto box = m_Scene->createEntity("Plane");
+		box.addComponent<ModelComponent>();
+		box.getComponent<ModelComponent>().m_Model = Model::createPlaneModel();
+
+		box.addComponent<TextureComponent>();
+		box.getComponent<TextureComponent>().m_Texture = Texture::createTexture("textures/karina.jpg");
+		box.getComponent<TransformComponent>().m_Position = glm::vec3(0.0f, 0.0f, -3.0f);
+		box.getComponent<TransformComponent>().m_Rotation = glm::vec3(0.0f, 0.0f, glm::radians(180.0f));
+		box.getComponent<TransformComponent>().m_Scale = glm::vec3(5.0f * 0.74f, 5.0f, 1.0f);
+
+		auto light = m_Scene->createEntity("Light");
+		light.addComponent<ModelComponent>();
+		light.getComponent<ModelComponent>().m_Model = Model::createSphereModel();
+
+		light.addComponent<TextureComponent>();
+		light.getComponent<TextureComponent>().m_Texture = Texture::createTexture("textures/texture.png");
+		light.getComponent<TransformComponent>().m_Position = m_Scene->getLightPos();
+		light.getComponent<TransformComponent>().m_Scale = glm::vec3(0.1f, 0.1f, 0.1f);
+
+		Renderer &renderer = App::get().getRenderer();
+		renderer.loadScene(m_Scene.get());
+	}
+
+	// camera setting
 }
 
 void EditorLayer::onDetach()
 {
+	// texture clean up
 }
 
 void EditorLayer::onUpdate(Timestep ts)
 {
+	// Scene의 State에 따라 update 구분
+	// Edit, Play, ...
 	m_CameraController.onUpdate(ts);
+	m_Scene->onUpdate(ts);
 }
 
 void EditorLayer::onImGuiRender()
 {
 	setDockingSpace();
 
-	// viewport
-	// texture descriptor set을 가져올 수 있는 방법 있으면 좋을듯
+	// Menu
+	// Stats - hovered entity, rendered entities
+	// viewport - texture descriptor set을 가져올 수 있는 방법 있으면 좋을듯
+	// Drag & Drop
+	// Gizmos
+
+	ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
 }
 
 void EditorLayer::onEvent(Event &e)
@@ -58,7 +107,9 @@ void EditorLayer::setDockingSpace()
 
 	if (!opt_padding)
 		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0.0f, 0.0f));
-	ImGui::Begin("DockSpace Demo", &p_open, window_flags);
+
+	ImGui::Begin("DockSpace", &p_open, window_flags); // begin dockspace
+
 	if (!opt_padding)
 		ImGui::PopStyleVar();
 
@@ -70,51 +121,6 @@ void EditorLayer::setDockingSpace()
 	{
 		ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
-	}
-
-	ImGui::End();
-}
-
-// Hierarchy 창
-void EditorLayer::showHierarchyWindow()
-{
-	if (ImGui::CollapsingHeader("Root Object"))
-	{
-		ImGui::Text("Child Object 1");
-		ImGui::Text("Child Object 2");
-	}
-}
-
-// Scene 창
-void EditorLayer::showSceneWindow()
-{
-	ImGui::Text("Scene View");
-	ImGui::Text("Render the 2D/3D scene here.");
-	// 여기에 2D/3D 렌더링 코드를 추가
-}
-
-// Inspector 창
-void EditorLayer::showInspectorWindow()
-{
-	ImGui::Text("Inspector");
-	static float position[3] = {0.0f, 0.0f, 0.0f};
-	ImGui::InputFloat3("Position", position);
-	static float rotation[3] = {0.0f, 0.0f, 0.0f};
-	ImGui::InputFloat3("Rotation", rotation);
-	static float scale[3] = {1.0f, 1.0f, 1.0f};
-	ImGui::InputFloat3("Scale", scale);
-}
-
-// Project 창
-void EditorLayer::showProjectWindow()
-{
-	ImGui::Text("Project Files");
-	if (ImGui::TreeNode("Assets"))
-	{
-		ImGui::Text("Material.mat");
-		ImGui::Text("Model.fbx");
-		ImGui::Text("Script.cs");
-		ImGui::TreePop();
 	}
 }
 
