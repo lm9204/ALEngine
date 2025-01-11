@@ -101,7 +101,7 @@ void Renderer::cleanup()
 
 void Renderer::loadScene(Scene *scene)
 {
-	this->scene = scene;
+	// this->scene = scene;
 	m_geometryPassShaderResourceManager =
 		ShaderResourceManager::createGeometryPassShaderResourceManager(scene, geometryPassDescriptorSetLayout);
 	geometryPassDescriptorSets = m_geometryPassShaderResourceManager->getDescriptorSets();
@@ -307,23 +307,42 @@ void Renderer::recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, 
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor); // [커맨드 버퍼에 시저 설정 등록]
 
 	// [렌더링 명령 기록]
-	const std::vector<std::shared_ptr<Object>> &objects = scene->getObjects();
-	size_t objectCount = scene->getObjectCount();
+	// const std::vector<std::shared_ptr<Object>> &objects = scene->getObjects();
+	// size_t objectCount = scene->getObjectCount();
 
-	for (size_t i = 0; i < objectCount; i++)
+	// for (size_t i = 0; i < objectCount; i++)
+	// {
+	// 	CameraController &controller = CameraController::get();
+	// 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1,
+	// 							&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
+	// 	GeometryPassUniformBufferObject ubo{};
+	// 	ubo.model = objects[i]->getModelMatrix();
+	// 	ubo.view = controller.getViewMatrix();
+	// 	ubo.proj = controller.getProjMatrix(swapChainExtent);
+	// 	ubo.proj[1][1] *= -1;
+	// 	// memcpy(uniformBuffersMapped[currentFrame * objectCount + i], &ubo, sizeof(ubo));
+	// 	geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
+	// 	objects[i]->draw(commandBuffer);
+	// }
+
+	// view를 활용한 방법
+	auto view = scene->getAllEntitiesWith<TransformComponent, ModelComponent>();
+	size_t i = 0;
+	for (auto entity : view)
 	{
 		CameraController &controller = CameraController::get();
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1,
 								&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
 		GeometryPassUniformBufferObject ubo{};
-		ubo.model = objects[i]->getModelMatrix();
+		ubo.model = view.get<TransformComponent>(entity).getTransform();
 		ubo.view = controller.getViewMatrix();
 		ubo.proj = controller.getProjMatrix(swapChainExtent);
 		ubo.proj[1][1] *= -1;
-		// memcpy(uniformBuffersMapped[currentFrame * objectCount + i], &ubo, sizeof(ubo));
 		geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
-		objects[i]->draw(commandBuffer);
+		view.get<ModelComponent>(entity).m_Model->draw(commandBuffer);
+		++i;
 	}
+
 	/*
 		[렌더 패스 종료]
 		1. 자원의 정리 및 레이아웃 전환 (최종 작업을 위해 attachment에 정의된 finalLayout 설정)
@@ -445,21 +464,40 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	scissor.extent = swapChainExtent;
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-	const std::vector<std::shared_ptr<Object>> &objects = scene->getObjects();
-	size_t objectCount = scene->getObjectCount();
+	// const std::vector<std::shared_ptr<Object>> &objects = scene->getObjects();
+	// size_t objectCount = scene->getObjectCount();
 
-	for (size_t i = 0; i < objectCount; i++)
+	// CameraController &controller = CameraController::get();
+	// for (size_t i = 0; i < objectCount; i++)
+	// {
+	// 	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1,
+	// 							&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
+	// 	GeometryPassUniformBufferObject ubo{};
+	// 	ubo.model = objects[i]->getModelMatrix();
+	// 	ubo.view = controller.getViewMatrix();
+	// 	ubo.proj = controller.getProjMatrix(swapChainExtent);
+	// 	ubo.proj[1][1] *= -1;
+	// 	geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
+	// 	objects[i]->draw(commandBuffer);
+	// }
+
+	// view를 활용한 방법
+	CameraController &controller = CameraController::get();
+	auto view = scene->getAllEntitiesWith<TransformComponent, ModelComponent>();
+	size_t i = 0;
+	for (auto entity : view)
 	{
 		CameraController &controller = CameraController::get();
 		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1,
 								&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
 		GeometryPassUniformBufferObject ubo{};
-		ubo.model = objects[i]->getModelMatrix();
+		ubo.model = view.get<TransformComponent>(entity).getTransform();
 		ubo.view = controller.getViewMatrix();
 		ubo.proj = controller.getProjMatrix(swapChainExtent);
 		ubo.proj[1][1] *= -1;
 		geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
-		objects[i]->draw(commandBuffer);
+		view.get<ModelComponent>(entity).m_Model->draw(commandBuffer);
+		++i;
 	}
 
 	vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
@@ -472,7 +510,7 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	LightingPassUniformBufferObject lightingPassUbo{};
 	lightingPassUbo.lightPos = scene->getLightPos();
 	lightingPassUbo.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
-	lightingPassUbo.cameraPos = scene->getCamPos();
+	lightingPassUbo.cameraPos = controller.getPosition();
 	lightingPassUniformBuffers[currentFrame]->updateUniformBuffer(&lightingPassUbo, sizeof(lightingPassUbo));
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 
@@ -511,7 +549,7 @@ void Renderer::recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuf
 	renderPassInfo.pClearValues = clearValues.data();
 
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
-	ImGuiLayer::renderDrawData(scene, commandBuffer);
+	ImGuiLayer::renderDrawData(commandBuffer);
 	vkCmdEndRenderPass(commandBuffer);
 
 	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
