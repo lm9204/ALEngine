@@ -4,7 +4,6 @@
 #include "ALpch.h"
 #include "Core/Base.h"
 #include "Events/Event.h"
-#include "Renderer/Scene.h"
 #include <GLFW/glfw3.h>
 
 namespace ale
@@ -39,7 +38,6 @@ class Window
 	virtual void setEventCallback(const EventCallbackFn &callback) = 0;
 	virtual void setVSync(bool enabled) = 0;
 	virtual bool isVSync() const = 0;
-	virtual void bindScene(Scene *scene) = 0;
 
 	static Window *create(const WindowProps &props = WindowProps());
 };
