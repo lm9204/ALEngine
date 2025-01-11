@@ -13,9 +13,4 @@ void Camera::setPosition(glm::vec3 &pos)
 	m_Position = pos;
 }
 
-glm::vec3 &Camera::getPosition()
-{
-	return m_Position;
-}
-
 } // namespace ale
