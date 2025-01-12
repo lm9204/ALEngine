@@ -11,9 +11,9 @@ Scene::~Scene()
 {
 }
 
-std::unique_ptr<Scene> Scene::createScene()
+std::shared_ptr<Scene> Scene::createScene()
 {
-	std::unique_ptr<Scene> scene = std::unique_ptr<Scene>(new Scene());
+	std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
 	// scene->initScene();
 	return scene;
 }
@@ -26,6 +26,11 @@ Entity Scene::createEntity(const std::string &name)
 	tag.m_Tag = name.empty() ? "Entity" : name;
 
 	return entity;
+}
+
+void Scene::destroyEntity(Entity entity)
+{
+	m_Registry.destroy(entity);
 }
 
 void Scene::onUpdate(Timestep ts)
@@ -73,10 +78,10 @@ void Scene::onViewportResize(uint32_t width, uint32_t height)
 	m_ViewportHeight = height;
 
 	// Resize non Fixed Aspect ratio camera
-	auto view = m_Registry.view<CamerComponent>();
+	auto view = m_Registry.view<CameraComponent>();
 	for (auto entity : view)
 	{
-		auto &cameraComponent = view.get<CamerComponent>(entity);
+		auto &cameraComponent = view.get<CameraComponent>(entity);
 		if (!cameraComponent.m_FixedAspectRatio)
 			cameraComponent.m_Camera.setViewportSize(width, height); // set viewport size
 	}
@@ -87,6 +92,42 @@ void Scene::renderScene()
 	Renderer &renderer = App::get().getRenderer();
 	// Draw Models
 	renderer.drawFrame(this);
+}
+
+// 컴파일 타임에 조건 확인
+template <typename T> void Scene::onComponentAdded(Entity entity, T &component)
+{
+	static_assert(sizeof(T) == 0);
+}
+
+template <> void Scene::onComponentAdded(Entity entity, TagComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded(Entity entity, TransformComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<CameraComponent>(Entity entity, CameraComponent &component)
+{
+	if (m_ViewportWidth > 0 && m_ViewportHeight > 0)
+		component.m_Camera.setViewportSize(m_ViewportWidth, m_ViewportHeight);
+}
+
+template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<TextureComponent>(Entity entity, TextureComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<LightComponent>(Entity entity, LightComponent &component)
+{
 }
 
 } // namespace ale

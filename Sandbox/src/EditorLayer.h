@@ -2,6 +2,7 @@
 #define EDITORLAYER_H
 
 #include "AL.h"
+#include "Panel/SceneHierarchyPanel.h"
 #include "Renderer/CameraController.h"
 
 namespace ale
@@ -19,10 +20,12 @@ class EditorLayer : public Layer
 	void onEvent(Event &e) override;
 
 	void setDockingSpace();
+	void setMenuBar();
 
   private:
 	CameraController m_CameraController;
-	std::unique_ptr<Scene> m_Scene;
+	std::shared_ptr<Scene> m_Scene;
+	SceneHierarchyPanel m_SceneHierarchyPanel;
 };
 
 } // namespace ale

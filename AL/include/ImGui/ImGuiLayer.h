@@ -34,6 +34,9 @@ class ImGuiLayer : public Layer
 	}
 
   private:
+	void setDarkThemeColors();
+
+  private:
 	ImGui_ImplVulkan_InitInfo init_info = {};
 	bool m_BlockEvents = false; // true default
 
