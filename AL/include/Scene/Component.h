@@ -46,6 +46,16 @@ struct TransformComponent
 };
 
 // RENDERER
+// Mesh Renderer - Cube, Sphere, Cylinder, Capsule
+
+struct MeshRendererComponent
+{
+	std::shared_ptr<Model> m_Model;
+
+	MeshRendererComponent() = default;
+	MeshRendererComponent(const MeshRendererComponent &) = default;
+};
+
 struct ModelComponent
 {
 	std::shared_ptr<Model> m_Model;
@@ -62,14 +72,22 @@ struct TextureComponent
 	TextureComponent(const TextureComponent &) = default;
 };
 
-struct CamerComponent
+struct LightComponent
+{
+	// Color
+	// Type - Directional, Spot, Point
+	LightComponent() = default;
+	LightComponent(const LightComponent &) = default;
+};
+
+struct CameraComponent
 {
 	SceneCamera m_Camera;
 	bool m_Primary = true;
 	bool m_FixedAspectRatio = false;
 
-	CamerComponent() = default;
-	CamerComponent(const CamerComponent &) = default;
+	CameraComponent() = default;
+	CameraComponent(const CameraComponent &) = default;
 };
 
 // PHYSICS
