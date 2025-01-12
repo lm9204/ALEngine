@@ -34,12 +34,10 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 
 void ImGuiLayer::onAttach()
 {
-	AL_CORE_INFO("ImGuiLayer::onAttach");
-
 	ImGui::CreateContext();
 
 	ImGuiIO &io = ImGui::GetIO();
-	io.IniFilename = nullptr;
+	// io.IniFilename = nullptr;							  // ini 파일 적용 X
 	io.ConfigFlags |= ImGuiConfigFlags_NavEnableKeyboard; // Enable Keyboard Controls
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	  // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;	  // Enable Multi-Viewport / Platform Windows
@@ -77,7 +75,6 @@ void ImGuiLayer::onAttach()
 	ImGuiStyle &style = ImGui::GetStyle();
 	if (io.ConfigFlags & ImGuiConfigFlags_ViewportsEnable)
 	{
-		AL_CORE_INFO("style ImGuiConfigFlags_ViewportsEnable");
 		style.WindowRounding = 0.0f;
 		style.Colors[ImGuiCol_WindowBg].w = 1.0f;
 	}

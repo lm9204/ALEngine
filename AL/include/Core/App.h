@@ -41,6 +41,7 @@ class App
 
   private:
 	bool onWindowClose(WindowCloseEvent &e);
+	bool onWindowClose(KeyPressedEvent &e);
 	bool onWindowResize(WindowResizeEvent &e);
 
 	std::unique_ptr<Window> m_Window;

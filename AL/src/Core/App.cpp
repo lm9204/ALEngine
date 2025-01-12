@@ -43,8 +43,7 @@ void App::pushOverlay(Layer *layer)
 
 void App::run()
 {
-	AL_CORE_INFO("App::run");
-	while (m_Running && !glfwWindowShouldClose(m_Window->getNativeWindow()))
+	while (m_Running)
 	{
 		// set delta time
 		float time = (float)glfwGetTime();
@@ -74,7 +73,8 @@ void App::onEvent(Event &e)
 {
 	EventDispatcher dispatcher(e);
 	dispatcher.dispatch<WindowCloseEvent>(AL_BIND_EVENT_FN(App::onWindowClose));
-	// dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(App::onWindowResize));
+	dispatcher.dispatch<KeyPressedEvent>(AL_BIND_EVENT_FN(App::onWindowClose));
+	dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(App::onWindowResize));
 
 	// AL_CORE_INFO("{0}", e.toString());
 
@@ -103,6 +103,15 @@ bool App::onWindowClose(WindowCloseEvent &e)
 	return true;
 }
 
+bool App::onWindowClose(KeyPressedEvent &e)
+{
+	if (e.getKeyCode() == Key::Escape)
+	{
+		m_Running = false;
+	}
+	return true;
+}
+
 bool App::onWindowResize(WindowResizeEvent &e)
 {
 	if (e.getWidth() == 0 || e.getHeight() == 0)
@@ -112,7 +121,6 @@ bool App::onWindowResize(WindowResizeEvent &e)
 	}
 
 	m_Minimized = false;
-	// renderer resize
 	return false;
 }
 
