@@ -3,6 +3,7 @@
 #include "entt.hpp"
 
 #include "Core/Timestep.h"
+#include <glm/glm.hpp>
 
 namespace ale
 {
@@ -14,13 +15,14 @@ class Scene
 	Scene() = default;
 	~Scene();
 
-	static std::unique_ptr<Scene> createScene();
+	static std::shared_ptr<Scene> createScene();
 	Entity createEntity(const std::string &name = "");
+	void destroyEntity(Entity entity);
 
 	void onUpdate(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
 
-	glm::vec3 getLightPos()
+	glm::vec3 &getLightPos()
 	{
 		return m_lightPos;
 	}
@@ -31,6 +33,8 @@ class Scene
 	}
 
   private:
+	template <typename T> void onComponentAdded(Entity entity, T &component);
+
 	void renderScene();
 
   private:
@@ -40,5 +44,6 @@ class Scene
 	glm::vec3 m_lightPos{0.0f, 1.0f, 0.0f};
 
 	friend class Entity;
+	friend class SceneHierarchyPanel;
 };
 } // namespace ale
