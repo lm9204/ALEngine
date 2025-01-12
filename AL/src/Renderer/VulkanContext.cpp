@@ -486,7 +486,7 @@ void VulkanContext::createDescriptorPool()
 	poolSizes[3].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);
 	// image input attachment
 	poolSizes[4].type = VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT;
-	poolSizes[4].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * 100);
+	poolSizes[4].descriptorCount = static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * MAX_OBJECTS);
 
 	// 디스크립터 풀을 생성할 때 필요한 설정 정보를 담는 구조체
 	VkDescriptorPoolCreateInfo poolInfo{};
