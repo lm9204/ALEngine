@@ -114,7 +114,6 @@ bool App::onWindowClose(KeyPressedEvent &e)
 
 bool App::onWindowResize(WindowResizeEvent &e)
 {
-	AL_CORE_TRACE("App::onWindowResize");
 	if (e.getWidth() == 0 || e.getHeight() == 0)
 	{
 		m_Minimized = true;
