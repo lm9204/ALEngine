@@ -51,9 +51,6 @@ void Renderer::init(GLFWwindow *window)
 	m_ImGuiSwapChainFrameBuffers = FrameBuffers::createImGuiFrameBuffers(m_swapChain.get(), imGuiRenderPass);
 	imGuiSwapChainFrameBuffers = m_ImGuiSwapChainFrameBuffers->getFramebuffers();
 
-	m_FinalFrameBuffers = FrameBuffers::createFinalFrameBuffers(m_swapChain.get(), deferredRenderPass);
-	finalFrameBuffers = m_FinalFrameBuffers->getFramebuffers();
-
 	m_geometryPassDescriptorSetLayout = DescriptorSetLayout::createGeometryPassDescriptorSetLayout();
 	geometryPassDescriptorSetLayout = m_geometryPassDescriptorSetLayout->getDescriptorSetLayout();
 
@@ -382,6 +379,7 @@ void Renderer::recreateSwapChain()
 	m_geometryPassPipeline->cleanup();
 	m_lightingPassPipeline->cleanup();
 	m_swapChainFrameBuffers->cleanup();
+	m_ImGuiSwapChainFrameBuffers->cleanup();
 	m_deferredRenderPass->cleanup();
 	m_ImGuiRenderPass->cleanup();
 	m_swapChain->recreateSwapChain();
@@ -395,11 +393,14 @@ void Renderer::recreateSwapChain()
 	m_deferredRenderPass = RenderPass::createDeferredRenderPass(swapChainImageFormat);
 	deferredRenderPass = m_deferredRenderPass->getRenderPass();
 
-	m_ImGuiRenderPass = RenderPass::createRenderPass(swapChainImageFormat);
+	m_ImGuiRenderPass = RenderPass::createImGuiRenderPass(swapChainImageFormat);
 	imGuiRenderPass = m_ImGuiRenderPass->getRenderPass();
 
 	m_swapChainFrameBuffers->initSwapChainFrameBuffers(m_swapChain.get(), deferredRenderPass);
 	swapChainFramebuffers = m_swapChainFrameBuffers->getFramebuffers();
+
+	m_ImGuiSwapChainFrameBuffers->initImGuiFrameBuffers(m_swapChain.get(), imGuiRenderPass);
+	imGuiSwapChainFrameBuffers = m_ImGuiSwapChainFrameBuffers->getFramebuffers();
 
 	m_geometryPassPipeline = Pipeline::createGeometryPassPipeline(deferredRenderPass, geometryPassDescriptorSetLayout);
 	geometryPassPipelineLayout = m_geometryPassPipeline->getPipelineLayout();
@@ -508,7 +509,7 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 							&lightingPassDescriptorSets[currentFrame], 0, nullptr);
 
 	LightingPassUniformBufferObject lightingPassUbo{};
-	lightingPassUbo.lightPos = scene->getLightPos();
+	lightingPassUbo.lightPos = scene->getLightPos(); // Light Object를 쿼리해 position 가져와야 함.
 	lightingPassUbo.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
 	lightingPassUbo.cameraPos = controller.getPosition();
 	lightingPassUniformBuffers[currentFrame]->updateUniformBuffer(&lightingPassUbo, sizeof(lightingPassUbo));
