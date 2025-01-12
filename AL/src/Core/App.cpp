@@ -92,6 +92,11 @@ void App::cleanup()
 	m_Renderer->cleanup();
 }
 
+void App::close()
+{
+	m_Running = false;
+}
+
 App &App::get()
 {
 	return *s_Instance;

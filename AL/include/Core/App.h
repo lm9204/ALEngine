@@ -25,6 +25,7 @@ class App
 	void run();
 	void onEvent(Event &e);
 	void cleanup();
+	void close();
 
 	void pushLayer(Layer *layer);
 	void pushOverlay(Layer *layer);
