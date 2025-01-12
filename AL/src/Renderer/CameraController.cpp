@@ -93,10 +93,7 @@ bool CameraController::onMousePressed(MouseButtonPressedEvent &e)
 	if (e.getMouseButton() == Mouse::ButtonRight)
 	{
 		m_CameraControl = true;
-
-		double xPos, yPos;
-		glfwGetCursorPos(App::get().getWindow().getNativeWindow(), &xPos, &yPos);
-		m_prevMousePos = glm::vec2((float)xPos, (float)yPos);
+		m_prevMousePos = Input::getMousePosition();
 	}
 	return false;
 }
