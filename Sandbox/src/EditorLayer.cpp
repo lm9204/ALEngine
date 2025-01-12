@@ -11,7 +11,6 @@ void EditorLayer::onAttach()
 	// Editor에 필요한 texture들 create
 	// Play, Stop, Pause etc.
 
-	AL_INFO("EditorLayer::onAttach");
 	// scene 생성
 	{
 		// 아마 이런 흐름으로 작성
@@ -22,6 +21,7 @@ void EditorLayer::onAttach()
 		}
 		// Temp - 지금 renderer 형식에 맞게
 		m_Scene = Scene::createScene();
+		m_SceneHierarchyPanel.setContext(m_Scene);
 
 		// Entity 생성 - 적절한 Component를 Add 해야 함.
 		auto box = m_Scene->createEntity("Plane");
@@ -65,15 +65,19 @@ void EditorLayer::onUpdate(Timestep ts)
 
 void EditorLayer::onImGuiRender()
 {
-	setDockingSpace();
+	// setDockingSpace();
 
 	// Menu
+	// setMenuBar();
+
 	// Stats - hovered entity, rendered entities
 	// viewport - texture descriptor set을 가져올 수 있는 방법 있으면 좋을듯
 	// Drag & Drop
 	// Gizmos
 
-	ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
+	m_SceneHierarchyPanel.onImGuiRender();
+
+	// ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
 }
 
 void EditorLayer::onEvent(Event &e)
@@ -117,11 +121,54 @@ void EditorLayer::setDockingSpace()
 		ImGui::PopStyleVar(2);
 
 	ImGuiIO &io = ImGui::GetIO();
+	ImGuiStyle &style = ImGui::GetStyle();
+	float minWinSizeX = style.WindowMinSize.x;
+	style.WindowMinSize.x = 370.0f;
 	if (io.ConfigFlags & ImGuiConfigFlags_DockingEnable)
 	{
 		ImGuiID dockspace_id = ImGui::GetID("MyDockSpace");
 		ImGui::DockSpace(dockspace_id, ImVec2(0.0f, 0.0f), dockspace_flags);
 	}
+	style.WindowMinSize.x = minWinSizeX;
 }
 
+void EditorLayer::setMenuBar()
+{
+	if (ImGui::BeginMenuBar())
+	{
+		if (ImGui::BeginMenu("File"))
+		{
+			if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
+				;
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("New Scene", "Ctrl+N"))
+				;
+
+			if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
+				;
+
+			if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
+				;
+
+			ImGui::Separator();
+
+			if (ImGui::MenuItem("Exit"))
+				App::get().close();
+
+			ImGui::EndMenu();
+		}
+
+		if (ImGui::BeginMenu("Script"))
+		{
+			if (ImGui::MenuItem("Reload assembly", "Ctrl+R"))
+				;
+
+			ImGui::EndMenu();
+		}
+
+		ImGui::EndMenuBar();
+	}
+}
 } // namespace ale
