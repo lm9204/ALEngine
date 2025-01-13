@@ -130,4 +130,27 @@ template <> void Scene::onComponentAdded<LightComponent>(Entity entity, LightCom
 {
 }
 
+template <> void Scene::onComponentAdded<RigidbodyComponent>(Entity entity, RigidbodyComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<SphereColliderComponent>(Entity entity, SphereColliderComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<CapsuleColliderComponent>(Entity entity, CapsuleColliderComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<CylinderColliderComponent>(Entity entity, CylinderColliderComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded<ScriptComponent>(Entity entity, ScriptComponent &component)
+{
+}
 } // namespace ale
