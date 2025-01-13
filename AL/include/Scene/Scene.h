@@ -44,6 +44,7 @@ class Scene
 	glm::vec3 m_lightPos{0.0f, 1.0f, 0.0f};
 
 	friend class Entity;
+	friend class SceneSerializer;
 	friend class SceneHierarchyPanel;
 };
 } // namespace ale

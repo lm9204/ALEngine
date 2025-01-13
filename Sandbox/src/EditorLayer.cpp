@@ -1,4 +1,6 @@
 #include "EditorLayer.h"
+#include "Scene/SceneSerializer.h"
+#include "Utils/PlatformUtils.h"
 
 namespace ale
 {
@@ -77,12 +79,60 @@ void EditorLayer::onImGuiRender()
 
 	m_SceneHierarchyPanel.onImGuiRender();
 
+	SceneSerializer serializer(m_Scene);
+	serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
+
 	// ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
 }
 
 void EditorLayer::onEvent(Event &e)
 {
 	m_CameraController.onEvent(e);
+
+	EventDispatcher dispatcher(e);
+	dispatcher.dispatch<MouseButtonPressedEvent>(AL_BIND_EVENT_FN(EditorLayer::onMouseButtonPressed));
+	dispatcher.dispatch<KeyPressedEvent>(AL_BIND_EVENT_FN(EditorLayer::onKeyPressed));
+}
+
+bool EditorLayer::onMouseButtonPressed(MouseButtonPressedEvent &e)
+{
+	return false;
+}
+
+bool EditorLayer::onKeyPressed(KeyPressedEvent &e)
+{
+	if (e.isRepeat())
+	{
+		return false;
+	}
+
+	bool control = Input::isKeyPressed(Key::LeftControl) || Input::isKeyPressed(Key::RightControl);
+	bool shift = Input::isKeyPressed(Key::LeftShift) || Input::isKeyPressed(Key::RightShift);
+
+	switch (e.getKeyCode())
+	{
+	case Key::N:
+		if (control)
+			; // new scene
+		break;
+	case Key::O:
+		if (control)
+			; // open scene
+		break;
+	case Key::S:
+		if (control)
+		{
+			if (shift)
+				; // save scene as
+			else
+				; // save scene
+		}
+		break;
+	default:
+		break;
+	}
+
+	return false;
 }
 
 void EditorLayer::setDockingSpace()
@@ -171,4 +221,71 @@ void EditorLayer::setMenuBar()
 		ImGui::EndMenuBar();
 	}
 }
+
+void EditorLayer::newProject()
+{
+}
+
+void EditorLayer::openProject(const std::filesystem::path &path)
+{
+}
+
+bool EditorLayer::openProject()
+{
+	std::string filepath = FileDialogs::openFile("AfterLife Project (*.hproj)\0*.hproj\0");
+	if (filepath.empty())
+		return false;
+
+	openProject(filepath);
+	return true;
+}
+
+void EditorLayer::saveProject()
+{
+}
+
+void EditorLayer::newScene()
+{
+}
+
+void EditorLayer::openScene()
+{
+	std::string filepath = FileDialogs::openFile("AfterLife Scene (*.ale)\0*.ale\0");
+	if (!filepath.empty())
+		openScene(filepath);
+}
+
+void EditorLayer::openScene(const std::filesystem::path &path)
+{
+	// 추후 수정 필요
+
+	// if (m_SceneState != SceneState::Edit)
+	// 	OnSceneStop();
+
+	if (path.extension().string() != ".hazel")
+	{
+		AL_WARN("Could not load {0} - not a scene file", path.filename().string());
+		return;
+	}
+
+	std::shared_ptr<Scene> newScene = Scene::createScene();
+	SceneSerializer serializer(newScene);
+	if (serializer.deserialize(path.string()))
+	{
+		// m_EditorScene = newScene;
+		// m_SceneHierarchyPanel.setContext(m_EditorScene);
+
+		// m_ActiveScene = m_EditorScene;
+		// m_EditorScenePath = path;
+	}
+}
+
+void EditorLayer::saveScene()
+{
+}
+
+void EditorLayer::saveSceneAs()
+{
+}
+
 } // namespace ale

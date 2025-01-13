@@ -46,9 +46,21 @@ void SceneHierarchyPanel::onImGuiRender()
 		// 오른쪽 클릭으로 Popup 활성화
 		if (ImGui::BeginPopupContextWindow(0, ImGuiPopupFlags_MouseButtonRight | ImGuiPopupFlags_NoOpenOverItems))
 		{
-			if (ImGui::MenuItem("Create Empty Entity"))
-				m_Context->createEntity("Empty Entity");
+			if (ImGui::MenuItem("Create Empty"))
+				m_Context->createEntity("Empty");
 
+			if (ImGui::BeginMenu("3D Object"))
+			{
+				if (ImGui::MenuItem("Box"))
+					;
+				if (ImGui::MenuItem("Sphere"))
+					;
+				if (ImGui::MenuItem("Capsule"))
+					;
+				if (ImGui::MenuItem("Cylinder"))
+					;
+				ImGui::EndMenu();
+			}
 			ImGui::EndPopup();
 		}
 	}
@@ -235,10 +247,32 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 	ImGui::PushItemWidth(-1);
 
 	if (ImGui::Button("Add Component"))
+	{
 		ImGui::OpenPopup("AddComponent");
+	}
 
+	ImGui::SetNextWindowSizeConstraints(ImVec2(300, 200), ImVec2(600, 400));
 	if (ImGui::BeginPopup("AddComponent"))
 	{
+		const char *text = "Component";
+		float windowWidth = ImGui::GetWindowSize().x;
+		float textWidth = ImGui::CalcTextSize(text).x;
+		float textPosX = (windowWidth - textWidth) * 0.5f;
+
+		ImGui::SetCursorPosX(textPosX);
+		ImGui::Text("%s", text);
+		ImGui::Separator();
+
+		displayAddComponentEntry<CameraComponent>("Camera");
+		displayAddComponentEntry<ScriptComponent>("Script");
+		displayAddComponentEntry<MeshRendererComponent>("Mesh Renderer");
+		// displayAddComponentEntry<LightComponent>("Light");
+		// displayAddComponentEntry<RigidbodyComponent>("Rigidbody");
+		// displayAddComponentEntry<BoxColliderComponent>("Box Collider");
+		// displayAddComponentEntry<SphereColliderComponent>("Sphere Collider");
+		// displayAddComponentEntry<CapsuleColliderComponent>("Capsule Collider");
+		// displayAddComponentEntry<CylinderColliderComponent>("Cylinder Collider");
+
 		ImGui::EndPopup();
 	}
 	ImGui::PopItemWidth();
@@ -266,5 +300,17 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setPerspectiveFarClip(perspectiveFar);
 	});
+}
+
+template <typename T> void SceneHierarchyPanel::displayAddComponentEntry(const std::string &entryName)
+{
+	if (!m_SelectionContext.hasComponent<T>())
+	{
+		if (ImGui::Selectable(entryName.c_str()))
+		{
+			m_SelectionContext.addComponent<T>();
+			ImGui::CloseCurrentPopup();
+		}
+	}
 }
 } // namespace ale

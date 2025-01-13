@@ -110,3 +110,23 @@ set(DEP_LIBS ${DEP_LIBS}
 	zlibstatic$<$<CONFIG:Debug>:d>
 	IrrXML$<$<CONFIG:Debug>:d>
 	)
+	
+# yaml-cpp
+ExternalProject_Add(
+    dep_yaml_cpp
+    GIT_REPOSITORY "https://github.com/jbeder/yaml-cpp.git"
+    GIT_TAG "yaml-cpp-0.7.0" 
+    GIT_SHALLOW 1
+    UPDATE_COMMAND ""
+    PATCH_COMMAND ""
+    CMAKE_ARGS
+        -DCMAKE_INSTALL_PREFIX=${DEP_INSTALL_DIR}
+        -DYAML_BUILD_SHARED_LIBS=OFF
+        -DYAML_CPP_BUILD_TESTS=OFF
+        -DYAML_CPP_BUILD_TOOLS=OFF
+    TEST_COMMAND ""
+)
+set(DEP_LIST ${DEP_LIST} dep_yaml_cpp)
+set(DEP_LIBS ${DEP_LIBS}
+    yaml-cpp$<$<CONFIG:Debug>:d>
+)
