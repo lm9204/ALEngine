@@ -75,6 +75,7 @@ struct TextureComponent
 struct LightComponent
 {
 	// Color
+	glm::vec4 color;
 	// Type - Directional, Spot, Point
 	LightComponent() = default;
 	LightComponent(const LightComponent &) = default;
@@ -93,12 +94,14 @@ struct CameraComponent
 // PHYSICS
 struct RigidbodyComponent
 {
+
 	RigidbodyComponent() = default;
 	RigidbodyComponent(const RigidbodyComponent &) = default;
 };
 
 struct BoxColliderComponent
 {
+
 	BoxColliderComponent() = default;
 	BoxColliderComponent(const BoxColliderComponent &) = default;
 };
