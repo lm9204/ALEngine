@@ -5,6 +5,7 @@
 #include "Renderer/CommandBuffers.h"
 #include "Renderer/Common.h"
 #include "Renderer/DescriptorSetLayout.h"
+#include "Renderer/EditorCamera.h"
 #include "Renderer/FrameBuffers.h"
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
@@ -12,6 +13,7 @@
 #include "Renderer/SwapChain.h"
 #include "Renderer/SyncObjects.h"
 #include "Renderer/VulkanContext.h"
+#include "Scene/SceneCamera.h"
 
 namespace ale
 {
@@ -23,6 +25,8 @@ class Renderer
 	void cleanup();
 
 	void loadScene(Scene *scene);
+	void beginScene(Scene *scene, EditorCamera &camera);
+	void beginScene(Scene *scene, SceneCamera &camera);
 	void drawFrame(Scene *scene);
 	void recreateSwapChain();
 
@@ -34,6 +38,11 @@ class Renderer
 	VkRenderPass getRenderPass()
 	{
 		return imGuiRenderPass;
+	}
+
+	VkDescriptorSetLayout getDescriptorSetLayout()
+	{
+		return geometryPassDescriptorSetLayout;
 	}
 
   private:
@@ -107,6 +116,9 @@ class Renderer
 	std::vector<VkSemaphore> renderFinishedSemaphores;
 	std::vector<VkFence> inFlightFences;
 	uint32_t currentFrame = 0;
+
+	glm::mat4 projMatrix;
+	glm::mat4 viewMatirx;
 
 	void init(GLFWwindow *window);
 	void recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);

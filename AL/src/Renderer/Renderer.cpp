@@ -105,6 +105,22 @@ void Renderer::loadScene(Scene *scene)
 	geometryPassUniformBuffers = m_geometryPassShaderResourceManager->getUniformBuffers();
 }
 
+void Renderer::beginScene(Scene *scene, EditorCamera &camera)
+{
+	projMatrix = camera.getProjection();
+	viewMatirx = camera.getView();
+
+	drawFrame(scene);
+}
+
+void Renderer::beginScene(Scene *scene, SceneCamera &camera)
+{
+	projMatrix = camera.getProjection();
+	viewMatirx = camera.getView();
+
+	drawFrame(scene);
+}
+
 void Renderer::drawFrame(Scene *scene)
 {
 	// [이전 GPU 작업 대기]
@@ -332,8 +348,8 @@ void Renderer::recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, 
 								&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
 		GeometryPassUniformBufferObject ubo{};
 		ubo.model = view.get<TransformComponent>(entity).getTransform();
-		ubo.view = controller.getViewMatrix();
-		ubo.proj = controller.getProjMatrix(swapChainExtent);
+		ubo.view = viewMatirx;
+		ubo.proj = projMatrix;
 		ubo.proj[1][1] *= -1;
 		geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
 		view.get<ModelComponent>(entity).m_Model->draw(commandBuffer);
@@ -493,8 +509,8 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 								&geometryPassDescriptorSets[MAX_FRAMES_IN_FLIGHT * i + currentFrame], 0, nullptr);
 		GeometryPassUniformBufferObject ubo{};
 		ubo.model = view.get<TransformComponent>(entity).getTransform();
-		ubo.view = controller.getViewMatrix();
-		ubo.proj = controller.getProjMatrix(swapChainExtent);
+		ubo.view = viewMatirx;
+		ubo.proj = projMatrix;
 		ubo.proj[1][1] *= -1;
 		geometryPassUniformBuffers[MAX_FRAMES_IN_FLIGHT * i + currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
 		view.get<ModelComponent>(entity).m_Model->draw(commandBuffer);
