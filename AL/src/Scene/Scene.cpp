@@ -68,12 +68,24 @@ void Scene::onUpdate(Timestep ts)
 
 	// if main Camera exists
 	{
-		renderScene();
+		// renderScene();
 	}
+}
+
+void Scene::onUpdateEditor(EditorCamera &camera)
+{
+	renderScene(camera);
+}
+
+void Scene::onUpdateRuntime(Timestep ts)
+{
 }
 
 void Scene::onViewportResize(uint32_t width, uint32_t height)
 {
+	if (m_ViewportWidth == width && m_ViewportHeight == height)
+		return;
+
 	m_ViewportWidth = width;
 	m_ViewportHeight = height;
 
@@ -87,11 +99,12 @@ void Scene::onViewportResize(uint32_t width, uint32_t height)
 	}
 }
 
-void Scene::renderScene()
+void Scene::renderScene(EditorCamera &camera)
 {
 	Renderer &renderer = App::get().getRenderer();
 	// Draw Models
-	renderer.drawFrame(this);
+	// renderer.drawFrame(this);
+	renderer.beginScene(this, camera);
 }
 
 // 컴파일 타임에 조건 확인

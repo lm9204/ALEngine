@@ -47,6 +47,8 @@ void EditorLayer::onAttach()
 
 		Renderer &renderer = App::get().getRenderer();
 		renderer.loadScene(m_Scene.get());
+
+		m_ContentBrowserPanel = std::unique_ptr<ContentBrowserPanel>(new ContentBrowserPanel());
 	}
 
 	// camera setting
@@ -59,10 +61,14 @@ void EditorLayer::onDetach()
 
 void EditorLayer::onUpdate(Timestep ts)
 {
+	// Resize
+	// m_Scene->onViewportResize();
+	// editorcamera viewport resize
+
 	// Scene의 State에 따라 update 구분
 	// Edit, Play, ...
-	m_CameraController.onUpdate(ts);
-	m_Scene->onUpdate(ts);
+	m_EditorCamera.onUpdate(ts);
+	m_Scene->onUpdateEditor(m_EditorCamera);
 }
 
 void EditorLayer::onImGuiRender()
@@ -78,6 +84,7 @@ void EditorLayer::onImGuiRender()
 	// Gizmos
 
 	m_SceneHierarchyPanel.onImGuiRender();
+	m_ContentBrowserPanel->onImGuiRender();
 
 	SceneSerializer serializer(m_Scene);
 	serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
@@ -87,9 +94,10 @@ void EditorLayer::onImGuiRender()
 
 void EditorLayer::onEvent(Event &e)
 {
-	m_CameraController.onEvent(e);
+	m_EditorCamera.onEvent(e);
 
 	EventDispatcher dispatcher(e);
+	dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(EditorLayer::onResized));
 	dispatcher.dispatch<MouseButtonPressedEvent>(AL_BIND_EVENT_FN(EditorLayer::onMouseButtonPressed));
 	dispatcher.dispatch<KeyPressedEvent>(AL_BIND_EVENT_FN(EditorLayer::onKeyPressed));
 }
@@ -132,6 +140,13 @@ bool EditorLayer::onKeyPressed(KeyPressedEvent &e)
 		break;
 	}
 
+	return false;
+}
+
+bool EditorLayer::onResized(WindowResizeEvent &e)
+{
+	// set viewport editor camera
+	m_EditorCamera.setViewportSize(e.getWidth(), e.getHeight());
 	return false;
 }
 

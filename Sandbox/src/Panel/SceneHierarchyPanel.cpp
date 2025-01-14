@@ -66,7 +66,7 @@ void SceneHierarchyPanel::onImGuiRender()
 	}
 	ImGui::End();
 
-	ImGui::Begin("Properties");
+	ImGui::Begin("Inspector");
 	if (m_SelectionContext)
 	{
 		drawComponents(m_SelectionContext);

@@ -2,8 +2,10 @@
 #define EDITORLAYER_H
 
 #include "AL.h"
+#include "Panel/ContentBrowserPanel.h"
 #include "Panel/SceneHierarchyPanel.h"
 #include "Renderer/CameraController.h"
+#include "Renderer/EditorCamera.h"
 
 namespace ale
 {
@@ -23,6 +25,7 @@ class EditorLayer : public Layer
 	// EVENTS
 	bool onMouseButtonPressed(MouseButtonPressedEvent &e);
 	bool onKeyPressed(KeyPressedEvent &e);
+	bool onResized(WindowResizeEvent &e);
 
 	// GUI
 	void setDockingSpace();
@@ -43,8 +46,10 @@ class EditorLayer : public Layer
 
   private:
 	CameraController m_CameraController;
+	EditorCamera m_EditorCamera;
 	std::shared_ptr<Scene> m_Scene;
 	SceneHierarchyPanel m_SceneHierarchyPanel;
+	std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
 };
 
 } // namespace ale
