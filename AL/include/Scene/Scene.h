@@ -5,6 +5,8 @@
 #include "Core/Timestep.h"
 #include <glm/glm.hpp>
 
+#include "Renderer/EditorCamera.h"
+
 namespace ale
 {
 class Entity;
@@ -20,6 +22,8 @@ class Scene
 	void destroyEntity(Entity entity);
 
 	void onUpdate(Timestep ts);
+	void onUpdateEditor(EditorCamera &camera);
+	void onUpdateRuntime(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
 
 	glm::vec3 &getLightPos()
@@ -35,7 +39,7 @@ class Scene
   private:
 	template <typename T> void onComponentAdded(Entity entity, T &component);
 
-	void renderScene();
+	void renderScene(EditorCamera &camera);
 
   private:
 	entt::registry m_Registry;
