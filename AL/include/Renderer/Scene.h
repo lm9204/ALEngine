@@ -53,42 +53,62 @@ private:
 	std::shared_ptr<Model> m_boxModel;
 	std::shared_ptr<Model> m_sphereModel;
 	std::shared_ptr<Model> m_planeModel;
-	std::shared_ptr<Model> m_vikingModel;
-	std::shared_ptr<Model> m_catModel;
-	std::shared_ptr<Model> m_backpackModel;
-
-	std::shared_ptr<Model> m_cameraModel;
-
-	std::shared_ptr<Texture> m_backpackAlbedo;
-	std::shared_ptr<Texture> m_backpackNormal;
-	std::shared_ptr<Texture> m_backpackRoughness;
-	std::shared_ptr<Texture> m_backpackMetallic;
-	std::shared_ptr<Texture> m_backpackAo;
 
 
-
-
-	std::shared_ptr<Texture> m_vikingTexture;
-	std::shared_ptr<Texture> m_sampleTexture;
-	std::shared_ptr<Texture> m_catTexture;
-	std::shared_ptr<Texture> m_karinaTexture;
-	std::shared_ptr<Texture> m_defaultTexture;
-	std::shared_ptr<Texture> m_defaultSingleChannelTexture;
-
-
-
-	std::shared_ptr<Texture> m_groundDiffuseTexture;
-	std::shared_ptr<Texture> m_groundNormalTexture;
 
 	std::vector< std::shared_ptr<Object> > m_objects;
-	std::shared_ptr<Object> m_lightObject;
+	
+	
+	
+	// floor
+	std::shared_ptr<Texture> m_floorDiffuseTexture;
+	std::shared_ptr<Texture> m_floorNormalTexture;
+	std::shared_ptr<Texture> m_floorRoughnessTexture;
+	std::shared_ptr<Material> m_floorMaterial;
+	std::shared_ptr<Object> m_floorObject;
+
+
+	// camera object
+	std::shared_ptr<Model> m_cameraModel;
+	std::shared_ptr<Object> m_cameraObject;
+
+	// alarm
+	std::shared_ptr<Model> m_alarmModel;
+	std::shared_ptr<Object> m_alarmObject;
+
+	// table
+	std::shared_ptr<Model> m_tableModel;
+	std::shared_ptr<Object> m_tableObject;
+
+	// sofa
+	std::shared_ptr<Model> m_sofaModel;
+	std::shared_ptr<Object> m_sofaObject;
+
+	// jug
+	std::shared_ptr<Model> m_jugModel;
+	std::shared_ptr<Object> m_jugObject;
+
+	// shelf
+	std::shared_ptr<Model> m_shelfModel;
+	std::shared_ptr<Object> m_shelfObject;
+
+	// plant1
+	std::shared_ptr<Model> m_plant1Model;
+	std::shared_ptr<Object> m_plant1Object;
+
+	// plant2
+	std::shared_ptr<Model> m_plant2Model;
+	std::shared_ptr<Object> m_plant2Object;
+
 
 	std::shared_ptr<Material> m_defaultMaterial;
-	std::shared_ptr<Material> m_karinaMaterial;
-	std::shared_ptr<Material> m_catMaterial;
-	std::shared_ptr<Material> m_vikingMaterial;
-	std::shared_ptr<Material> m_backpackMaterial;
-	std::shared_ptr<Material> m_groundMaterial;
+
+
+	std::shared_ptr<Object> m_lightObject;
+
+
+
+
 
 	bool m_cameraControl { false };
 	glm::vec2 m_prevMousePos { 0.0f, 0.0f };

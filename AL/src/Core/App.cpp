@@ -18,7 +18,7 @@ App::App()
 	// init renderer
 	m_Renderer = Renderer::createRenderer(m_Window->getNativeWindow());
 	m_Scene = Scene::createScene();
-	m_Renderer->loadScene(m_Scene.get());
+	// m_Renderer->loadScene(m_Scene.get());
 	m_Window->bindScene(m_Scene.get());
 
 	// ImGuiLayer created

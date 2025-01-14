@@ -4,7 +4,7 @@
 #include "Core/Base.h"
 #include "Renderer/Buffer.h"
 #include "Renderer/Common.h"
-#include "Renderer/Scene.h"
+#include "Renderer/Model.h"
 #include "Renderer/VulkanContext.h"
 
 namespace ale
@@ -12,7 +12,7 @@ namespace ale
 class AL_API ShaderResourceManager
 {
 public:
-	static std::unique_ptr<ShaderResourceManager> createGeometryPassShaderResourceManager(Scene* scene, VkDescriptorSetLayout descriptorSetLayout);
+	static std::unique_ptr<ShaderResourceManager> createGeometryPassShaderResourceManager(Model* model);
 	static std::unique_ptr<ShaderResourceManager> createLightingPassShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, 
 	VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView, VkImageView pbrImageView);
 	~ShaderResourceManager() {}
@@ -23,16 +23,19 @@ public:
 	std::vector<std::shared_ptr<UniformBuffer>>& getFragmentUniformBuffers() { return m_fragmentUniformBuffers; }
 	std::vector<VkDescriptorSet>& getDescriptorSets() { return descriptorSets; }
 
+	void updateDescriptorSets(Model* model, std::vector<std::shared_ptr<Material>> materials);
 private:
 	std::vector<std::shared_ptr<UniformBuffer>> m_uniformBuffers = {};
 	std::vector<std::shared_ptr<UniformBuffer>> m_vertexUniformBuffers = {};
 	std::vector<std::shared_ptr<UniformBuffer>> m_fragmentUniformBuffers = {};
 
 	std::vector<VkDescriptorSet> descriptorSets = {};
+	
+	void initGeometryPassShaderResourceManager(Model* model);
+	void createGeometryPassUniformBuffers(Model* model);
+	void createGeometryPassDescriptorSets(Model* model);
 
-	void initGeometryPassShaderResourceManager(Scene* scene, VkDescriptorSetLayout descriptorSetLayout);
-	void createGeometryPassUniformBuffers(Scene* scene);
-	void createGeometryPassDescriptorSets(Scene* scene, VkDescriptorSetLayout descriptorSetLayout);
+
 
 	void initLightingPassShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, 
 	VkImageView positionImageView, VkImageView normalImageView, VkImageView albedoImageView, VkImageView pbrImageView);

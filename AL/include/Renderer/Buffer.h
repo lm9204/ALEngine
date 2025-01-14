@@ -73,6 +73,7 @@ class ImageBuffer : public Buffer
 {
   public:
 	static std::unique_ptr<ImageBuffer> createImageBuffer(std::string path, bool flipVertically = false);
+	static std::unique_ptr<ImageBuffer> createMaterialImageBuffer(std::string path, bool flipVertically = false);
 	static std::unique_ptr<ImageBuffer> createDefaultImageBuffer(glm::vec4 color);
 	static std::unique_ptr<ImageBuffer> createDefaultSingleChannelImageBuffer(float value);
 	~ImageBuffer()
@@ -99,6 +100,7 @@ class ImageBuffer : public Buffer
 	VkDeviceMemory textureImageMemory;
 
 	void initImageBuffer(std::string path, bool flipVertically);
+	void initMaterialImageBuffer(std::string path, bool flipVertically);
 	void initDefaultImageBuffer(glm::vec4 color);
 	void initDefaultSingleChannelImageBuffer(float value);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout,

@@ -10,6 +10,13 @@ std::shared_ptr<Texture> Texture::createTexture(std::string path, bool flipVerti
 	return texture;
 }
 
+std::shared_ptr<Texture> Texture::createMaterialTexture(std::string path, bool flipVertically)
+{
+	std::shared_ptr<Texture> texture = std::shared_ptr<Texture>(new Texture());
+	texture->initMaterialTexture(path, flipVertically);
+	return texture;
+}
+
 void Texture::cleanup()
 {
 	auto &context = VulkanContext::getContext();
@@ -25,6 +32,11 @@ void Texture::initTexture(std::string path, bool flipVertically)
 	loadTexture(path, flipVertically);
 }
 
+void Texture::initMaterialTexture(std::string path, bool flipVertically)
+{
+	loadMaterialTexture(path, flipVertically);
+}
+
 void Texture::loadTexture(std::string path, bool flipVertically)
 {
 	m_imageBuffer = ImageBuffer::createImageBuffer(path, flipVertically);
@@ -33,11 +45,26 @@ void Texture::loadTexture(std::string path, bool flipVertically)
 	createTextureSampler();
 }
 
+void Texture::loadMaterialTexture(std::string path, bool flipVertically)
+{
+	m_imageBuffer = ImageBuffer::createMaterialImageBuffer(path, flipVertically);
+	mipLevels = m_imageBuffer->getMipLevels();
+	createMaterialTextureImageView();
+	createTextureSampler();
+}
+
+
 // 텍스처 이미지 뷰 생성
 void Texture::createTextureImageView()
 {
 	// SRGB 총 4바이트 포맷으로 된 이미지 뷰 생성
 	textureImageView = VulkanUtil::createImageView(m_imageBuffer->getImage(), VK_FORMAT_R8G8B8A8_SRGB,
+												   VK_IMAGE_ASPECT_COLOR_BIT, m_imageBuffer->getMipLevels());
+}
+
+void Texture::createMaterialTextureImageView()
+{
+	textureImageView = VulkanUtil::createImageView(m_imageBuffer->getImage(), VK_FORMAT_R8G8B8A8_UNORM,
 												   VK_IMAGE_ASPECT_COLOR_BIT, m_imageBuffer->getMipLevels());
 }
 

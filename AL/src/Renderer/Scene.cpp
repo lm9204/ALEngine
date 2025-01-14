@@ -22,17 +22,6 @@ void Scene::cleanup() {
     m_sphereModel->cleanup();
     m_planeModel->cleanup();
 
-    m_vikingModel->cleanup();
-    m_catModel->cleanup();
-    m_backpackModel->cleanup();
-
-    m_vikingTexture->cleanup();
-    m_sampleTexture->cleanup();
-    m_catTexture->cleanup();
-    m_karinaTexture->cleanup();
-
-    m_groundDiffuseTexture->cleanup();
-    m_groundNormalTexture->cleanup();
 }
 
 
@@ -69,19 +58,19 @@ void Scene::initScene() {
     m_defaultTextures.height = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
 
     m_defaultMaterial = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 0.0f), nullptr, false},
-        {nullptr, false},
-        {0.5f, nullptr, false},
-        {0.0f, nullptr, false},
-        {1.0f, nullptr, false},
-        {0.0f, nullptr, false}
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_defaultTextures.albedo, false},
+        {m_defaultTextures.normal, false},
+        {0.5f, m_defaultTextures.roughness, false},
+        {0.0f, m_defaultTextures.metallic, false},
+        {1.0f, m_defaultTextures.ao, false},
+        {0.0f, m_defaultTextures.height, false}
     );
 
-    m_lightInfo.lightPos = glm::vec3(0.0f, 1.0f, 5.0f);
+    m_lightInfo.lightPos = glm::vec3(0.0f, 0.0f, 0.0f);
     m_lightInfo.lightDirection = glm::normalize(-m_lightInfo.lightPos);
     m_lightInfo.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     m_lightInfo.intensity = 1.0f;
-    m_lightInfo.ambientStrength = 0.1f;
+    m_lightInfo.ambientStrength = 0.2f;
 
     m_cameraPos = glm::vec3(0.0f, 0.0f, 5.0f);
     m_cameraFront = glm::vec3(0.0f, 0.0f, -1.0f);
@@ -90,117 +79,89 @@ void Scene::initScene() {
     m_cameraYaw = 0.0f;
 
 
-
-    m_boxModel = Model::createBoxModel();
-    m_sphereModel = Model::createSphereModel();
-    m_planeModel = Model::createPlaneModel();
-
-    m_vikingModel = Model::createModel("models/viking_room.obj");
-    m_catModel = Model::createModel("models/cat.obj");
-    m_backpackModel = Model::createModel("models/backpack/backpack.obj");
-    m_cameraModel = Model::createModel("models/Camera_01_2k.gltf/Camera_01_2k.gltf");
+    m_boxModel = Model::createBoxModel(m_defaultMaterial);
+    m_sphereModel = Model::createSphereModel(m_defaultMaterial);
+    m_planeModel = Model::createPlaneModel(m_defaultMaterial);
 
 
-    m_backpackAlbedo = Texture::createTexture("models/backpack/diffuse.jpg", true);
-    m_backpackNormal = Texture::createTexture("models/backpack/normal.png", true);
-    m_backpackRoughness = Texture::createTexture("models/backpack/roughness.jpg", true);
-    m_backpackMetallic = Texture::createTexture("models/backpack/specular.jpg", true);
-    m_backpackAo = Texture::createTexture("models/backpack/ao.jpg", true);
-
-    m_vikingTexture = Texture::createTexture("textures/viking_room.png");
-    m_sampleTexture = Texture::createTexture("textures/texture.png");
-    m_catTexture = Texture::createTexture("textures/cat.bmp");
-    m_karinaTexture = Texture::createTexture("textures/karina.jpg");
-
-    m_groundDiffuseTexture = Texture::createTexture("textures/GroundDiffuse.png");
-    m_groundNormalTexture = Texture::createTexture("textures/GroundNormal.png");
-
-
-    m_karinaMaterial = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_karinaTexture, true},
-        {nullptr, false},
-        {0.5f, nullptr, false},
-        {0.0f, nullptr, false},
-        {1.0f, nullptr, false},
-        {0.0f, nullptr, false}
-    );
-
-    m_catMaterial = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_catTexture, true},
-        {nullptr, false},
-        {0.5f, nullptr, false},
-        {0.0f, nullptr, false},
-        {1.0f, nullptr, false},
-        {0.0f, nullptr, false}
-    );
-
-    m_vikingMaterial = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_vikingTexture, true},
-        {nullptr, false},
-        {0.5f, nullptr, false},
-        {0.0f, nullptr, false},
-        {1.0f, nullptr, false},
-        {0.0f, nullptr, false}
-    );
-
-
-    m_backpackMaterial = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_backpackAlbedo, true},
-        {m_backpackNormal, true},
-        {0.5f, m_backpackRoughness, true},
-        {0.0f, m_backpackMetallic, true},
-        {1.0f, m_backpackAo, true},
-        {0.0f, nullptr, false}
-    );
-
-    m_groundMaterial = Material::createMaterial(
-        {glm::vec3(1.0f, 1.0f, 1.0f), m_groundDiffuseTexture, true},
-        {m_groundNormalTexture, true},
-        {0.5f, nullptr, false},
-        {0.8f, nullptr, false},
-        {1.0f, nullptr, false},
-        {0.0f, nullptr, false}
-    );
-
-    m_lightObject = Object::createObject("light", m_sphereModel, m_defaultMaterial, 
+    m_lightObject = Object::createObject("light", m_sphereModel, 
     Transform{m_lightInfo.lightPos, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f)});
     m_objects.push_back(m_lightObject);
 
-    m_objects.push_back(Object::createObject("karina", m_planeModel, m_karinaMaterial, 
-    Transform{glm::vec3(0.0f, 0.0f, -3.0f), glm::vec3(0.0f, 0.0f, 180.0f), glm::vec3(5.0f * 0.74f, 5.0f, 1.0f)}));
 
-    m_objects.push_back(Object::createObject("box1", m_boxModel, m_defaultMaterial, 
-    Transform{glm::vec3(-2.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
 
-    m_objects.push_back(Object::createObject("viking", m_vikingModel, m_vikingMaterial, 
-    Transform{glm::vec3(0.0f, -0.3f, 0.0f), glm::vec3(-90.0f, 0.0f, -90.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
-
-    m_objects.push_back(Object::createObject("sphere", m_sphereModel, m_defaultMaterial, 
-    Transform{glm::vec3(0.3f, 1.3f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
+    m_floorDiffuseTexture = Texture::createTexture("textures/laminate_floor_02_diff_2k.jpg");
+    m_floorNormalTexture = Texture::createMaterialTexture("textures/laminate_floor_02_nor_gl_2k.jpg");
+    m_floorRoughnessTexture = Texture::createMaterialTexture("textures/laminate_floor_02_rough_2k.jpg");
     
-    m_objects.push_back(Object::createObject("cat", m_catModel, m_catMaterial, 
-    Transform{glm::vec3(0.5f, 0.0f, 0.0f), glm::vec3(-90.0f, 0.0f, 45.0f), glm::vec3(0.01f, 0.01f, 0.01f)}));
 
-    m_objects.push_back(Object::createObject("box2", m_boxModel, m_defaultMaterial, 
-    Transform{glm::vec3(2.0f, -0.5f, 0.0f), glm::vec3(30.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
+    m_floorMaterial = Material::createMaterial(
+        {glm::vec3(1.0f, 1.0f, 1.0f), m_floorDiffuseTexture, true},
+        {m_floorNormalTexture, true},
+        {0.5f, m_floorRoughnessTexture, true},
+        {0.0f, m_defaultTextures.metallic, false},
+        {1.0f, m_defaultTextures.ao, false},
+        {0.0f, m_defaultTextures.height, false}
+    );
 
-    m_objects.push_back(Object::createObject("backpack", m_backpackModel, m_backpackMaterial, 
-    Transform{glm::vec3(-1.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.3f, 0.3f, 0.3f)}));
 
-    m_objects.push_back(Object::createObject("ground", m_planeModel, m_groundMaterial, 
-    Transform{glm::vec3(0.0f, -1.5f, 0.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
+    m_floorObject = Object::createObject("floor", m_planeModel, 
+    Transform{glm::vec3(0.0f, -1.7f, 0.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(5.0f, 5.0f, 5.0f)});
+    m_objects.push_back(m_floorObject);
 
-    m_objects.push_back(Object::createObject("camera", m_cameraModel, m_defaultMaterial, 
-    Transform{glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)}));
+    m_cameraModel = Model::createModel("Models/Camera_01_2k.gltf/Camera_01_2k.gltf", m_defaultMaterial);
+    m_cameraObject = Object::createObject("camera", m_cameraModel, 
+    Transform{glm::vec3(0.1f, -1.2f, 0.1f), glm::vec3(0.0f, -50.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_cameraObject);
+
+    m_tableModel = Model::createModel("Models/coffee_table_round_01_4k.gltf/coffee_table_round_01_4k.gltf", m_defaultMaterial);
+    m_tableObject = Object::createObject("table", m_tableModel, 
+    Transform{glm::vec3(0.0f, -1.7f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_tableObject);
+
+    m_sofaModel = Model::createModel("Models/Sofa_01_4k.gltf/Sofa_01_4k.gltf", m_defaultMaterial);
+    m_sofaObject = Object::createObject("sofa", m_sofaModel, 
+    Transform{glm::vec3(0.0f, -1.7f, -1.2f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_sofaObject);
+
+    m_jugModel = Model::createModel("Models/jug_01_4k.gltf/jug_01_4k.gltf", m_defaultMaterial);
+    m_jugObject = Object::createObject("jug", m_jugModel, 
+    Transform{glm::vec3(-0.1f, -1.2f, -0.1f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_jugObject);
+
+
+    m_shelfModel = Model::createModel("Models/steel_frame_shelves_02_4k.gltf/steel_frame_shelves_02_4k.gltf", m_defaultMaterial);
+    m_shelfObject = Object::createObject("shelf", m_shelfModel, 
+    Transform{glm::vec3(-1.6f, -1.7f, -1.25f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_shelfObject);
+
+
+    m_plant1Model = Model::createModel("Models/potted_plant_01_4k.gltf/potted_plant_01_4k.gltf", m_defaultMaterial);
+    m_plant1Object = Object::createObject("plant1", m_plant1Model, 
+    Transform{glm::vec3(1.5f, -1.7f, -0.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_plant1Object);
+
+
+    m_plant2Model = Model::createModel("Models/potted_plant_04_4k.gltf/potted_plant_04_4k.gltf", m_defaultMaterial);
+    m_plant2Object = Object::createObject("plant2", m_plant2Model, 
+    Transform{glm::vec3(-1.6f, -0.56f, -1.25f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
+    m_objects.push_back(m_plant2Object);
 
     m_objectCount = m_objects.size();
+
+    for (auto& object : m_objects) {
+        object->createRenderingComponent();
+    }
+
+    m_floorObject->updateMaterial({m_floorMaterial});
+
 }
 
 
 void Scene::processInput(GLFWwindow* window) {
     if (!m_cameraControl)
         return;
-    const float cameraSpeed = 0.03f;
+    const float cameraSpeed = 0.01f;
     if (glfwGetKey(window, GLFW_KEY_W) == GLFW_PRESS)
         m_cameraPos += cameraSpeed * m_cameraFront;
     if (glfwGetKey(window, GLFW_KEY_S) == GLFW_PRESS)

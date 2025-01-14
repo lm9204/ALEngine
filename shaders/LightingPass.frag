@@ -47,6 +47,8 @@ float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 void main() {
     vec3 fragPosition = subpassLoad(positionAttachment).rgb;
     vec3 fragNormal = normalize(subpassLoad(normalAttachment).rgb);
+    // -1 ~ 1 범위로 변환 잘라버리기
+    fragNormal = clamp(fragNormal, -1.0, 1.0);
     vec3 albedo = subpassLoad(albedoAttachment).rgb;
 
     vec4 pbr = subpassLoad(pbrAttachment);
@@ -57,8 +59,15 @@ void main() {
     // 법선, 뷰, 라이트 벡터
     vec3 N = fragNormal;
     vec3 V = normalize(cameraPos - fragPosition);
-    vec3 L = normalize(-lightDirection);
+    vec3 L = normalize(lightPos - fragPosition); // 포인트 라이트 방향
     vec3 H = normalize(V + L);
+
+    // 거리 계산 및 감쇠 적용
+    float distance = length(lightPos - fragPosition);
+    float constant = 1.0;
+    float linear = 0.09;
+    float quadratic = 0.032;
+    float attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
 
     // Fresnel
     vec3 F0 = mix(vec3(0.04), albedo, metallic); // 금속성과 알베도를 고려한 반사율
@@ -78,9 +87,13 @@ void main() {
     vec3 kD = vec3(1.0) - kS;
     kD *= 1.0 - metallic; // 금속성은 diffuse를 줄임
 
+    // // 라이트 기여도
+    // float NdotL = max(dot(N, L), 0.0);
+    // vec3 radiance = lightColor * intensity * NdotL;
+
     // 라이트 기여도
     float NdotL = max(dot(N, L), 0.0);
-    vec3 radiance = lightColor * intensity * NdotL;
+    vec3 radiance = (lightColor * intensity * NdotL) * attenuation; // 감쇠 적용
 
     // 최종 색상
     vec3 diffuse = kD * albedo / 3.14159265359;
@@ -88,4 +101,5 @@ void main() {
     vec3 finalColor = ambient + (diffuse + specular) * radiance;
 
     outColor = vec4(finalColor, 1.0);
+    // outColor = vec4(fragNormal * 0.5 + 0.5, 1.0); // Normal
 }

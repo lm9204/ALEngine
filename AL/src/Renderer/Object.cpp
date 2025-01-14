@@ -2,16 +2,20 @@
 
 namespace ale
 {
-std::unique_ptr<Object> Object::createObject(std::string name, std::shared_ptr<Model> model, std::shared_ptr<Material> material, Transform transform)
+std::unique_ptr<Object> Object::createObject(std::string name, std::shared_ptr<Model> model, Transform transform)
 {
 	std::unique_ptr<Object> object = std::unique_ptr<Object>(new Object());
-	object->initObject(name, model, material, transform);
+	object->initObject(name, model, transform);
 	return object;
 }
 
-void Object::draw(VkCommandBuffer commandBuffer)
+void Object::draw(DrawInfo& drawInfo)
 {
-	m_model->draw(commandBuffer);
+	// drawInfo.model = getModelMatrix();
+	// drawInfo.shaderResourceManager = m_shaderResourceManager.get();
+	// m_model->draw(drawInfo);
+	drawInfo.model = getModelMatrix();
+	m_renderingComponent->draw(drawInfo);
 }
 
 glm::mat4 Object::getModelMatrix()
@@ -25,11 +29,24 @@ glm::mat4 Object::getModelMatrix()
 	return model;
 }
 
-void Object::initObject(std::string name, std::shared_ptr<Model> model, std::shared_ptr<Material> material, Transform transform)
+void Object::initObject(std::string name, std::shared_ptr<Model> model, Transform transform)
 {
 	m_name = name;
 	m_model = model;
-	m_material = material;
 	m_transform = transform;
 }
+
+void Object::createShaderResourceManager() {
+	m_shaderResourceManager = ShaderResourceManager::createGeometryPassShaderResourceManager(m_model.get());
+}
+
+void Object::createRenderingComponent() {
+	m_renderingComponent = RenderingComponent::createRenderingComponent(m_model);
+}
+
+void Object::updateMaterial(std::vector<std::shared_ptr<Material>> materials)
+{
+	m_renderingComponent->updateMaterial(materials);
+}
+
 } // namespace ale

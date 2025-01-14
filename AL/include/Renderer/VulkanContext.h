@@ -26,7 +26,9 @@ public:
 	VkSampleCountFlagBits getMsaaSamples() { return msaaSamples; }
 	VkDescriptorPool getDescriptorPool() { return descriptorPool; }
 	uint32_t getQueueFamily();
+	VkDescriptorSetLayout getGeometryPassDescriptorSetLayout() { return geometryPassDescriptorSetLayout; }
 
+	void setGeometryPassDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout) { geometryPassDescriptorSetLayout = descriptorSetLayout; }
 private:
 	VulkanContext() { }
 	VulkanContext(VulkanContext const&) = delete;
@@ -42,6 +44,7 @@ private:
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	VkDescriptorPool descriptorPool;
+	VkDescriptorSetLayout geometryPassDescriptorSetLayout;
 
 	void createInstance();
 	bool checkValidationLayerSupport();

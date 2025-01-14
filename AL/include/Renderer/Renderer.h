@@ -9,6 +9,7 @@
 #include "Renderer/Pipeline.h"
 #include "Renderer/RenderPass.h"
 #include "Renderer/ShaderResourceManager.h"
+#include "Renderer/Scene.h"
 #include "Renderer/SwapChain.h"
 #include "Renderer/SyncObjects.h"
 #include "Renderer/VulkanContext.h"
@@ -35,6 +36,8 @@ class AL_API Renderer
 	{
 		return deferredRenderPass;
 	}
+
+	VkDescriptorSetLayout getGeometryPassDescriptorSetLayout() { return geometryPassDescriptorSetLayout; }
 
   private:
 	Renderer() = default;
@@ -81,11 +84,6 @@ class AL_API Renderer
 	VkPipeline lightingPassGraphicsPipeline;
 
 	VkDescriptorPool descriptorPool;
-
-	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
-	std::vector<VkDescriptorSet> geometryPassDescriptorSets;
-	std::vector< std::shared_ptr<UniformBuffer> > geometryPassVertexUniformBuffers;
-	std::vector< std::shared_ptr<UniformBuffer> > geometryPassFragmentUniformBuffers;
 	
 	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
 	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
