@@ -386,40 +386,6 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuff
     size_t objectCount = scene->getObjectCount();
 
     for (size_t i = 0; i < objectCount; i++) {
-        // size_t index = MAX_FRAMES_IN_FLIGHT * i + currentFrame;
-        
-        // Albedo albedo = objects[i]->getAlbedo();
-        // NormalMap normalMap = objects[i]->getNormalMap();
-        // Roughness roughness = objects[i]->getRoughness();
-        // Metallic metallic = objects[i]->getMetallic();
-        // AOMap aoMap = objects[i]->getAOMap();
-        // HeightMap heightMap = objects[i]->getHeightMap();
-
-        // vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, geometryPassPipelineLayout, 0, 1, &geometryPassDescriptorSets[index], 0, nullptr);
-        // GeometryPassVertexUniformBufferObject vertexUbo{};
-        // vertexUbo.model = objects[i]->getModelMatrix();
-        // vertexUbo.view = scene->getViewMatrix();
-        // vertexUbo.proj = scene->getProjMatrix(swapChainExtent);
-        // vertexUbo.proj[1][1] *= -1;
-        // vertexUbo.heightFlag = heightMap.flag;
-        // vertexUbo.heightScale = 0.1;
-        // vertexUbo.padding = glm::vec2(0.0f);
-        // geometryPassVertexUniformBuffers[index]->updateUniformBuffer(&vertexUbo, sizeof(vertexUbo));
-
-        // GeometryPassFragmentUniformBufferObject fragmentUbo{};
-        // fragmentUbo.albedoValue = glm::vec4(albedo.albedo, 1.0f);
-        // fragmentUbo.roughnessValue = roughness.roughness;
-        // fragmentUbo.metallicValue = metallic.metallic;
-        // fragmentUbo.aoValue = aoMap.ao;
-        // fragmentUbo.albedoFlag = albedo.flag;
-        // fragmentUbo.normalFlag = normalMap.flag;
-        // fragmentUbo.roughnessFlag = roughness.flag;
-        // fragmentUbo.metallicFlag = metallic.flag;
-        // fragmentUbo.aoFlag = aoMap.flag;
-        // fragmentUbo.padding = glm::vec2(0.0f);
-        // geometryPassFragmentUniformBuffers[index]->updateUniformBuffer(&fragmentUbo, sizeof(fragmentUbo));
-        // objects[i]->draw(commandBuffer);
-
         DrawInfo drawInfo;
         drawInfo.currentFrame = currentFrame;
         drawInfo.pipelineLayout = geometryPassPipelineLayout;
@@ -448,7 +414,7 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuff
     LightingPassUniformBufferObject lightingPassUbo{};
     auto& lightInfo = scene->getLightInfo();
     lightingPassUbo.lightPos = lightInfo.lightPos;
-    lightingPassUbo.lightDirection = glm::normalize(-lightInfo.lightPos);
+    lightingPassUbo.lightDirection = lightInfo.lightDirection;
     lightingPassUbo.lightColor = lightInfo.lightColor;
     lightingPassUbo.cameraPos = scene->getCamPos();
     lightingPassUbo.intensity = lightInfo.intensity;

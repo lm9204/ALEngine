@@ -67,7 +67,7 @@ void Scene::initScene() {
     );
 
     m_lightInfo.lightPos = glm::vec3(0.0f, 0.0f, 0.0f);
-    m_lightInfo.lightDirection = glm::normalize(-m_lightInfo.lightPos);
+    m_lightInfo.lightDirection = glm::normalize(glm::vec3(0.0f, -1.0f, 0.0f));
     m_lightInfo.lightColor = glm::vec3(1.0f, 1.0f, 1.0f);
     m_lightInfo.intensity = 1.0f;
     m_lightInfo.ambientStrength = 0.2f;

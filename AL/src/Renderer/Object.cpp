@@ -11,9 +11,6 @@ std::unique_ptr<Object> Object::createObject(std::string name, std::shared_ptr<M
 
 void Object::draw(DrawInfo& drawInfo)
 {
-	// drawInfo.model = getModelMatrix();
-	// drawInfo.shaderResourceManager = m_shaderResourceManager.get();
-	// m_model->draw(drawInfo);
 	drawInfo.model = getModelMatrix();
 	m_renderingComponent->draw(drawInfo);
 }
