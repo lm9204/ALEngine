@@ -385,15 +385,22 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuff
     const std::vector<std::shared_ptr<Object>>& objects = scene->getObjects();
     size_t objectCount = scene->getObjectCount();
 
+    DrawInfo drawInfo;
+    drawInfo.currentFrame = currentFrame;
+    drawInfo.pipelineLayout = geometryPassPipelineLayout;
+    drawInfo.commandBuffer = commandBuffer;
+    drawInfo.view = scene->getViewMatrix();
+    drawInfo.projection = scene->getProjMatrix(swapChainExtent);
+    drawInfo.projection[1][1] *= -1;
     for (size_t i = 0; i < objectCount; i++) {
-        DrawInfo drawInfo;
-        drawInfo.currentFrame = currentFrame;
-        drawInfo.pipelineLayout = geometryPassPipelineLayout;
-        drawInfo.commandBuffer = commandBuffer;
-        drawInfo.view = scene->getViewMatrix();
-        drawInfo.projection = scene->getProjMatrix(swapChainExtent);
-        drawInfo.projection[1][1] *= -1;
         objects[i]->draw(drawInfo);
+    }
+
+    const std::vector<std::shared_ptr<Object>>& lightObjects = scene->getLightObjects();
+    size_t lightObjectCount = lightObjects.size();
+
+    for (size_t i = 0; i < lightObjectCount; i++) {
+        lightObjects[i]->draw(drawInfo);
     }
 
     vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
@@ -412,14 +419,17 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene* scene, VkCommandBuff
     );
 
     LightingPassUniformBufferObject lightingPassUbo{};
-    auto& lightInfo = scene->getLightInfo();
-    lightingPassUbo.lightPos = lightInfo.lightPos;
-    lightingPassUbo.lightDirection = lightInfo.lightDirection;
-    lightingPassUbo.lightColor = lightInfo.lightColor;
+
+    std::memset(lightingPassUbo.lights, 0, sizeof(lightingPassUbo.lights));
+    auto& lights = scene->getLights();
+    for (size_t i = 0; i < lights.size(); i++) {
+        lightingPassUbo.lights[i] = lights[i];
+    }
+    lightingPassUbo.numLights = static_cast<uint32_t>(lights.size());
     lightingPassUbo.cameraPos = scene->getCamPos();
-    lightingPassUbo.intensity = lightInfo.intensity;
-    lightingPassUbo.ambientStrength = lightInfo.ambientStrength;
+    lightingPassUbo.ambientStrength = scene->getAmbientStrength();
     lightingPassUbo.padding = glm::vec2(0.0f);
+
     lightingPassFragmentUniformBuffers[currentFrame]->updateUniformBuffer(&lightingPassUbo, sizeof(lightingPassUbo));
     vkCmdDraw(commandBuffer, 6, 1, 0, 0);
 

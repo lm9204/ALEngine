@@ -5,12 +5,20 @@ layout(input_attachment_index = 1, binding = 1) uniform subpassInput normalAttac
 layout(input_attachment_index = 2, binding = 2) uniform subpassInput albedoAttachment;
 layout(input_attachment_index = 3, binding = 3) uniform subpassInput pbrAttachment;
 
-layout(binding = 4) uniform LightingInfo {
-    vec3 lightPos;
-    vec3 lightDirection;
-    vec3 lightColor;
-    vec3 cameraPos;
+struct Light {
+    vec3 position;
+    vec3 direction;
+    vec3 color;
     float intensity;
+    float innerCutoff;
+    float outerCutoff;
+    uint type;
+};
+
+layout(binding = 4) uniform LightingInfo {
+    Light lights[16];
+    vec3 cameraPos;
+    uint numLights;
     float ambientStrength;
 };
 
@@ -47,8 +55,6 @@ float geometrySmith(vec3 N, vec3 V, vec3 L, float roughness) {
 void main() {
     vec3 fragPosition = subpassLoad(positionAttachment).rgb;
     vec3 fragNormal = normalize(subpassLoad(normalAttachment).rgb);
-    // -1 ~ 1 범위로 변환 잘라버리기
-    fragNormal = clamp(fragNormal, -1.0, 1.0);
     vec3 albedo = subpassLoad(albedoAttachment).rgb;
 
     vec4 pbr = subpassLoad(pbrAttachment);
@@ -56,50 +62,63 @@ void main() {
     float metallic = pbr.g;
     float ao = pbr.b;
 
-    // 법선, 뷰, 라이트 벡터
     vec3 N = fragNormal;
     vec3 V = normalize(cameraPos - fragPosition);
-    vec3 L = normalize(lightPos - fragPosition); // 포인트 라이트 방향
-    vec3 H = normalize(V + L);
 
-    // 거리 계산 및 감쇠 적용
-    float distance = length(lightPos - fragPosition);
-    float constant = 1.0;
-    float linear = 0.09;
-    float quadratic = 0.032;
-    float attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+    vec3 finalColor = vec3(0.0);
 
-    // Fresnel
-    vec3 F0 = mix(vec3(0.04), albedo, metallic); // 금속성과 알베도를 고려한 반사율
-    vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-    // NDF와 Geometry
-    float NDF = distributionGGX(N, H, roughness);
-    float G = geometrySmith(N, V, L, roughness);
-
-    // 스페큘러
-    vec3 numerator = NDF * G * F;
-    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
-    vec3 specular = numerator / denominator;
-
-    // Diffuse와 Specular 비율
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic; // 금속성은 diffuse를 줄임
-
-    // // 라이트 기여도
-    // float NdotL = max(dot(N, L), 0.0);
-    // vec3 radiance = lightColor * intensity * NdotL;
-
-    // 라이트 기여도
-    float NdotL = max(dot(N, L), 0.0);
-    vec3 radiance = (lightColor * intensity * NdotL) * attenuation; // 감쇠 적용
-
-    // 최종 색상
-    vec3 diffuse = kD * albedo / 3.14159265359;
     vec3 ambient = ambientStrength * albedo * ao;
-    vec3 finalColor = ambient + (diffuse + specular) * radiance;
+    finalColor += ambient;
 
-    outColor = vec4(finalColor, 1.0);
-    // outColor = vec4(fragNormal * 0.5 + 0.5, 1.0); // Normal
+    for (uint i = 0; i < numLights; ++i) {
+        vec3 L;
+        float attenuation = 1.0;
+
+        if (lights[i].type == 0) { // Point Light
+            L = normalize(lights[i].position - fragPosition);
+            float distance = length(lights[i].position - fragPosition);
+            float constant = 1.0;
+            float linear = 0.09;
+            float quadratic = 0.032;
+            attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+        }
+        else if (lights[i].type == 1) { // Spot Light
+            L = normalize(lights[i].position - fragPosition);
+            float distance = length(lights[i].position - fragPosition);
+            float constant = 1.0;
+            float linear = 0.09;
+            float quadratic = 0.032;
+            attenuation = 1.0 / (constant + linear * distance + quadratic * (distance * distance));
+
+            float theta = dot(L, normalize(-lights[i].direction));
+            float epsilon = max(lights[i].innerCutoff - lights[i].outerCutoff, 0.001);
+            attenuation *= clamp((theta - lights[i].outerCutoff) / epsilon, 0.0, 1.0);
+        }
+        else { // Directional Light
+            L = normalize(-lights[i].direction);
+            attenuation = 1.0;
+        }
+
+        vec3 H = normalize(V + L);
+        vec3 F0 = mix(vec3(0.04), albedo, metallic);
+        vec3 F = fresnelSchlick(max(dot(H, V), 0.0), F0);
+
+        float NDF = distributionGGX(N, H, roughness);
+        float G = geometrySmith(N, V, L, roughness);
+
+        vec3 numerator = NDF * G * F;
+        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0) + 0.001;
+        vec3 specular = numerator / denominator;
+
+        vec3 kS = F;
+        vec3 kD = vec3(1.0) - kS;
+        kD *= 1.0 - metallic;
+
+        float NdotL = max(dot(N, L), 0.0);
+        vec3 diffuse = kD * albedo / 3.14159265359;
+        vec3 radiance = lights[i].color * lights[i].intensity * NdotL * attenuation;
+
+        finalColor += (diffuse + specular) * radiance;
+    }
+    outColor = vec4(clamp(finalColor, 0.0, 1.0), 1.0);
 }

@@ -8,15 +8,6 @@
 
 namespace ale
 {
-
-struct LightInfo {
-	glm::vec3 lightPos;
-	glm::vec3 lightDirection;
-	glm::vec3 lightColor;
-	float intensity;
-	float ambientStrength;
-};
-
 class AL_API Scene
 {
 public:
@@ -25,7 +16,8 @@ public:
 	void cleanup();
 
 	const std::vector< std::shared_ptr<Object> >& getObjects() { return m_objects; }
-	LightInfo &getLightInfo() { return m_lightInfo; }
+	std::vector<std::shared_ptr<Object>> &getLightObjects() { return m_lightObjects; }
+	std::vector<Light> &getLights() { return m_lights; }
 	glm::vec3 &getCamPos() { return m_cameraPos; }
 	glm::vec3 &getCamFront() { return m_cameraFront; }
 	glm::vec3 &getCamUp() { return m_cameraUp; }
@@ -34,10 +26,10 @@ public:
 	size_t getObjectCount() { return m_objectCount; }
 	glm::mat4 getViewMatrix();
 	glm::mat4 getProjMatrix(VkExtent2D swapChainExtent);
-	std::shared_ptr<Object> getLightObject() { return m_lightObject; }
+	float &getAmbientStrength() { return m_ambientStrength; }
 	DefaultTextures &getDefaultTextures() { return m_defaultTextures; }
 
-	void updateLightPos(glm::vec3 lightPos);
+	// void updateLightPos(glm::vec3 lightPos);
 	void mouseButton(int button, int action, double x, double y);
 	void mouseMove(double x, double y);
 	void processInput(GLFWwindow* window);
@@ -104,7 +96,7 @@ private:
 	std::shared_ptr<Material> m_defaultMaterial;
 
 
-	std::shared_ptr<Object> m_lightObject;
+	// std::shared_ptr<Object> m_lightObject;
 
 
 
@@ -119,7 +111,13 @@ private:
 	float m_cameraPitch { 0.0f };
     float m_cameraYaw { 0.0f };
 	size_t m_objectCount;
-	LightInfo m_lightInfo;
+
+	// lighting
+	std::vector<Light> m_lights;
+	uint32_t m_numLights { 0 };
+	float m_ambientStrength { 0.2f };
+	std::vector<std::shared_ptr<Object>> m_lightObjects;
+	
 
 	void initScene();
 };

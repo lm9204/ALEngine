@@ -112,22 +112,62 @@ void ImGuiLayer::renderDrawData(Scene* scene, VkCommandBuffer commandBuffer)
 	io.FontGlobalScale = 1.5f; // 기본 폰트 크기를 1.5배로 증가
 
 	ImGui::Begin("GUI");
-	auto objects = scene->getObjects();
-	auto lightObject = scene->getLightObject();
 
-	std::string lightLabelPrefix = lightObject->getName();
-	ImGui::Text("Light: %s", lightLabelPrefix.c_str());
-	ImGui::Separator();
 
-	glm::vec3 &lightPosition = lightObject->getPosition();
-	if (ImGui::DragFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), 0.01f, -10.0f, 10.0f)) {
-		scene->updateLightPos(lightPosition);
-	}
-	auto& lightInfo = scene->getLightInfo();
-	ImGui::ColorEdit3("Color", glm::value_ptr(lightInfo.lightColor));
-	ImGui::DragFloat("Intensity", &lightInfo.intensity, 0.01f, 0.0f, 1.0f);
-	ImGui::DragFloat("Ambient Strength", &lightInfo.ambientStrength, 0.01f, 0.0f, 1.0f);
+	float& ambientStrength = scene->getAmbientStrength();
+    ImGui::DragFloat("Global Ambient Strength", &ambientStrength, 0.01f, 0.0f, 1.0f);
+    ImGui::Separator();
+	 // 다중 광원 처리
+    auto& lights = scene->getLights(); // 모든 광원을 가져옵니다.
+	auto& lightObjects = scene->getLightObjects();
+    for (size_t i = 0; i < lights.size(); i++) {
+        std::string lightLabelPrefix = "Light " + std::to_string(i);
+		auto& lightObject = lightObjects[i];
+        if (ImGui::TreeNode(lightLabelPrefix.c_str())) {
+            glm::vec3& lightPosition = lights[i].position;
+            if (ImGui::DragFloat3((lightLabelPrefix + " Position").c_str(), glm::value_ptr(lightPosition), 0.01f, -10.0f, 10.0f)) {
+				lightObject->setPosition(lightPosition);
+			}
 
+            glm::vec3& lightColor = lights[i].color;
+            ImGui::ColorEdit3((lightLabelPrefix + " Color").c_str(), glm::value_ptr(lightColor));
+
+            float& intensity = lights[i].intensity;
+			ImGui::DragFloat((lightLabelPrefix + " Intensity").c_str(), &intensity, 0.01f, 0.0f, 1.0f);
+
+
+			// 타입 설정
+			uint32_t& type = lights[i].type;
+			if (ImGui::DragInt((lightLabelPrefix + " Type").c_str(), reinterpret_cast<int*>(&type), 1, 0, 2)) {
+			}
+
+			// 방향 설정 (Spot Light 및 Directional Light만 사용)
+			if (type == 1 || type == 2) { // Spot Light 또는 Directional Light
+				glm::vec3& direction = lights[i].direction;
+				if (ImGui::DragFloat3((lightLabelPrefix + " Direction").c_str(), glm::value_ptr(direction), 0.01f, -1.0f, 1.0f)) {
+				}
+			}
+
+			// 스포트라이트 추가 속성 (cutoff 설정)
+			if (type == 1) { // Spot Light
+				float innerCutoffDegree = glm::degrees(glm::acos(lights[i].innerCutoff));
+				float outerCutoffDegree = glm::degrees(glm::acos(lights[i].outerCutoff));
+
+				if (ImGui::DragFloat((lightLabelPrefix + " Inner Cutoff (Degree)").c_str(), &innerCutoffDegree, 0.1f, 0.0f, 90.0f)) {
+					// 입력받은 각도를 코사인 값으로 변환하여 저장
+					lights[i].innerCutoff = glm::cos(glm::radians(innerCutoffDegree));
+				}
+
+				if (ImGui::DragFloat((lightLabelPrefix + " Outer Cutoff (Degree)").c_str(), &outerCutoffDegree, 0.1f, 0.0f, 90.0f)) {
+					// 입력받은 각도를 코사인 값으로 변환하여 저장
+					lights[i].outerCutoff = glm::cos(glm::radians(outerCutoffDegree));
+				}
+			}
+            ImGui::TreePop();
+        }
+    }
+
+	auto& objects = scene->getObjects();
     for (uint32_t index = 1; index < objects.size(); index++) {
         std::string label = "Object: " + objects[index]->getName();
 

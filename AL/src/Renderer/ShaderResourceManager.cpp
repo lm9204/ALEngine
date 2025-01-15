@@ -314,6 +314,13 @@ void ShaderResourceManager::initLightingPassShaderResourceManager(VkDescriptorSe
 void ShaderResourceManager::createLightingPassUniformBuffers() {
     VkDeviceSize bufferSize = sizeof(LightingPassUniformBufferObject);
 
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(VulkanContext::getContext().getPhysicalDevice(), &deviceProperties);
+    if (bufferSize > deviceProperties.limits.maxUniformBufferRange) {
+        throw std::runtime_error("LightingPassUniformBufferObject size exceeds maxUniformBufferRange!");
+    }
+
+
     m_fragmentUniformBuffers.resize(MAX_FRAMES_IN_FLIGHT);
 
     for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {

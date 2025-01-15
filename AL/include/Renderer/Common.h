@@ -164,17 +164,34 @@ struct GeometryPassFragmentUniformBufferObject {
     alignas(8) glm::vec2 padding; // 패딩 추가 (8바이트)
 };
 
-
+struct Light {
+	alignas(16) glm::vec3 position;      // 광원의 위치 (점광원, 스포트라이트)
+    alignas(16) glm::vec3 direction;     // 광원의 방향 (스포트라이트, 방향성 광원)
+    alignas(16) glm::vec3 color;         // 광원의 색상
+    alignas(4) float intensity;          // 광원의 강도
+    alignas(4) float innerCutoff;        // 스포트라이트 내부 각도 (cosine 값)
+    alignas(4) float outerCutoff;        // 스포트라이트 외부 각도 (cosine 값)
+    alignas(4) uint32_t type;                 // 광원 타입 (0: 점광원, 1: 스포트라이트, 2: 방향성 광원)
+};
 
 struct LightingPassUniformBufferObject {
-    alignas(16) glm::vec3 lightPos;       // 16바이트
-    alignas(16) glm::vec3 lightDirection; // 16바이트
-    alignas(16) glm::vec3 lightColor;     // 16바이트
-    alignas(16) glm::vec3 cameraPos;      // 16바이트
-    alignas(4) float intensity;           // 4바이트
-    alignas(4) float ambientStrength;     // 4바이트
-    alignas(8) glm::vec2 padding;         // 8바이트 (패딩)
+	alignas(16) Light lights[16];  	// 최대 16개의 광원 정보
+    alignas(16) glm::vec3 cameraPos;       // 카메라 위치
+    alignas(4) uint32_t numLights;              // 활성화된 광원 개수
+    alignas(4) float ambientStrength;      // 주변광 강도
+	alignas(8) glm::vec2 padding;         // 8바이트 (패딩)
 };
+
+
+// struct LightingPassUniformBufferObject {
+//     alignas(16) glm::vec3 lightPos;       // 16바이트
+//     alignas(16) glm::vec3 lightDirection; // 16바이트
+//     alignas(16) glm::vec3 lightColor;     // 16바이트
+//     alignas(16) glm::vec3 cameraPos;      // 16바이트
+//     alignas(4) float intensity;           // 4바이트
+//     alignas(4) float ambientStrength;     // 4바이트
+//     alignas(8) glm::vec2 padding;         // 8바이트 (패딩)
+// };
 
 } // namespace ale
 
