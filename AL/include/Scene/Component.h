@@ -1,6 +1,8 @@
 #ifndef COMPONENT_H
 #define COMPONENT_H
 
+#include "Core/UUID.h"
+
 #include "Renderer/Model.h"
 #include "Renderer/Texture.h"
 
@@ -12,6 +14,14 @@
 
 namespace ale
 {
+struct IDComponent
+{
+	UUID m_ID;
+
+	IDComponent() = default;
+	IDComponent(const IDComponent &) = default;
+};
+
 struct TagComponent
 {
 	std::string m_Tag;
