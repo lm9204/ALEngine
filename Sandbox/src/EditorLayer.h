@@ -6,6 +6,7 @@
 #include "Panel/SceneHierarchyPanel.h"
 #include "Renderer/CameraController.h"
 #include "Renderer/EditorCamera.h"
+#include "Renderer/Texture.h"
 
 namespace ale
 {
@@ -30,6 +31,7 @@ class EditorLayer : public Layer
 	// GUI
 	void setDockingSpace();
 	void setMenuBar();
+	void uiToolBar();
 
 	// PROJECT
 	void newProject();
@@ -50,6 +52,20 @@ class EditorLayer : public Layer
 	std::shared_ptr<Scene> m_Scene;
 	SceneHierarchyPanel m_SceneHierarchyPanel;
 	std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
+
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorPool descriptorPool;
+	VkDevice device;
+
+	enum class ESceneState
+	{
+		EDIT = 0,
+		PLAY
+	};
+
+	ESceneState m_SceneState = ESceneState::EDIT;
+	std::shared_ptr<Texture> m_PlayIcon, m_PauseIcon, m_StepIcon;
+	ImTextureID playTextureID, pauseTextureID, stepTextureID;
 };
 
 } // namespace ale

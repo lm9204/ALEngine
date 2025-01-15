@@ -3,6 +3,7 @@
 #include "entt.hpp"
 
 #include "Core/Timestep.h"
+#include "Core/UUID.h"
 #include <glm/glm.hpp>
 
 #include "Renderer/EditorCamera.h"
@@ -19,12 +20,17 @@ class Scene
 
 	static std::shared_ptr<Scene> createScene();
 	Entity createEntity(const std::string &name = "");
+	Entity createEntityWithUUID(UUID uuid, const std::string &name = "");
 	void destroyEntity(Entity entity);
 
-	void onUpdate(Timestep ts);
 	void onUpdateEditor(EditorCamera &camera);
 	void onUpdateRuntime(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
+
+	void setPaused(bool pause)
+	{
+		m_IsPaused = pause;
+	}
 
 	glm::vec3 &getLightPos()
 	{
@@ -46,6 +52,9 @@ class Scene
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 	glm::vec3 m_lightPos{0.0f, 1.0f, 0.0f};
+	bool m_IsPaused = false;
+
+	std::unordered_map<UUID, entt::entity> m_EntityMap;
 
 	friend class Entity;
 	friend class SceneSerializer;

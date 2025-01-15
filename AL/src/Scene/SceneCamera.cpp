@@ -5,6 +5,7 @@ namespace ale
 {
 SceneCamera::SceneCamera()
 {
+	setViewMatrix(m_CameraPos, m_CameraFront, m_CameraUp);
 	recalculateProjection();
 }
 

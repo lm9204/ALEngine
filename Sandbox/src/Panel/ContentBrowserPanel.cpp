@@ -11,8 +11,6 @@ constexpr char *s_AssetsDirectory = "Sandbox/assets";
 
 ContentBrowserPanel::ContentBrowserPanel() : m_BaseDirectory(), m_CurrentDirectory(s_AssetsDirectory)
 {
-	AL_CORE_INFO("ContentBrowserPanel::ContentBrowserPanel");
-
 	m_DirectoryIcon = Texture::createTexture("Sandbox/Resources/Icons/ContentBrowser/DirectoryIcon.png");
 	m_FileIcon = Texture::createTexture("Sandbox/Resources/Icons/ContentBrowser/FileIcon.png");
 
@@ -20,8 +18,10 @@ ContentBrowserPanel::ContentBrowserPanel() : m_BaseDirectory(), m_CurrentDirecto
 	descriptorPool = context.getDescriptorPool();
 	device = context.getDevice();
 
-	directoryTextureID = createIconTexture(m_DirectoryIcon->getImageView(), m_DirectoryIcon->getSampler());
-	fileTextureID = createIconTexture(m_FileIcon->getImageView(), m_FileIcon->getSampler());
+	directoryTextureID = VulkanUtil::createIconTexture(device, descriptorPool, m_DirectoryIcon->getImageView(),
+													   m_DirectoryIcon->getSampler());
+	fileTextureID =
+		VulkanUtil::createIconTexture(device, descriptorPool, m_FileIcon->getImageView(), m_FileIcon->getSampler());
 }
 
 ContentBrowserPanel::~ContentBrowserPanel()

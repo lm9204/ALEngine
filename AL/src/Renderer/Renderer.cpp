@@ -113,7 +113,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 	drawFrame(scene);
 }
 
-void Renderer::beginScene(Scene *scene, SceneCamera &camera)
+void Renderer::beginScene(Scene *scene, Camera &camera)
 {
 	projMatrix = camera.getProjection();
 	viewMatirx = camera.getView();
