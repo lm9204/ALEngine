@@ -26,7 +26,7 @@ class Renderer
 
 	void loadScene(Scene *scene);
 	void beginScene(Scene *scene, EditorCamera &camera);
-	void beginScene(Scene *scene, SceneCamera &camera);
+	void beginScene(Scene *scene, Camera &camera);
 	void drawFrame(Scene *scene);
 	void recreateSwapChain();
 
