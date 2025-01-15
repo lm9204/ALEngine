@@ -20,10 +20,18 @@ std::shared_ptr<Scene> Scene::createScene()
 
 Entity Scene::createEntity(const std::string &name)
 {
+	return createEntityWithUUID(UUID(), name);
+}
+
+Entity Scene::createEntityWithUUID(UUID uuid, const std::string &name)
+{
 	Entity entity = {m_Registry.create(), this};
+	entity.addComponent<IDComponent>();
 	entity.addComponent<TransformComponent>();
 	auto &tag = entity.addComponent<TagComponent>();
 	tag.m_Tag = name.empty() ? "Entity" : name;
+
+	m_EntityMap[uuid] = entity;
 
 	return entity;
 }
@@ -33,11 +41,14 @@ void Scene::destroyEntity(Entity entity)
 	m_Registry.destroy(entity);
 }
 
-void Scene::onUpdate(Timestep ts)
+void Scene::onUpdateEditor(EditorCamera &camera)
 {
-	// update needs to be classified by states
-	// Edit, Play, (Simulate??), Pause
-	// if Update runtime(maybe play button)
+	renderScene(camera);
+}
+
+void Scene::onUpdateRuntime(Timestep ts)
+{
+	if (!m_IsPaused)
 	{
 		// update scripts
 		{
@@ -57,28 +68,34 @@ void Scene::onUpdate(Timestep ts)
 				nsc.instance->onUpdate(ts);
 			});
 		}
-		// Do Physics
+		// update Physics
 		{
 		}
 	}
 
 	// find main camera
+	Camera *mainCamera = nullptr;
 	{
+		auto view = m_Registry.view<TransformComponent, CameraComponent>();
+		for (auto entity : view)
+		{
+			auto camera = view.get<CameraComponent>(entity);
+
+			if (camera.m_Primary)
+			{
+				mainCamera = &camera.m_Camera;
+				break;
+			}
+		}
 	}
 
-	// if main Camera exists
+	if (mainCamera)
 	{
-		// renderScene();
+		Renderer &renderer = App::get().getRenderer();
+		renderer.beginScene(this, *mainCamera);
 	}
-}
 
-void Scene::onUpdateEditor(EditorCamera &camera)
-{
-	renderScene(camera);
-}
-
-void Scene::onUpdateRuntime(Timestep ts)
-{
+	// imguilayer::renderDrawData
 }
 
 void Scene::onViewportResize(uint32_t width, uint32_t height)
@@ -111,6 +128,10 @@ void Scene::renderScene(EditorCamera &camera)
 template <typename T> void Scene::onComponentAdded(Entity entity, T &component)
 {
 	static_assert(sizeof(T) == 0);
+}
+
+template <> void Scene::onComponentAdded<IDComponent>(Entity entity, IDComponent &component)
+{
 }
 
 template <> void Scene::onComponentAdded(Entity entity, TagComponent &component)
