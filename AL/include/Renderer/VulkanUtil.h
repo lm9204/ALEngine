@@ -4,6 +4,7 @@
 #include "Core/Base.h"
 #include "Renderer/Common.h"
 #include "Renderer/VulkanContext.h"
+#include <imgui/imgui.h>
 
 namespace ale
 {
@@ -30,6 +31,8 @@ class VulkanUtil
 									  VkCommandBuffer commandBuffer);
 
 	static VkSampler createSampler();
+	static ImTextureID createIconTexture(VkDevice device, VkDescriptorPool descriptorpool, VkImageView imageView,
+										 VkSampler sampler);
 };
 } // namespace ale
 
