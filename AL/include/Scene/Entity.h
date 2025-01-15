@@ -1,6 +1,7 @@
 #ifndef ENTITY_H
 #define ENTITY_H
 
+#include "Scene/Component.h"
 #include "Scene/Scene.h"
 
 namespace ale
@@ -41,6 +42,15 @@ class Entity
 	template <typename T> bool hasComponent()
 	{
 		return m_Scene->m_Registry.all_of<T>(m_EntityHandle);
+	}
+
+	UUID getUUID()
+	{
+		return getComponent<IDComponent>().m_ID;
+	}
+	const std::string &getTag()
+	{
+		return getComponent<TagComponent>().m_Tag;
 	}
 
 	operator bool() const
