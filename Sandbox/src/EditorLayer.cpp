@@ -11,6 +11,21 @@ EditorLayer::EditorLayer() : Layer("EditorLayer")
 void EditorLayer::onAttach()
 {
 	// Editor에 필요한 texture들 create
+	m_PlayIcon = Texture::createTexture("Sandbox/Resources/Icons/PlayButton.png");
+	m_PauseIcon = Texture::createTexture("Sandbox/Resources/Icons/PauseButton.png");
+	m_StepIcon = Texture::createTexture("Sandbox/Resources/Icons/StepButton.png");
+
+	auto &context = VulkanContext::getContext();
+	descriptorPool = context.getDescriptorPool();
+	device = context.getDevice();
+
+	playTextureID =
+		VulkanUtil::createIconTexture(device, descriptorPool, m_PlayIcon->getImageView(), m_PlayIcon->getSampler());
+	pauseTextureID =
+		VulkanUtil::createIconTexture(device, descriptorPool, m_PauseIcon->getImageView(), m_PauseIcon->getSampler());
+	stepTextureID =
+		VulkanUtil::createIconTexture(device, descriptorPool, m_StepIcon->getImageView(), m_StepIcon->getSampler());
+
 	// Play, Stop, Pause etc.
 
 	// scene 생성
@@ -45,6 +60,10 @@ void EditorLayer::onAttach()
 		light.getComponent<TransformComponent>().m_Position = m_Scene->getLightPos();
 		light.getComponent<TransformComponent>().m_Scale = glm::vec3(0.1f, 0.1f, 0.1f);
 
+		auto camera = m_Scene->createEntity("Camera");
+		camera.addComponent<CameraComponent>();
+		camera.getComponent<CameraComponent>().m_Camera.setViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
+
 		Renderer &renderer = App::get().getRenderer();
 		renderer.loadScene(m_Scene.get());
 
@@ -66,25 +85,45 @@ void EditorLayer::onUpdate(Timestep ts)
 	// editorcamera viewport resize
 
 	// Scene의 State에 따라 update 구분
-	// Edit, Play, ...
-	m_EditorCamera.onUpdate(ts);
-	m_Scene->onUpdateEditor(m_EditorCamera);
+	switch (m_SceneState)
+	{
+	case ESceneState::EDIT:
+
+		m_EditorCamera.onUpdate(ts);
+		m_Scene->onUpdateEditor(m_EditorCamera);
+		break;
+
+	case ESceneState::PLAY:
+
+		m_Scene->onUpdateRuntime(ts);
+		break;
+	}
+
+	// Render Collider 테두리
 }
 
 void EditorLayer::onImGuiRender()
 {
+	// Docking space
 	// setDockingSpace();
 
 	// Menu
-	// setMenuBar();
+	setMenuBar();
 
 	// Stats - hovered entity, rendered entities
+
 	// viewport - texture descriptor set을 가져올 수 있는 방법 있으면 좋을듯
+
 	// Drag & Drop
+
 	// Gizmos
+
+	// UI Toolbar
 
 	m_SceneHierarchyPanel.onImGuiRender();
 	m_ContentBrowserPanel->onImGuiRender();
+
+	uiToolBar();
 
 	SceneSerializer serializer(m_Scene);
 	serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
@@ -237,6 +276,92 @@ void EditorLayer::setMenuBar()
 	}
 }
 
+void EditorLayer::uiToolBar()
+{
+	// ImGui::Begin("##toolbar", nullptr);
+	// ImGui::End();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 2));
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(0, 0));
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemInnerSpacing, ImVec2(0, 0));
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
+	auto &colors = ImGui::GetStyle().Colors;
+	const auto &buttonHovered = colors[ImGuiCol_ButtonHovered];
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(buttonHovered.x, buttonHovered.y, buttonHovered.z, 0.5f));
+	const auto &buttonActive = colors[ImGuiCol_ButtonActive];
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(buttonActive.x, buttonActive.y, buttonActive.z, 0.5f));
+
+	ImGui::Begin("##toolbar", nullptr,
+				 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
+
+	bool toolbarEnabled = (bool)m_Scene;
+
+	ImVec4 tintColor = ImVec4(1, 1, 1, 1);
+	ImVec4 disabledTint = ImVec4(0.5f, 0.5f, 0.5f, 1);	 // 비활성화된 색상
+	ImVec4 activeColor = ImVec4(0.0f, 0.5f, 1.0f, 1.0f); // 파란색 (눌림 상태)
+
+	if (!toolbarEnabled)
+		tintColor.w = 0.5f;
+
+	float size = ImGui::GetWindowHeight() - 10.0f;
+	ImGui::SetCursorPosX((ImGui::GetWindowContentRegionMax().x * 0.5f) - (size * 0.5f));
+	ImGui::SetCursorPosY(size * 0.5f - 5.0f);
+
+	bool isEditMode = (m_SceneState == ESceneState::EDIT);
+	bool isPlayMode = (m_SceneState == ESceneState::PLAY);
+	// AL_CORE_TRACE("{0}, {1}", isEditMode, isPlayMode);
+
+	static bool isPlayPressed = false;	// Play 버튼 눌림 상태
+	static bool isPausePressed = false; // Pause 버튼 눌림 상태
+
+	if (ImGui::ImageButton("a", playTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
+						   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), isPlayPressed ? activeColor : tintColor) &&
+		toolbarEnabled)
+	{
+		isPlayPressed = !isPlayPressed;
+		if (isEditMode)
+		{
+			m_SceneState = ESceneState::PLAY;
+		}
+		else
+		{
+			m_SceneState = ESceneState::EDIT;
+		}
+	}
+
+	if (!isPlayMode)
+		ImGui::BeginDisabled();
+	ImGui::SameLine();
+	{
+		if (ImGui::ImageButton("b", pauseTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
+							   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), isPausePressed ? activeColor : tintColor) &&
+			toolbarEnabled)
+		{
+			isPausePressed = !isPausePressed;
+		}
+	}
+	if (!isPlayMode)
+		ImGui::EndDisabled();
+
+	if (!isPlayMode)
+		ImGui::BeginDisabled();
+	ImGui::SameLine();
+	{
+		if (ImGui::ImageButton("c", stepTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
+							   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), tintColor) &&
+			toolbarEnabled)
+		{
+			isPausePressed = true;
+		}
+	}
+	if (!isPlayMode)
+		ImGui::EndDisabled();
+
+	ImGui::PopStyleVar(3);
+	ImGui::PopStyleColor(3);
+	ImGui::End();
+}
+
 void EditorLayer::newProject()
 {
 }
@@ -274,7 +399,7 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 {
 	// 추후 수정 필요
 
-	// if (m_SceneState != SceneState::Edit)
+	// if (m_SceneState != ESceneState::Edit)
 	// 	OnSceneStop();
 
 	if (path.extension().string() != ".hazel")
