@@ -46,10 +46,23 @@ class EditorLayer : public Layer
 	void saveScene();
 	void saveSceneAs();
 
+	void serializeScene(std::shared_ptr<Scene> &scene, const std::filesystem::path &path);
+
+	void onScenePlay();
+	void onScenePause();
+	void onSceneStop();
+
+	void loadSceneToRenderer(std::shared_ptr<Scene> &scene);
+
   private:
 	CameraController m_CameraController;
 	EditorCamera m_EditorCamera;
-	std::shared_ptr<Scene> m_Scene;
+
+	std::shared_ptr<Scene> m_EditorScene;
+	std::shared_ptr<Scene> m_ActiveScene;
+
+	std::filesystem::path m_EditorScenePath;
+
 	SceneHierarchyPanel m_SceneHierarchyPanel;
 	std::unique_ptr<ContentBrowserPanel> m_ContentBrowserPanel;
 

@@ -11,6 +11,57 @@ Scene::~Scene()
 {
 }
 
+template <typename... Component>
+static void copyComponent(entt::registry &dst, entt::registry &src,
+						  const std::unordered_map<UUID, entt::entity> &enttMap)
+{
+	(
+		[&]() {
+			auto view = src.view<Component>();
+			for (auto srcEntity : view)
+			{
+				entt::entity dstEntity = enttMap.at(src.get<IDComponent>(srcEntity).m_ID);
+
+				auto &srcComponent = src.get<Component>(srcEntity);
+				dst.emplace_or_replace<Component>(dstEntity, srcComponent);
+			}
+		}(),
+		...);
+}
+
+template <typename... Component>
+static void copyComponent(ComponentGroup<Component...>, entt::registry &dst, entt::registry &src,
+						  const std::unordered_map<UUID, entt::entity> &enttMap)
+{
+	copyComponent<Component...>(dst, src, enttMap);
+}
+
+std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
+{
+	std::shared_ptr<Scene> newScene = createScene();
+
+	newScene->m_ViewportWidth = scene->m_ViewportWidth;
+	newScene->m_ViewportHeight = scene->m_ViewportHeight;
+
+	auto &srcRegistry = scene->m_Registry;
+	auto &dstRegistry = newScene->m_Registry;
+	std::unordered_map<UUID, entt::entity> enttMap;
+
+	auto idView = srcRegistry.view<IDComponent>();
+	for (auto e : idView)
+	{
+		UUID uuid = srcRegistry.get<IDComponent>(e).m_ID;
+		const auto &name = srcRegistry.get<TagComponent>(e).m_Tag;
+		Entity newEntity = newScene->createEntityWithUUID(uuid, name);
+		enttMap[uuid] = (entt::entity)newEntity;
+	}
+	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
+
+	auto view = newScene->m_Registry.view<CameraComponent>();
+
+	return newScene;
+}
+
 std::shared_ptr<Scene> Scene::createScene()
 {
 	std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
@@ -48,7 +99,7 @@ void Scene::onUpdateEditor(EditorCamera &camera)
 
 void Scene::onUpdateRuntime(Timestep ts)
 {
-	if (!m_IsPaused)
+	if (!m_IsPaused && m_StepFrames-- > 0)
 	{
 		// update scripts
 		{
@@ -94,6 +145,10 @@ void Scene::onUpdateRuntime(Timestep ts)
 		Renderer &renderer = App::get().getRenderer();
 		renderer.beginScene(this, *mainCamera);
 	}
+	else
+	{
+		AL_CORE_ERROR("No Camera!");
+	}
 
 	// imguilayer::renderDrawData
 }
@@ -114,6 +169,11 @@ void Scene::onViewportResize(uint32_t width, uint32_t height)
 		if (!cameraComponent.m_FixedAspectRatio)
 			cameraComponent.m_Camera.setViewportSize(width, height); // set viewport size
 	}
+}
+
+void Scene::step(int32_t frames)
+{
+	m_StepFrames = frames;
 }
 
 void Scene::renderScene(EditorCamera &camera)

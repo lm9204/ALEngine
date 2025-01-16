@@ -163,6 +163,12 @@ struct NativeScriptComponent
 	}
 };
 
+template <typename... Component> struct ComponentGroup
+{
+};
+
+using AllComponents = ComponentGroup<TransformComponent, ModelComponent, TextureComponent, CameraComponent>;
+
 } // namespace ale
 
 #endif

@@ -26,8 +26,6 @@ void EditorLayer::onAttach()
 	stepTextureID =
 		VulkanUtil::createIconTexture(device, descriptorPool, m_StepIcon->getImageView(), m_StepIcon->getSampler());
 
-	// Play, Stop, Pause etc.
-
 	// scene 생성
 	{
 		// 아마 이런 흐름으로 작성
@@ -37,11 +35,12 @@ void EditorLayer::onAttach()
 			// Open Scene File -> Parse Scene (Entity - Component)
 		}
 		// Temp - 지금 renderer 형식에 맞게
-		m_Scene = Scene::createScene();
-		m_SceneHierarchyPanel.setContext(m_Scene);
+		m_EditorScene = Scene::createScene();
+		m_ActiveScene = m_EditorScene;
+		m_SceneHierarchyPanel.setContext(m_ActiveScene);
 
 		// Entity 생성 - 적절한 Component를 Add 해야 함.
-		auto box = m_Scene->createEntity("Plane");
+		auto box = m_ActiveScene->createEntity("Plane");
 		box.addComponent<ModelComponent>();
 		box.getComponent<ModelComponent>().m_Model = Model::createPlaneModel();
 
@@ -51,21 +50,20 @@ void EditorLayer::onAttach()
 		box.getComponent<TransformComponent>().m_Rotation = glm::vec3(0.0f, 0.0f, glm::radians(180.0f));
 		box.getComponent<TransformComponent>().m_Scale = glm::vec3(5.0f * 0.74f, 5.0f, 1.0f);
 
-		auto light = m_Scene->createEntity("Light");
+		auto light = m_ActiveScene->createEntity("Light");
 		light.addComponent<ModelComponent>();
 		light.getComponent<ModelComponent>().m_Model = Model::createSphereModel();
 
 		light.addComponent<TextureComponent>();
 		light.getComponent<TextureComponent>().m_Texture = Texture::createTexture("textures/texture.png");
-		light.getComponent<TransformComponent>().m_Position = m_Scene->getLightPos();
+		light.getComponent<TransformComponent>().m_Position = m_ActiveScene->getLightPos();
 		light.getComponent<TransformComponent>().m_Scale = glm::vec3(0.1f, 0.1f, 0.1f);
 
-		auto camera = m_Scene->createEntity("Camera");
+		auto camera = m_ActiveScene->createEntity("Camera");
 		camera.addComponent<CameraComponent>();
 		camera.getComponent<CameraComponent>().m_Camera.setViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
 
-		Renderer &renderer = App::get().getRenderer();
-		renderer.loadScene(m_Scene.get());
+		loadSceneToRenderer(m_ActiveScene);
 
 		m_ContentBrowserPanel = std::unique_ptr<ContentBrowserPanel>(new ContentBrowserPanel());
 	}
@@ -90,12 +88,12 @@ void EditorLayer::onUpdate(Timestep ts)
 	case ESceneState::EDIT:
 
 		m_EditorCamera.onUpdate(ts);
-		m_Scene->onUpdateEditor(m_EditorCamera);
+		m_ActiveScene->onUpdateEditor(m_EditorCamera);
 		break;
 
 	case ESceneState::PLAY:
 
-		m_Scene->onUpdateRuntime(ts);
+		m_ActiveScene->onUpdateRuntime(ts);
 		break;
 	}
 
@@ -125,7 +123,7 @@ void EditorLayer::onImGuiRender()
 
 	uiToolBar();
 
-	SceneSerializer serializer(m_Scene);
+	SceneSerializer serializer(m_EditorScene);
 	serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
 
 	// ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
@@ -160,19 +158,19 @@ bool EditorLayer::onKeyPressed(KeyPressedEvent &e)
 	{
 	case Key::N:
 		if (control)
-			; // new scene
+			newScene();
 		break;
 	case Key::O:
 		if (control)
-			; // open scene
+			; // open project
 		break;
 	case Key::S:
 		if (control)
 		{
 			if (shift)
-				; // save scene as
+				saveSceneAs();
 			else
-				; // save scene
+				saveScene();
 		}
 		break;
 	default:
@@ -248,13 +246,13 @@ void EditorLayer::setMenuBar()
 			ImGui::Separator();
 
 			if (ImGui::MenuItem("New Scene", "Ctrl+N"))
-				;
+				newScene();
 
 			if (ImGui::MenuItem("Save Scene", "Ctrl+S"))
-				;
+				saveScene();
 
 			if (ImGui::MenuItem("Save Scene As...", "Ctrl+Shift+S"))
-				;
+				saveSceneAs();
 
 			ImGui::Separator();
 
@@ -294,7 +292,7 @@ void EditorLayer::uiToolBar()
 	ImGui::Begin("##toolbar", nullptr,
 				 ImGuiWindowFlags_NoDecoration | ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 
-	bool toolbarEnabled = (bool)m_Scene;
+	bool toolbarEnabled = (bool)m_ActiveScene;
 
 	ImVec4 tintColor = ImVec4(1, 1, 1, 1);
 	ImVec4 disabledTint = ImVec4(0.5f, 0.5f, 0.5f, 1);	 // 비활성화된 색상
@@ -309,10 +307,9 @@ void EditorLayer::uiToolBar()
 
 	bool isEditMode = (m_SceneState == ESceneState::EDIT);
 	bool isPlayMode = (m_SceneState == ESceneState::PLAY);
-	// AL_CORE_TRACE("{0}, {1}", isEditMode, isPlayMode);
 
-	static bool isPlayPressed = false;	// Play 버튼 눌림 상태
-	static bool isPausePressed = false; // Pause 버튼 눌림 상태
+	static bool isPlayPressed = false;
+	static bool isPausePressed = false;
 
 	if (ImGui::ImageButton("a", playTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
 						   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), isPlayPressed ? activeColor : tintColor) &&
@@ -320,13 +317,9 @@ void EditorLayer::uiToolBar()
 	{
 		isPlayPressed = !isPlayPressed;
 		if (isEditMode)
-		{
-			m_SceneState = ESceneState::PLAY;
-		}
+			onScenePlay();
 		else
-		{
-			m_SceneState = ESceneState::EDIT;
-		}
+			onSceneStop();
 	}
 
 	if (!isPlayMode)
@@ -338,6 +331,7 @@ void EditorLayer::uiToolBar()
 			toolbarEnabled)
 		{
 			isPausePressed = !isPausePressed;
+			onScenePause();
 		}
 	}
 	if (!isPlayMode)
@@ -352,6 +346,7 @@ void EditorLayer::uiToolBar()
 			toolbarEnabled)
 		{
 			isPausePressed = true;
+			// m_ActiveScene->step(1); // step one frame
 		}
 	}
 	if (!isPlayMode)
@@ -386,6 +381,9 @@ void EditorLayer::saveProject()
 
 void EditorLayer::newScene()
 {
+	m_ActiveScene = Scene::createScene();
+	m_SceneHierarchyPanel.setContext(m_ActiveScene);
+	m_EditorScenePath = std::filesystem::path();
 }
 
 void EditorLayer::openScene()
@@ -399,8 +397,8 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 {
 	// 추후 수정 필요
 
-	// if (m_SceneState != ESceneState::Edit)
-	// 	OnSceneStop();
+	if (m_SceneState != ESceneState::EDIT)
+		onSceneStop();
 
 	if (path.extension().string() != ".hazel")
 	{
@@ -412,20 +410,75 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 	SceneSerializer serializer(newScene);
 	if (serializer.deserialize(path.string()))
 	{
-		// m_EditorScene = newScene;
-		// m_SceneHierarchyPanel.setContext(m_EditorScene);
+		m_EditorScene = newScene;
+		m_SceneHierarchyPanel.setContext(m_EditorScene);
 
-		// m_ActiveScene = m_EditorScene;
-		// m_EditorScenePath = path;
+		m_ActiveScene = m_EditorScene;
+		m_EditorScenePath = path;
 	}
 }
 
 void EditorLayer::saveScene()
 {
+	if (!m_EditorScenePath.empty())
+	{
+		serializeScene(m_ActiveScene, m_EditorScenePath);
+	}
+	else
+		saveSceneAs();
 }
 
 void EditorLayer::saveSceneAs()
 {
+	std::string filepath = FileDialogs::saveFile("AfterLife Scene (*.ale)\0*.ale\0");
+	if (!filepath.empty())
+	{
+		serializeScene(m_ActiveScene, filepath);
+		m_EditorScenePath = filepath;
+	}
+}
+
+void EditorLayer::serializeScene(std::shared_ptr<Scene> &scene, const std::filesystem::path &path)
+{
+	SceneSerializer serializer(scene);
+	serializer.serialize(path.string());
+}
+
+void EditorLayer::onScenePlay()
+{
+	m_SceneState = ESceneState::PLAY;
+
+	m_ActiveScene = Scene::copyScene(m_EditorScene);
+
+	loadSceneToRenderer(m_ActiveScene);
+
+	// active scene runtime start
+
+	m_SceneHierarchyPanel.setContext(m_ActiveScene);
+}
+
+void EditorLayer::onScenePause()
+{
+	// set active scene paused
+	m_ActiveScene->setPaused(true);
+}
+
+void EditorLayer::onSceneStop()
+{
+	// active scene runtime stop
+
+	m_SceneState = ESceneState::EDIT;
+
+	m_ActiveScene = m_EditorScene;
+	loadSceneToRenderer(m_ActiveScene);
+
+	m_SceneHierarchyPanel.setContext(m_ActiveScene);
+}
+
+void EditorLayer::loadSceneToRenderer(std::shared_ptr<Scene> &scene)
+{
+	Renderer &renderer = App::get().getRenderer();
+	renderer.loadScene(scene.get());
 }
 
 } // namespace ale
