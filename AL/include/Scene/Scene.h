@@ -18,6 +18,8 @@ class Scene
 	Scene() = default;
 	~Scene();
 
+	static std::shared_ptr<Scene> copyScene(std::shared_ptr<Scene> scene);
+
 	static std::shared_ptr<Scene> createScene();
 	Entity createEntity(const std::string &name = "");
 	Entity createEntityWithUUID(UUID uuid, const std::string &name = "");
@@ -26,6 +28,8 @@ class Scene
 	void onUpdateEditor(EditorCamera &camera);
 	void onUpdateRuntime(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
+
+	void step(int32_t frames);
 
 	void setPaused(bool pause)
 	{
@@ -53,6 +57,7 @@ class Scene
 
 	glm::vec3 m_lightPos{0.0f, 1.0f, 0.0f};
 	bool m_IsPaused = false;
+	int32_t m_StepFrames = 0;
 
 	std::unordered_map<UUID, entt::entity> m_EntityMap;
 
