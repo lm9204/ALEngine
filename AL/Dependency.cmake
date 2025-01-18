@@ -130,3 +130,24 @@ set(DEP_LIST ${DEP_LIST} dep_yaml_cpp)
 set(DEP_LIBS ${DEP_LIBS}
     yaml-cpp$<$<CONFIG:Debug>:d>
 )
+
+# Mono
+ExternalProject_Add(
+    dep_mono
+    GIT_REPOSITORY "https://github.com/Very-Real-Engine/ALE_mono.git"
+    GIT_TAG "main"
+    GIT_SHALLOW 1
+    UPDATE_COMMAND ""
+    PATCH_COMMAND ""
+    CONFIGURE_COMMAND "" 
+    BUILD_COMMAND ""     
+    INSTALL_COMMAND      
+        ${CMAKE_COMMAND} -E copy_directory
+        <SOURCE_DIR>/mono  
+        ${DEP_INCLUDE_DIR}/mono
+        COMMAND ${CMAKE_COMMAND} -E copy
+        <SOURCE_DIR>/libmono-static-sgen.lib 
+        ${DEP_LIB_DIR}/libmono-static-sgen.lib
+)
+set(DEP_LIST ${DEP_LIST} dep_mono)
+set(DEP_LIBS ${DEP_LIBS} libmono-static-sgen)

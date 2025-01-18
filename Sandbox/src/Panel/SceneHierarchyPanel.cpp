@@ -34,10 +34,19 @@ void SceneHierarchyPanel::onImGuiRender()
 	ImGui::Begin("Scene Hierarchy");
 	if (m_Context)
 	{
-		m_Context->m_Registry.view<entt::entity>().each([&](auto entityID) {
-			Entity entity{entityID, m_Context.get()};
+		// std::cout << "Scene Hierarchy\n";
+		// m_Context->m_Registry.view<entt::entity>().each([&](auto entityID) {
+		// 	Entity entity{entityID, m_Context.get()};
+		// 	drawEntityNode(entity);
+		// });
+
+		auto view = m_Context->m_Registry.view<entt::entity>();
+
+		for (auto it = view.begin(); it != view.end(); ++it)
+		{
+			Entity entity(*it, m_Context.get());
 			drawEntityNode(entity);
-		});
+		}
 
 		// 왼쪽 클릭 && Hovered(마우스를 window에 올려뒀을 때)
 		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
