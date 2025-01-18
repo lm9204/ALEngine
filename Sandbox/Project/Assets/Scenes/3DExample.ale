@@ -1,0 +1,23 @@
+Scene: Untitled
+Entities:
+  - Entity: 943649188941713944
+    TagComponent:
+      Tag: Camera
+    TransformComponent:
+      Position: [0, 0, 0]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    CameraComponent:
+      Camera:
+        PerspectiveFOV: 0.785398185
+        PerspectiveNear: 0.00999999978
+        PerspectiveFar: 100
+      Primary: true
+      FixedAspectRatio: false
+  - Entity: 10829253971587418347
+    TagComponent:
+      Tag: Light
+    TransformComponent:
+      Position: [0, 1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
