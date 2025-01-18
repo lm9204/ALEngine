@@ -4,8 +4,8 @@ project(${PROJECT_NAME})
 
 # Set Macros
 set(WINDOW_NAME "ALEngine")
-set(WINDOW_WIDTH 1280)
-set(WINDOW_HEIGHT 720)
+set(WINDOW_WIDTH 1600)
+set(WINDOW_HEIGHT 900)
 
 
 # 의존성 설정
@@ -21,7 +21,7 @@ add_library(${PROJECT_NAME} STATIC ${SOURCES}) # SOURCES만 전달
 # PCH 설정
 target_precompile_headers(${PROJECT_NAME} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/include/alpch.h)
 
-# VulkanSDK 설정
+# VulkanSDK 설정 - 설치 여부 확인 필요. 버전 확인 필요.
 set(CMAKE_PREFIX_PATH "C:/VulkanSDK/1.3.296.0")
 find_package(Vulkan REQUIRED)
 target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
@@ -29,6 +29,10 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 # 헤더 파일 경로 포함
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${DEP_INCLUDE_DIR})
+
+# 시스템 라이브러리 추가
+set(SYSTEM_LIBS WS2_32.lib WinMM.lib Version.lib Bcrypt.lib)
+target_link_libraries(${PROJECT_NAME} PRIVATE ${SYSTEM_LIBS})
 
 # lib 경로 설정
 target_link_directories(${PROJECT_NAME} PUBLIC ${DEP_LIB_DIR})
