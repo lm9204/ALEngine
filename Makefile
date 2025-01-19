@@ -5,13 +5,11 @@ all: $(NAME)_debug
 release: $(NAME)_release
 
 $(NAME)_debug:
-	@make shader
 	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .
 	@cmake --build build --config Debug
 	@echo [SUCCESS] $@ compiled successfully with debug mode and validation layers!
 
 $(NAME)_release:
-	@make shader
 	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .
 	@cmake --build build --config Release
 	@echo [SUCCESS] $@ compiled successfully without validation layers!
