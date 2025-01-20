@@ -25,6 +25,9 @@ class Scene
 	Entity createEntityWithUUID(UUID uuid, const std::string &name = "");
 	void destroyEntity(Entity entity);
 
+	void onRuntimeStart();
+	void onRuntimeStop();
+
 	void onUpdateEditor(EditorCamera &camera);
 	void onUpdateRuntime(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
@@ -36,10 +39,18 @@ class Scene
 		m_IsPaused = pause;
 	}
 
+	bool isRunning() const
+	{
+		return m_IsRunning;
+	}
+
 	glm::vec3 &getLightPos()
 	{
 		return m_lightPos;
 	}
+
+	Entity findEntityByName(std::string_view name);
+	Entity getEntityByUUID(UUID uuid);
 
 	template <typename... Components> auto getAllEntitiesWith()
 	{
@@ -50,6 +61,8 @@ class Scene
 	template <typename T> void onComponentAdded(Entity entity, T &component);
 
 	void renderScene(EditorCamera &camera);
+	void onPhysicsStart();
+	void onPhysicsStop();
 
   private:
 	entt::registry m_Registry;
@@ -57,6 +70,7 @@ class Scene
 
 	glm::vec3 m_lightPos{0.0f, 1.0f, 0.0f};
 	bool m_IsPaused = false;
+	bool m_IsRunning = false;
 	int32_t m_StepFrames = 0;
 
 	std::unordered_map<UUID, entt::entity> m_EntityMap;
