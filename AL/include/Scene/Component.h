@@ -167,7 +167,8 @@ template <typename... Component> struct ComponentGroup
 {
 };
 
-using AllComponents = ComponentGroup<TransformComponent, ModelComponent, TextureComponent, CameraComponent>;
+using AllComponents =
+	ComponentGroup<TransformComponent, ModelComponent, TextureComponent, CameraComponent, ScriptComponent>;
 
 } // namespace ale
 

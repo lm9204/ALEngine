@@ -5,6 +5,8 @@
 
 #include "Core/App.h"
 
+#include "Scripting/ScriptingEngine.h"
+
 namespace ale
 {
 Scene::~Scene()
@@ -89,7 +91,36 @@ Entity Scene::createEntityWithUUID(UUID uuid, const std::string &name)
 
 void Scene::destroyEntity(Entity entity)
 {
+	m_EntityMap.erase(entity.getUUID());
 	m_Registry.destroy(entity);
+}
+
+void Scene::onRuntimeStart()
+{
+	m_IsRunning = true;
+
+	onPhysicsStart();
+
+	{
+		ScriptingEngine::onRuntimeStart(this);
+
+		auto view = m_Registry.view<ScriptComponent>();
+
+		for (auto e : view)
+		{
+			Entity entity = {e, this};
+			ScriptingEngine::onCreateEntity(entity);
+		}
+	}
+}
+
+void Scene::onRuntimeStop()
+{
+	m_IsRunning = false;
+
+	onPhysicsStop();
+
+	ScriptingEngine::onRuntimeStop();
 }
 
 void Scene::onUpdateEditor(EditorCamera &camera)
@@ -103,12 +134,15 @@ void Scene::onUpdateRuntime(Timestep ts)
 	{
 		// update scripts
 		{
+			// Script
 			auto view = m_Registry.view<ScriptComponent>();
 			for (auto e : view)
 			{
 				Entity entity = {e, this};
-				// update entity
+				ScriptingEngine::onUpdateEntity(entity, ts);
 			}
+
+			// Native Script
 			m_Registry.view<NativeScriptComponent>().each([=](auto entity, auto &nsc) {
 				if (!nsc.instance)
 				{
@@ -121,6 +155,8 @@ void Scene::onUpdateRuntime(Timestep ts)
 		}
 		// update Physics
 		{
+			// Run physics
+			// set transforms of entity by body
 		}
 	}
 
@@ -182,6 +218,39 @@ void Scene::renderScene(EditorCamera &camera)
 	// Draw Models
 	// renderer.drawFrame(this);
 	renderer.beginScene(this, camera);
+}
+
+void Scene::onPhysicsStart()
+{
+	// create world
+	// body
+	// fixture
+	// ...
+}
+
+void Scene::onPhysicsStop()
+{
+	// delete world
+}
+
+Entity Scene::findEntityByName(std::string_view name)
+{
+	auto view = m_Registry.view<TagComponent>();
+	for (auto entity : view)
+	{
+		const TagComponent &tc = view.get<TagComponent>(entity);
+		if (tc.m_Tag == name)
+			return Entity{entity, this};
+	}
+	return {};
+}
+
+Entity Scene::getEntityByUUID(UUID uuid)
+{
+	if (m_EntityMap.find(uuid) != m_EntityMap.end())
+		return {m_EntityMap.at(uuid), this};
+
+	return {};
 }
 
 // 컴파일 타임에 조건 확인
