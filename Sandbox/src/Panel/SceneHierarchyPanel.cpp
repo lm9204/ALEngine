@@ -309,6 +309,16 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setPerspectiveFarClip(perspectiveFar);
 	});
+
+	drawComponent<ScriptComponent>("Script", entity, [](auto &component) {
+		sdtatic char buffer[64];
+		strcpy(buffer, component.m_ClassName.c_str());
+
+		if (ImGui::InputText("Class", buffer, sizeof(buffer)))
+		{
+			component.m_ClassName = buffer;
+		}
+	});
 }
 
 template <typename T> void SceneHierarchyPanel::displayAddComponentEntry(const std::string &entryName)
