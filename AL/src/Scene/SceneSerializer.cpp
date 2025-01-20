@@ -164,6 +164,15 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 	// CapsuleColliderComponent
 	// CylinderColliderComponent
 	// ScriptComponent
+	if (entity.hasComponent<ScriptComponent>())
+	{
+		auto &scriptComponent = entity.getComponent<ScriptComponent>();
+
+		out << YAML::Key << "ScriptComponent";
+		out << YAML::BeginMap;
+		out << YAML::Key << "ClassName" << YAML::Value << scriptComponent.m_ClassName;
+		out << YAML::EndMap;
+	}
 
 	out << YAML::EndMap;
 }
@@ -267,6 +276,12 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 			// CapsuleColliderComponent
 			// CylinderColliderComponent
 			// ScriptComponent
+			auto scriptComponent = entity["ScriptComponent"];
+			if (scriptComponent)
+			{
+				auto &sc = deserializedEntity.addComponent<ScriptComponent>();
+				sc.m_ClassName = scriptComponent["ClassName"].as<std::string>();
+			}
 		}
 	}
 	return true;
