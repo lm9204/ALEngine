@@ -17,12 +17,12 @@ namespace ALEngine
         {
             get
             {
-                InternalCalls.TransformComponent_getTranslation(Entity.ID, out Vector3 translation);
+                InternalCalls.TransformComponent_getPosition(Entity.ID, out Vector3 translation);
                 return translation;
             }
             set
             {
-                InternalCalls.TransformComponent_setTranslation(Entity.ID, ref value);
+                InternalCalls.TransformComponent_setPosition(Entity.ID, ref value);
             }
         }
     }
