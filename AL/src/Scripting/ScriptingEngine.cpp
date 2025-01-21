@@ -22,6 +22,8 @@ static MonoAssembly *loadMonoAssembly(const std::filesystem::path &assemblyPath,
 	// Mono Runtime 중 메모리에 로드된 데이터를 이용해 Assembly Image Open
 	// need_copy - Mono가 data를 복사해야 하는지
 	// ref_only - Image가 참조 전용으로 열릴지
+
+	// AL_CORE_TRACE("{0}", fileData.size());
 	MonoImage *image = mono_image_open_from_data_full(fileData.as<char>(), fileData.size(), 1, &status, 0);
 
 	if (status != MONO_IMAGE_OK)
@@ -39,7 +41,7 @@ static MonoAssembly *loadMonoAssembly(const std::filesystem::path &assemblyPath,
 		{
 			ScopedBuffer pdbFileData = FileSystem::readFileBinary(pdbPath);
 			mono_debug_open_image_from_memory(image, pdbFileData.as<const mono_byte>(), pdbFileData.size());
-			AL_CORE_INFO("Loaded PDB {}", pdbPath);
+			// AL_CORE_INFO("Loaded PDB {}", pdbPath);
 		}
 	}
 
@@ -107,7 +109,7 @@ void ScriptingEngine::init()
 	initMono();
 	ScriptGlue::registerFunctions();
 
-	bool status = loadAssembly("Resources/Scripts/AL-ScriptCore.dll");
+	bool status = loadAssembly("Sandbox/Resources/Scripts/Debug/AL-ScriptCore.dll");
 	if (!status)
 	{
 		AL_CORE_ERROR("[ScriptEngine] Could not load AL-ScriptCore assembly!");
@@ -115,7 +117,7 @@ void ScriptingEngine::init()
 	}
 
 	// get script module path
-	status = loadAppAssembly("Sandbox/Project/Scripts/src");
+	status = loadAppAssembly("Sandbox/Project/Assets/Scripts/Debug/SandboxProject.dll");
 	if (!status)
 	{
 		AL_CORE_ERROR("[ScriptEngine] Could not load app assembly!");
@@ -136,7 +138,8 @@ void ScriptingEngine::shutDown()
 void ScriptingEngine::initMono()
 {
 	// Validate check 필요.
-	mono_set_assemblies_path("mono/lib");
+
+	mono_set_assemblies_path("Sandbox/mono/lib");
 
 	if (s_Data->enableDebugging)
 	{
@@ -260,8 +263,13 @@ void ScriptingEngine::onUpdateEntity(Entity entity, Timestep ts)
 	}
 	else
 	{
-		AL_CORE_ERROR("Could not find ScriptInstance for entity {}", entityID);
+		// AL_CORE_ERROR("Could not find ScriptInstance for entity {}", entityID);
 	}
+}
+
+Scene *ScriptingEngine::getSceneContext()
+{
+	return s_Data->sceneContext;
 }
 
 MonoImage *ScriptingEngine::getCoreAssemblyImage()
@@ -281,7 +289,7 @@ std::unordered_map<std::string, std::shared_ptr<ScriptClass>> ScriptingEngine::g
 }
 void ScriptingEngine::loadAssemblyClasses()
 {
-	// s_Data->entityClasses.clear();
+	s_Data->entityClasses.clear();
 
 	// Metadata를 나타내는 구조체 - 타입, 메서드, 필드 정보 등을 포함.
 	const MonoTableInfo *typeDefsTable = mono_image_get_table_info(s_Data->appAssemblyImage, MONO_TABLE_TYPEDEF);
@@ -347,7 +355,7 @@ MonoMethod *ScriptClass::getMethod(const std::string &name, int parameterCount)
 	return mono_class_get_method_from_name(m_MonoClass, name.c_str(), parameterCount);
 }
 
-MonoObject *ScriptClass::invokeMethod(MonoObject *instance, MonoMethod *method, void **params = nullptr)
+MonoObject *ScriptClass::invokeMethod(MonoObject *instance, MonoMethod *method, void **params)
 {
 	MonoObject *exception = nullptr;
 
