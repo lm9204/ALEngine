@@ -35,7 +35,7 @@ namespace ALEngine
 
         public T getComponent<T>() where T : Component, new()
         {
-            if (!HasComponent<T>())
+            if (!hasComponent<T>())
                 return null;
 
             T component = new T() { Entity = this };
