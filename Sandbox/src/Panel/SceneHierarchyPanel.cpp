@@ -1,6 +1,8 @@
 #include "SceneHierarchyPanel.h"
 #include "Scene/Component.h"
 
+#include "Scripting/ScriptingEngine.h"
+
 #include "imgui/imgui.h"
 #include "imgui/imgui_internal.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"
@@ -311,7 +313,12 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 	});
 
 	drawComponent<ScriptComponent>("Script", entity, [](auto &component) {
-		sdtatic char buffer[64];
+		bool scriptClassExists = ScriptingEngine::entityClassExists(component.m_ClassName);
+
+		// if (!scriptClassExists)
+		// 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
+
+		static char buffer[64];
 		strcpy(buffer, component.m_ClassName.c_str());
 
 		if (ImGui::InputText("Class", buffer, sizeof(buffer)))
