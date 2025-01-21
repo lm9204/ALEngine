@@ -6,24 +6,24 @@
 namespace ale
 {
 // Non-owning raw buffer class
-struct Buffer
+struct SBuffer
 {
 	uint8_t *data = nullptr;
-	uint64_t size = 0;
+	uint64_t _size = 0;
 
-	Buffer() = default;
+	SBuffer() = default;
 
-	Buffer(uint64_t size)
+	SBuffer(uint64_t size)
 	{
 		allocate(size);
 	}
 
-	Buffer(const Buffer &) = default;
+	SBuffer(const SBuffer &) = default;
 
-	static Buffer copy(Buffer other)
+	static SBuffer copy(SBuffer other)
 	{
-		Buffer result(other.size);
-		memcpy(result.data, other.data, other.size);
+		SBuffer result(other._size);
+		memcpy(result.data, other.data, other._size);
 		return result;
 	}
 
@@ -32,14 +32,14 @@ struct Buffer
 		release();
 
 		data = new uint8_t[size];
-		size = size;
+		_size = size;
 	}
 
 	void release()
 	{
 		delete[] data;
 		data = nullptr;
-		size = 0;
+		_size = 0;
 	}
 
 	template <typename T> T *as()
@@ -55,7 +55,7 @@ struct Buffer
 
 struct ScopedBuffer
 {
-	ScopedBuffer(Buffer buffer) : m_Buffer(buffer)
+	ScopedBuffer(SBuffer buffer) : m_Buffer(buffer)
 	{
 	}
 
@@ -74,7 +74,7 @@ struct ScopedBuffer
 	}
 	uint64_t size()
 	{
-		return m_Buffer.size;
+		return m_Buffer._size;
 	}
 
 	template <typename T> T *as()
@@ -88,6 +88,6 @@ struct ScopedBuffer
 	}
 
   private:
-	Buffer m_Buffer;
+	SBuffer m_Buffer;
 };
 } // namespace ale

@@ -9,6 +9,6 @@ namespace ale
 class FileSystem
 {
   public:
-	static Buffer readFileBinary(const std::filesystem::path &filepath);
+	static SBuffer readFileBinary(const std::filesystem::path &filepath);
 };
 } // namespace ale

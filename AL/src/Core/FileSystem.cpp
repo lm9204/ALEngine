@@ -4,7 +4,7 @@
 
 namespace ale
 {
-Buffer FileSystem::readFileBinary(const std::filesystem::path &filepath)
+SBuffer FileSystem::readFileBinary(const std::filesystem::path &filepath)
 {
 	std::ifstream stream(filepath, std::ios::binary | std::ios::ate);
 
@@ -23,8 +23,10 @@ Buffer FileSystem::readFileBinary(const std::filesystem::path &filepath)
 		// File is empty
 		return {};
 	}
+	// AL_CORE_TRACE("{0}", size);
 
-	Buffer buffer(size);
+	SBuffer buffer(size);
+
 	stream.read(buffer.as<char>(), size);
 	stream.close();
 	return buffer;

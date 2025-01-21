@@ -130,7 +130,7 @@ void Scene::onUpdateEditor(EditorCamera &camera)
 
 void Scene::onUpdateRuntime(Timestep ts)
 {
-	if (!m_IsPaused && m_StepFrames-- > 0)
+	if (!m_IsPaused /*&& m_StepFrames-- > 0*/)
 	{
 		// update scripts
 		{
