@@ -2,6 +2,8 @@
 #include "Scene/SceneSerializer.h"
 #include "Utils/PlatformUtils.h"
 
+#include "Scripting/ScriptingEngine.h"
+
 namespace ale
 {
 EditorLayer::EditorLayer() : Layer("EditorLayer")
@@ -66,6 +68,7 @@ void EditorLayer::onAttach()
 		loadSceneToRenderer(m_ActiveScene);
 
 		m_ContentBrowserPanel = std::unique_ptr<ContentBrowserPanel>(new ContentBrowserPanel());
+		ScriptingEngine::init();
 	}
 
 	// camera setting
@@ -453,6 +456,7 @@ void EditorLayer::onScenePlay()
 	loadSceneToRenderer(m_ActiveScene);
 
 	// active scene runtime start
+	m_ActiveScene->onRuntimeStart();
 
 	m_SceneHierarchyPanel.setContext(m_ActiveScene);
 }
@@ -466,6 +470,7 @@ void EditorLayer::onScenePause()
 void EditorLayer::onSceneStop()
 {
 	// active scene runtime stop
+	m_ActiveScene->onRuntimeStop();
 
 	m_SceneState = ESceneState::EDIT;
 
