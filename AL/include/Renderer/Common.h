@@ -75,6 +75,8 @@ struct Vertex
 	glm::vec3 normal;
 	glm::vec2 texCoord;
 	glm::vec3 tangent;
+	glm::ivec4 boneIds;
+	glm::vec4 weights;
 
 	// 정점 데이터가 전달되는 방법을 알려주는 구조체 반환하는 함수
 	static VkVertexInputBindingDescription getBindingDescription()
@@ -91,7 +93,7 @@ struct Vertex
 	}
 
 	// 정점 속성별 데이터 형식과 위치를 지정하는 구조체 반환하는 함수
-	static std::array<VkVertexInputAttributeDescription, 4> getAttributeDescriptions()
+	static std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions()
 	{
 		// 정점 속성의 데이터 형식과 위치를 지정하는 구조체
 		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
@@ -120,6 +122,18 @@ struct Vertex
 		attributeDescriptions[3].location = 3;
 		attributeDescriptions[3].format = VK_FORMAT_R32G32B32_SFLOAT;
 		attributeDescriptions[3].offset = offsetof(Vertex, tangent);
+
+		// boneIds 속성 정보 입력
+		attributeDescriptions[4].binding = 0;
+		attributeDescriptions[4].location = 4;
+		attributeDescriptions[4].format = VK_FORMAT_R32G32B32A32_SINT;
+		attributeDescriptions[4].offset = offsetof(Vertex, boneIds);
+
+		// weights 속성 정보 입력
+		attributeDescriptions[5].binding = 0;
+		attributeDescriptions[5].location = 5;
+		attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
+		attributeDescriptions[5].offset = offsetof(Vertex, weights);
 
 		return attributeDescriptions;
 	}
