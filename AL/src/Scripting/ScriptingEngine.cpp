@@ -3,6 +3,7 @@
 
 #include "mono/jit/jit.h"
 #include "mono/metadata/assembly.h"
+#include "mono/metadata/attrdefs.h"
 #include "mono/metadata/mono-debug.h"
 #include "mono/metadata/object.h"
 #include "mono/metadata/threads.h"
@@ -11,8 +12,25 @@
 
 namespace ale
 {
+
+static std::unordered_map<std::string, EScriptFieldType> s_ScriptFieldTypeMap = {
+
+	{"System.Single", EScriptFieldType::FLOAT},		 {"System.Double", EScriptFieldType::DOUBLE},
+	{"System.Boolean", EScriptFieldType::BOOL},		 {"System.Char", EScriptFieldType::CHAR},
+	{"System.Int16", EScriptFieldType::SHORT},		 {"System.Int32", EScriptFieldType::INT},
+	{"System.Int64", EScriptFieldType::LONG},		 {"System.Byte", EScriptFieldType::BYTE},
+	{"System.UInt16", EScriptFieldType::USHORT},	 {"System.UInt32", EScriptFieldType::UINT},
+	{"System.UInt64", EScriptFieldType::ULONG},
+
+	{"ALEngine.Vector2", EScriptFieldType::VECTOR2}, {"ALEngine.Vector3", EScriptFieldType::VECTOR3},
+	{"ALEngine.Vector4", EScriptFieldType::VECTOR4},
+
+	{"ALEngine.Entity", EScriptFieldType::ENTITY},
+};
+
 namespace utils
 {
+
 static MonoAssembly *loadMonoAssembly(const std::filesystem::path &assemblyPath, bool loadPDB = false)
 {
 	ScopedBuffer fileData = FileSystem::readFileBinary(assemblyPath);
@@ -71,6 +89,20 @@ void printAssemblyType(MonoAssembly *assembly)
 	}
 }
 
+EScriptFieldType monoTypeToScriptFieldType(MonoType *monoType)
+{
+	std::string typeName = mono_type_get_name(monoType);
+
+	auto it = s_ScriptFieldTypeMap.find(typeName);
+	if (it == s_ScriptFieldTypeMap.end())
+	{
+		AL_CORE_ERROR("Unknown type: {}", typeName);
+		return EScriptFieldType::NONE;
+	}
+
+	return it->second;
+}
+
 } // namespace utils
 
 struct ScriptingEngineData
@@ -91,7 +123,7 @@ struct ScriptingEngineData
 	ScriptClass entityClass;
 	std::unordered_map<std::string, std::shared_ptr<ScriptClass>> entityClasses;
 	std::unordered_map<UUID, std::shared_ptr<ScriptInstance>> entityInstances;
-	// std::unordered_map<UUID, ScriptFieldMap> entityScriptFields;
+	std::unordered_map<UUID, ScriptFieldMap> entityScriptFields;
 
 	// filewatch?
 	bool assemblyReloadPending = false;
@@ -241,12 +273,12 @@ void ScriptingEngine::onCreateEntity(Entity entity)
 		s_Data->entityInstances[entityID] = instance;
 
 		// Copy field values
-		// if (s_Data->EntityScriptFields.find(entityID) != s_Data->EntityScriptFields.end())
-		// {
-		// 	const ScriptFieldMap &fieldMap = s_Data->EntityScriptFields.at(entityID);
-		// 	for (const auto &[name, fieldInstance] : fieldMap)
-		// 		instance->SetFieldValueInternal(name, fieldInstance.m_Buffer);
-		// }
+		if (s_Data->entityScriptFields.find(entityID) != s_Data->entityScriptFields.end())
+		{
+			const ScriptFieldMap &fieldMap = s_Data->entityScriptFields.at(entityID);
+			for (const auto &[name, fieldInstance] : fieldMap)
+				instance->setFieldValueInternal(name, fieldInstance.m_Buffer);
+		}
 		instance->invokeOnCreate();
 	}
 }
@@ -283,10 +315,25 @@ MonoObject *ScriptingEngine::getManagedInstance(UUID uuid)
 	return s_Data->entityInstances.at(uuid)->getManagedObject();
 }
 
+std::shared_ptr<ScriptInstance> ScriptingEngine::getEntityScriptInstance(UUID entityID)
+{
+	auto it = s_Data->entityInstances.find(entityID);
+	if (it == s_Data->entityInstances.end())
+		return nullptr;
+	return it->second;
+}
+
 std::unordered_map<std::string, std::shared_ptr<ScriptClass>> ScriptingEngine::getEntityClasses()
 {
 	return s_Data->entityClasses;
 }
+
+ScriptFieldMap &ScriptingEngine::getScriptFieldMap(Entity entity)
+{
+	UUID entityID = entity.getUUID();
+	return s_Data->entityScriptFields[entityID];
+}
+
 void ScriptingEngine::loadAssemblyClasses()
 {
 	s_Data->entityClasses.clear();
@@ -326,6 +373,19 @@ void ScriptingEngine::loadAssemblyClasses()
 		s_Data->entityClasses[fullName] = scriptClass;
 
 		// check class fields
+		int32_t fieldCount = mono_class_num_fields(monoClass);
+		void *iterator = nullptr;
+		while (MonoClassField *field = mono_class_get_fields(monoClass, &iterator))
+		{
+			const char *fieldName = mono_field_get_name(field); // variable name
+			uint32_t flags = mono_field_get_flags(field);
+			if (flags & MONO_FIELD_ATTR_PUBLIC)
+			{
+				MonoType *type = mono_field_get_type(field); // variable type
+				EScriptFieldType fieldType = utils::monoTypeToScriptFieldType(type);
+				scriptClass->m_Fields[fieldName] = {fieldType, fieldName, field};
+			}
+		}
 	}
 }
 
@@ -391,6 +451,30 @@ void ScriptInstance::invokeOnUpdate(float ts)
 		void *param = &ts;
 		m_ScriptClass->invokeMethod(m_Instance, m_OnUpdateMethod, &param);
 	}
+}
+
+bool ScriptInstance::getFieldValueInternal(const std::string &name, void *buffer)
+{
+	const auto &fields = m_ScriptClass->getFields();
+	auto it = fields.find(name);
+	if (it == fields.end())
+		return false;
+
+	const ScriptField &field = it->second;
+	mono_field_get_value(m_Instance, field.m_ClassField, buffer);
+	return true;
+}
+
+bool ScriptInstance::setFieldValueInternal(const std::string &name, const void *value)
+{
+	const auto &fields = m_ScriptClass->getFields();
+	auto it = fields.find(name);
+	if (it == fields.end())
+		return false;
+
+	const ScriptField &field = it->second;
+	mono_field_set_value(m_Instance, field.m_ClassField, (void *)value);
+	return true;
 }
 
 } // namespace ale
