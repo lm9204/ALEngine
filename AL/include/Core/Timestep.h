@@ -1,34 +1,40 @@
 #ifndef TIMESTEP_H
 #define TIMESTEP_H
 
+#include <chrono>
+
 #include "Core/Base.h"
+
+using namespace std::chrono_literals;
 
 namespace ale
 {
 class Timestep
 {
   public:
-	Timestep(float time = 0.0f) : m_Time(time)
-	{
-	}
+	Timestep();
+	Timestep(std::chrono::duration<float, std::chrono::seconds::period> time);
 
-	operator float() const
-	{
-		return m_Time;
-	}
+	std::chrono::duration<float, std::chrono::seconds::period> getSeconds() const;
+	std::chrono::duration<float, std::chrono::milliseconds::period> getMilliseconds() const;
 
-	float getSeconds() const
-	{
-		return m_Time;
-	}
+	void print() const;
+	float count() const;
 
-	float getMiliSeconds() const
+	Timestep& operator=(const std::chrono::duration<float, std::chrono::seconds::period>& timestep);
+	Timestep& operator-=(const Timestep& other);
+	Timestep operator-(const Timestep& other) const;
+	bool operator<=(const std::chrono::duration<float, std::chrono::seconds::period>& other) const;
+
+	operator float() const { return m_Timestep.count(); }
+	glm::vec3 operator*(const glm::vec3& other) const
 	{
-		return m_Time * 1000.0f;
+		auto ts = m_Timestep.count();
+		return glm::vec3(ts * other.x, ts * other.y, ts * other.z);
 	}
 
   private:
-	float m_Time;
+	std::chrono::duration<float, std::chrono::seconds::period> m_Timestep;
 };
 } // namespace ale
 
