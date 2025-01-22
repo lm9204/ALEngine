@@ -26,6 +26,35 @@ extern "C"
 
 namespace ale
 {
+enum class EScriptFieldType
+{
+	NONE = 0,
+	FLOAT,
+	DOUBLE,
+	BOOL,
+	CHAR,
+	BYTE,
+	SHORT,
+	INT,
+	LONG,
+	UBYTE,
+	USHORT,
+	UINT,
+	ULONG,
+	VECTOR2,
+	VECTOR3,
+	VECTOR4,
+	ENTITY
+};
+
+struct ScriptField
+{
+	EScriptFieldType m_Type;
+	std::string m_Name;
+
+	MonoClassField *m_ClassField;
+};
+
 class ScriptClass
 {
   public:
@@ -36,9 +65,16 @@ class ScriptClass
 	MonoMethod *getMethod(const std::string &name, int parameterCount);
 	MonoObject *invokeMethod(MonoObject *instance, MonoMethod *method, void **params = nullptr);
 
+	const std::map<std::string, ScriptField> &getFields() const
+	{
+		return m_Fields;
+	}
+
   private:
 	std::string m_ClassNamespace;
 	std::string m_ClassName;
+
+	std::map<std::string, ScriptField> m_Fields;
 
 	MonoClass *m_MonoClass = nullptr;
 	friend class ScriptingEngine;
@@ -62,6 +98,28 @@ class ScriptInstance
 		return m_Instance;
 	}
 
+	template <typename T> T getFieldValue(const std::string &name)
+	{
+		static_assert(sizeof(T) <= 16, "Type too large!");
+
+		bool success = getFieldValueInternal(name, s_FieldValueBuffer);
+		if (!success)
+			return T();
+
+		return *(T *)s_FieldValueBuffer;
+	}
+
+	template <typename T> void setFieldValue(const std::string &name, T value)
+	{
+		static_assert(sizeof(T) <= 16, "Type too large!");
+
+		setFieldValueInternal(name, &value);
+	}
+
+  private:
+	bool getFieldValueInternal(const std::string &name, void *buffer);
+	bool setFieldValueInternal(const std::string &name, const void *value);
+
   private:
 	std::shared_ptr<ScriptClass> m_ScriptClass;
 
@@ -70,8 +128,41 @@ class ScriptInstance
 	MonoMethod *m_OnCreateMethod = nullptr;
 	MonoMethod *m_OnUpdateMethod = nullptr;
 
+	inline static char s_FieldValueBuffer[16];
+
 	friend class ScriptingEngine;
+	friend class ScriptFieldInstance;
 };
+
+struct ScriptFieldInstance
+{
+	ScriptField Field;
+
+	ScriptFieldInstance()
+	{
+		memset(m_Buffer, 0, sizeof(m_Buffer));
+	}
+
+	template <typename T> T getValue()
+	{
+		static_assert(sizeof(T) <= 16, "Type too large!");
+		return *(T *)m_Buffer;
+	}
+
+	template <typename T> void setValue(T value)
+	{
+		static_assert(sizeof(T) <= 16, "Type too large!");
+		memcpy(m_Buffer, &value, sizeof(T));
+	}
+
+  private:
+	uint8_t m_Buffer[16];
+
+	friend class ScriptingEngine;
+	friend class ScriptInstance;
+};
+
+using ScriptFieldMap = std::unordered_map<std::string, ScriptFieldInstance>;
 
 class ScriptingEngine
 {
@@ -92,12 +183,13 @@ class ScriptingEngine
 	static void onUpdateEntity(Entity entity, Timestep ts);
 
 	static Scene *getSceneContext();
-
 	static MonoImage *getCoreAssemblyImage();
-
 	static MonoObject *getManagedInstance(UUID uuid);
 
+	static std::shared_ptr<ScriptInstance> getEntityScriptInstance(UUID entityID);
+
 	static std::unordered_map<std::string, std::shared_ptr<ScriptClass>> getEntityClasses();
+	static ScriptFieldMap &getScriptFieldMap(Entity entity);
 
   private:
 	static void initMono();

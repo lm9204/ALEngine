@@ -126,8 +126,8 @@ void EditorLayer::onImGuiRender()
 
 	uiToolBar();
 
-	SceneSerializer serializer(m_EditorScene);
-	serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
+	// SceneSerializer serializer(m_EditorScene);
+	// serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
 
 	// ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
 }

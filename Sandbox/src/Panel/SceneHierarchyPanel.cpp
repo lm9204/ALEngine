@@ -312,19 +312,41 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			camera.setPerspectiveFarClip(perspectiveFar);
 	});
 
-	drawComponent<ScriptComponent>("Script", entity, [](auto &component) {
+	drawComponent<ScriptComponent>("Script", entity, [entity, scene = m_Context](auto &component) mutable {
 		bool scriptClassExists = ScriptingEngine::entityClassExists(component.m_ClassName);
 
-		// if (!scriptClassExists)
-		// 	ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
+		if (!scriptClassExists)
+			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
 
 		static char buffer[64];
 		strcpy(buffer, component.m_ClassName.c_str());
 
 		if (ImGui::InputText("Class", buffer, sizeof(buffer)))
-		{
 			component.m_ClassName = buffer;
+
+		bool sceneRunning;
+
+		{
+			std::shared_ptr<ScriptInstance> scriptInstance = ScriptingEngine::getEntityScriptInstance(entity.getUUID());
+			if (scriptInstance)
+			{
+				const auto &fields = scriptInstance->getScriptClass()->getFields();
+				for (const auto &[name, field] : fields)
+				{
+					if (field.m_Type == EScriptFieldType::FLOAT)
+					{
+						float data = scriptInstance->getFieldValue<float>(name);
+						if (ImGui::DragFloat(name.c_str(), &data))
+						{
+							scriptInstance->setFieldValue(name, data);
+						}
+					}
+				}
+			}
 		}
+
+		if (!scriptClassExists)
+			ImGui::PopStyleColor();
 	});
 }
 
