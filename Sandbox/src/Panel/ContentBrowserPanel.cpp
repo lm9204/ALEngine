@@ -1,15 +1,16 @@
 #include "alpch.h"
 
 #include "Core/App.h"
+#include "Project/Project.h"
 
 #include "ContentBrowserPanel.h"
 #include <imgui/imgui.h>
 
 namespace ale
 {
-constexpr char *s_AssetsDirectory = "Sandbox/assets";
 
-ContentBrowserPanel::ContentBrowserPanel() : m_BaseDirectory(), m_CurrentDirectory(s_AssetsDirectory)
+ContentBrowserPanel::ContentBrowserPanel()
+	: m_BaseDirectory(Project::getAssetDirectory()), m_CurrentDirectory(m_BaseDirectory)
 {
 	m_DirectoryIcon = Texture::createTexture("Sandbox/Resources/Icons/ContentBrowser/DirectoryIcon.png");
 	m_FileIcon = Texture::createTexture("Sandbox/Resources/Icons/ContentBrowser/FileIcon.png");
@@ -86,7 +87,7 @@ void ContentBrowserPanel::onImGuiRender()
 {
 	ImGui::Begin("Content Browser");
 
-	if (m_CurrentDirectory != std::filesystem::path(s_AssetsDirectory))
+	if (m_CurrentDirectory != std::filesystem::path(m_BaseDirectory))
 	{
 		if (ImGui::Button("<-"))
 		{
@@ -129,6 +130,9 @@ void ContentBrowserPanel::onImGuiRender()
 		{
 			if (directoryEntry.is_directory())
 				m_CurrentDirectory /= path.filename();
+
+			// if script -> turn on code editor
+			// if scene -> change scene
 		}
 		ImGui::TextWrapped(filenameString.c_str());
 

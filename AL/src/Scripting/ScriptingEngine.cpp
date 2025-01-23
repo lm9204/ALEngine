@@ -10,6 +10,8 @@
 
 #include "Core/FileSystem.h"
 
+#include "Project/Project.h"
+
 namespace ale
 {
 
@@ -149,7 +151,8 @@ void ScriptingEngine::init()
 	}
 
 	// get script module path
-	status = loadAppAssembly("Sandbox/Project/Assets/Scripts/Debug/SandboxProject.dll");
+	auto scriptModulePath = Project::getAssetDirectory() / Project::getActive()->getConfig().m_ScriptModulePath;
+	status = loadAppAssembly(scriptModulePath);
 	if (!status)
 	{
 		AL_CORE_ERROR("[ScriptEngine] Could not load app assembly!");
@@ -165,12 +168,12 @@ void ScriptingEngine::init()
 
 void ScriptingEngine::shutDown()
 {
+	shutDownMono();
+	delete s_Data;
 }
 
 void ScriptingEngine::initMono()
 {
-	// Validate check 필요.
-
 	mono_set_assemblies_path("Sandbox/mono/lib");
 
 	if (s_Data->enableDebugging)
@@ -203,6 +206,13 @@ void ScriptingEngine::initMono()
 
 void ScriptingEngine::shutDownMono()
 {
+	mono_domain_set(mono_get_root_domain(), false);
+
+	mono_domain_unload(s_Data->appDomain);
+	s_Data->appDomain = nullptr;
+
+	mono_jit_cleanup(s_Data->rootDomain);
+	s_Data->rootDomain = nullptr;
 }
 
 bool ScriptingEngine::loadAssembly(const std::filesystem::path &filepath)
@@ -321,6 +331,13 @@ std::shared_ptr<ScriptInstance> ScriptingEngine::getEntityScriptInstance(UUID en
 	if (it == s_Data->entityInstances.end())
 		return nullptr;
 	return it->second;
+}
+
+std::shared_ptr<ScriptClass> ScriptingEngine::getEntityClass(const std::string &name)
+{
+	if (s_Data->entityClasses.find(name) == s_Data->entityClasses.end())
+		return nullptr;
+	return s_Data->entityClasses.at(name);
 }
 
 std::unordered_map<std::string, std::shared_ptr<ScriptClass>> ScriptingEngine::getEntityClasses()

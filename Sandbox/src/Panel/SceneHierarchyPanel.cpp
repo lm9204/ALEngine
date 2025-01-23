@@ -7,6 +7,8 @@
 #include "imgui/imgui_internal.h"
 #include "imgui/misc/cpp/imgui_stdlib.h"
 
+#include "UI/UI.h"
+
 #include <glm/gtc/type_ptr.hpp>
 
 #include <cstring>
@@ -315,17 +317,20 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 	drawComponent<ScriptComponent>("Script", entity, [entity, scene = m_Context](auto &component) mutable {
 		bool scriptClassExists = ScriptingEngine::entityClassExists(component.m_ClassName);
 
-		if (!scriptClassExists)
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f));
+		UI::ScopedStyleColor textColor(ImGuiCol_Text, ImVec4(0.9f, 0.2f, 0.3f, 1.0f), !scriptClassExists);
 
 		static char buffer[64];
 		strcpy(buffer, component.m_ClassName.c_str());
 
 		if (ImGui::InputText("Class", buffer, sizeof(buffer)))
+		{
 			component.m_ClassName = buffer;
+			return;
+		}
 
-		bool sceneRunning;
+		bool sceneRunning = scene->isRunning();
 
+		if (sceneRunning)
 		{
 			std::shared_ptr<ScriptInstance> scriptInstance = ScriptingEngine::getEntityScriptInstance(entity.getUUID());
 			if (scriptInstance)
@@ -344,9 +349,43 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				}
 			}
 		}
+		else
+		{
+			if (scriptClassExists)
+			{
+				std::shared_ptr<ScriptClass> entityClass = ScriptingEngine::getEntityClass(component.m_ClassName);
+				const auto &fields = entityClass->getFields();
 
-		if (!scriptClassExists)
-			ImGui::PopStyleColor();
+				auto &entityFields = ScriptingEngine::getScriptFieldMap(entity);
+				for (const auto &[name, field] : fields)
+				{
+					if (entityFields.find(name) != entityFields.end())
+					{
+						ScriptFieldInstance &scriptField = entityFields.at(name);
+
+						if (field.m_Type == EScriptFieldType::FLOAT)
+						{
+							float data = scriptField.getValue<float>();
+							if (ImGui::DragFloat(name.c_str(), &data))
+								scriptField.setValue<float>(data);
+						}
+					}
+					else
+					{
+						if (field.m_Type == EScriptFieldType::FLOAT)
+						{
+							float data = 0.0f;
+							if (ImGui::DragFloat(name.c_str(), &data))
+							{
+								ScriptFieldInstance &fieldInstance = entityFields[name];
+								fieldInstance.m_Field = field;
+								fieldInstance.setValue<float>(data);
+							}
+						}
+					}
+				}
+			}
+		}
 	});
 }
 

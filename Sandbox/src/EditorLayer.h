@@ -35,7 +35,7 @@ class EditorLayer : public Layer
 
 	// PROJECT
 	void newProject();
-	void openProject(const std::filesystem::path &path);
+	bool openProject(const std::filesystem::path &path);
 	bool openProject();
 	void saveProject();
 
@@ -69,6 +69,8 @@ class EditorLayer : public Layer
 	VkDescriptorSetLayout descriptorSetLayout;
 	VkDescriptorPool descriptorPool;
 	VkDevice device;
+
+	glm::vec2 m_ViewportSize = {0.0f, 0.0f};
 
 	enum class ESceneState
 	{

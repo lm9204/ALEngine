@@ -115,7 +115,7 @@ template <typename... Component> static void registerComponent()
 				mono_reflection_type_from_name(managedTypename.data(), ScriptingEngine::getCoreAssemblyImage());
 			if (!managedType)
 			{
-				AL_CORE_ERROR("Could not find component type");
+				// AL_CORE_ERROR("Could not find component type");
 				return;
 			}
 			s_EntityHasComponentFuncs[managedType] = [](Entity entity) { return entity.hasComponent<Component>(); };

@@ -55,6 +55,7 @@ struct ScriptField
 	MonoClassField *m_ClassField;
 };
 
+// App Assembly로부터 파싱해온 Class
 class ScriptClass
 {
   public:
@@ -136,7 +137,7 @@ class ScriptInstance
 
 struct ScriptFieldInstance
 {
-	ScriptField Field;
+	ScriptField m_Field;
 
 	ScriptFieldInstance()
 	{
@@ -187,7 +188,7 @@ class ScriptingEngine
 	static MonoObject *getManagedInstance(UUID uuid);
 
 	static std::shared_ptr<ScriptInstance> getEntityScriptInstance(UUID entityID);
-
+	static std::shared_ptr<ScriptClass> getEntityClass(const std::string &name);
 	static std::unordered_map<std::string, std::shared_ptr<ScriptClass>> getEntityClasses();
 	static ScriptFieldMap &getScriptFieldMap(Entity entity);
 
@@ -201,4 +202,91 @@ class ScriptingEngine
 	friend class ScriptClass;
 	friend class ScriptGlue;
 };
+
+namespace utils
+{
+
+inline const char *scriptFieldTypeToString(EScriptFieldType fieldType)
+{
+	switch (fieldType)
+	{
+	case EScriptFieldType::NONE:
+		return "None";
+	case EScriptFieldType::FLOAT:
+		return "Float";
+	case EScriptFieldType::DOUBLE:
+		return "Double";
+	case EScriptFieldType::BOOL:
+		return "Bool";
+	case EScriptFieldType::CHAR:
+		return "Char";
+	case EScriptFieldType::BYTE:
+		return "Byte";
+	case EScriptFieldType::SHORT:
+		return "Short";
+	case EScriptFieldType::INT:
+		return "Int";
+	case EScriptFieldType::LONG:
+		return "Long";
+	case EScriptFieldType::UBYTE:
+		return "UByte";
+	case EScriptFieldType::USHORT:
+		return "UShort";
+	case EScriptFieldType::UINT:
+		return "UInt";
+	case EScriptFieldType::ULONG:
+		return "ULong";
+	case EScriptFieldType::VECTOR2:
+		return "Vector2";
+	case EScriptFieldType::VECTOR3:
+		return "Vector3";
+	case EScriptFieldType::VECTOR4:
+		return "Vector4";
+	case EScriptFieldType::ENTITY:
+		return "Entity";
+	}
+	return "None";
+}
+
+inline EScriptFieldType scriptFieldTypeFromString(std::string_view fieldType)
+{
+	if (fieldType == "None")
+		return EScriptFieldType::NONE;
+	if (fieldType == "Float")
+		return EScriptFieldType::FLOAT;
+	if (fieldType == "Double")
+		return EScriptFieldType::DOUBLE;
+	if (fieldType == "Bool")
+		return EScriptFieldType::BOOL;
+	if (fieldType == "Char")
+		return EScriptFieldType::CHAR;
+	if (fieldType == "Byte")
+		return EScriptFieldType::BYTE;
+	if (fieldType == "Short")
+		return EScriptFieldType::SHORT;
+	if (fieldType == "Int")
+		return EScriptFieldType::INT;
+	if (fieldType == "Long")
+		return EScriptFieldType::LONG;
+	if (fieldType == "UByte")
+		return EScriptFieldType::UBYTE;
+	if (fieldType == "UShort")
+		return EScriptFieldType::USHORT;
+	if (fieldType == "UInt")
+		return EScriptFieldType::UINT;
+	if (fieldType == "ULong")
+		return EScriptFieldType::ULONG;
+	if (fieldType == "Vector2")
+		return EScriptFieldType::VECTOR2;
+	if (fieldType == "Vector3")
+		return EScriptFieldType::VECTOR3;
+	if (fieldType == "Vector4")
+		return EScriptFieldType::VECTOR4;
+	if (fieldType == "Entity")
+		return EScriptFieldType::ENTITY;
+
+	return EScriptFieldType::NONE;
+}
+
+} // namespace utils
 } // namespace ale
