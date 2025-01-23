@@ -8,7 +8,7 @@ namespace ale
 class Sandbox : public App
 {
   public:
-	Sandbox()
+	Sandbox(const ApplicationSpecification &spec) : App(spec)
 	{
 		pushLayer(new EditorLayer());
 	}
@@ -18,9 +18,13 @@ class Sandbox : public App
 	}
 };
 
-App *createApp()
+App *createApp(ApplicationCommandLineArgs args)
 {
-	return new Sandbox();
+	ApplicationSpecification spec;
+	spec.m_Name = "ALEngine";
+	spec.m_CommandLineArgs = args;
+
+	return new Sandbox(spec);
 }
 
 } // namespace ale
