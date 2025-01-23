@@ -4,6 +4,8 @@
 #include "Scene/Entity.h"
 #include "Scene/SceneSerializer.h"
 
+#include "Scripting/ScriptingEngine.h"
+
 #include <yaml-cpp/yaml.h>
 
 namespace YAML
@@ -79,10 +81,37 @@ template <> struct convert<glm::vec4>
 		return true;
 	}
 };
+
+template <> struct convert<ale::UUID>
+{
+	static Node encode(const ale::UUID &uuid)
+	{
+		Node node;
+		node.push_back((uint64_t)uuid);
+		return node;
+	}
+
+	static bool decode(const Node &node, ale::UUID &uuid)
+	{
+		uuid = node.as<uint64_t>();
+		return true;
+	}
+};
 } // namespace YAML
 
 namespace ale
 {
+#define WRITE_SCRIPT_FIELD(FieldType, Type)                                                                            \
+	case EScriptFieldType::FieldType:                                                                                  \
+		out << scriptField.getValue<Type>();                                                                           \
+		break
+
+#define READ_SCRIPT_FIELD(FieldType, Type)                                                                             \
+	case EScriptFieldType::FieldType: {                                                                                \
+		Type data = scriptField["Data"].as<Type>();                                                                    \
+		fieldInstance.setValue(data);                                                                                  \
+		break;                                                                                                         \
+	}
 
 YAML::Emitter &operator<<(YAML::Emitter &out, const glm::vec2 &v)
 {
@@ -121,7 +150,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::BeginMap;
 		auto &tag = entity.getComponent<TagComponent>().m_Tag;
 		out << YAML::Key << "Tag" << YAML::Value << tag;
-		out << YAML::EndMap;
+		out << YAML::EndMap; // Tag
 	}
 
 	// TransformComponent
@@ -133,7 +162,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Position" << YAML::Value << tf.m_Position;
 		out << YAML::Key << "Rotation" << YAML::Value << tf.m_Rotation;
 		out << YAML::Key << "Scale" << YAML::Value << tf.m_Scale;
-		out << YAML::EndMap;
+		out << YAML::EndMap; // Transform
 	}
 	// CameraComponent
 	if (entity.hasComponent<CameraComponent>())
@@ -153,7 +182,61 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Primary" << YAML::Value << cc.m_Primary;
 		out << YAML::Key << "FixedAspectRatio" << YAML::Value << cc.m_FixedAspectRatio;
 
-		out << YAML::EndMap;
+		out << YAML::EndMap; // Camera
+	}
+	if (entity.hasComponent<ScriptComponent>())
+	{
+		auto &scriptComponent = entity.getComponent<ScriptComponent>();
+
+		out << YAML::Key << "ScriptComponent";
+		out << YAML::BeginMap;
+		out << YAML::Key << "ClassName" << YAML::Value << scriptComponent.m_ClassName;
+
+		std::shared_ptr<ScriptClass> entityClass = ScriptingEngine::getEntityClass(scriptComponent.m_ClassName);
+		const auto &fields = entityClass->getFields();
+
+		if (fields.size() > 0)
+		{
+			out << YAML::Key << "ScriptFields" << YAML::Value;
+			auto &entityFields = ScriptingEngine::getScriptFieldMap(entity);
+			out << YAML::BeginSeq;
+
+			for (const auto &[name, field] : fields)
+			{
+				if (entityFields.find(name) == entityFields.end())
+					return;
+				out << YAML::BeginMap;
+				out << YAML::Key << "Name" << YAML::Value << name;
+				out << YAML::Key << "Type" << YAML::Value << utils::scriptFieldTypeToString(field.m_Type);
+
+				out << YAML::Key << "Data" << YAML::Value;
+				ScriptFieldInstance &scriptField = entityFields.at(name);
+
+				switch (field.m_Type)
+				{
+					WRITE_SCRIPT_FIELD(FLOAT, float);
+					WRITE_SCRIPT_FIELD(DOUBLE, double);
+					WRITE_SCRIPT_FIELD(BOOL, bool);
+					WRITE_SCRIPT_FIELD(CHAR, char);
+					WRITE_SCRIPT_FIELD(BYTE, int8_t);
+					WRITE_SCRIPT_FIELD(SHORT, int16_t);
+					WRITE_SCRIPT_FIELD(INT, int32_t);
+					WRITE_SCRIPT_FIELD(LONG, int64_t);
+					WRITE_SCRIPT_FIELD(UBYTE, uint8_t);
+					WRITE_SCRIPT_FIELD(USHORT, uint16_t);
+					WRITE_SCRIPT_FIELD(UINT, uint32_t);
+					WRITE_SCRIPT_FIELD(ULONG, uint64_t);
+					WRITE_SCRIPT_FIELD(VECTOR2, glm::vec2);
+					WRITE_SCRIPT_FIELD(VECTOR3, glm::vec3);
+					WRITE_SCRIPT_FIELD(VECTOR4, glm::vec4);
+					WRITE_SCRIPT_FIELD(ENTITY, UUID);
+				}
+				out << YAML::EndMap;
+			}
+			out << YAML::EndSeq;
+		}
+
+		out << YAML::EndMap; // End ScriptComponent
 	}
 
 	// MeshRendererComponent
@@ -164,17 +247,8 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 	// CapsuleColliderComponent
 	// CylinderColliderComponent
 	// ScriptComponent
-	if (entity.hasComponent<ScriptComponent>())
-	{
-		auto &scriptComponent = entity.getComponent<ScriptComponent>();
 
-		out << YAML::Key << "ScriptComponent";
-		out << YAML::BeginMap;
-		out << YAML::Key << "ClassName" << YAML::Value << scriptComponent.m_ClassName;
-		out << YAML::EndMap;
-	}
-
-	out << YAML::EndMap;
+	out << YAML::EndMap; // End Serialize Entity
 }
 
 void SceneSerializer::serialize(const std::string &filepath)
@@ -264,24 +338,67 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				cc.m_Camera.setPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
 				cc.m_Camera.setPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
 
-				cc.m_Primary = cameraProps["Primary"].as<bool>();
-				cc.m_FixedAspectRatio = cameraProps["FixedAspectRatio"].as<bool>();
+				cc.m_Primary = cameraComponent["Primary"].as<bool>();
+				cc.m_FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 			}
 
-			// MeshRendererComponent
-			// LightComponent
-			// RigidbodyComponent
-			// BoxColliderComponent
-			// SphereColliderComponent
-			// CapsuleColliderComponent
-			// CylinderColliderComponent
 			// ScriptComponent
 			auto scriptComponent = entity["ScriptComponent"];
 			if (scriptComponent)
 			{
 				auto &sc = deserializedEntity.addComponent<ScriptComponent>();
 				sc.m_ClassName = scriptComponent["ClassName"].as<std::string>();
+
+				auto scriptFields = scriptComponent["ScriptFields"];
+				if (scriptFields)
+				{
+					std::shared_ptr<ScriptClass> entityClass = ScriptingEngine::getEntityClass(sc.m_ClassName);
+					if (entityClass)
+					{
+						const auto &fields = entityClass->getFields();
+						auto &entityFields = ScriptingEngine::getScriptFieldMap(deserializedEntity);
+
+						for (auto scriptField : scriptFields)
+						{
+							std::string name = scriptField["Name"].as<std::string>();
+							std::string typeString = scriptField["Type"].as<std::string>();
+							EScriptFieldType type = utils::scriptFieldTypeFromString(typeString);
+
+							ScriptFieldInstance &fieldInstance = entityFields[name];
+							if (fields.find(name) == fields.end())
+								continue;
+
+							fieldInstance.m_Field = fields.at(name);
+
+							switch (type)
+							{
+								READ_SCRIPT_FIELD(FLOAT, float);
+								READ_SCRIPT_FIELD(DOUBLE, double);
+								READ_SCRIPT_FIELD(BOOL, bool);
+								READ_SCRIPT_FIELD(CHAR, char);
+								READ_SCRIPT_FIELD(BYTE, int8_t);
+								READ_SCRIPT_FIELD(SHORT, int16_t);
+								READ_SCRIPT_FIELD(INT, int32_t);
+								READ_SCRIPT_FIELD(LONG, int64_t);
+								READ_SCRIPT_FIELD(UBYTE, uint8_t);
+								READ_SCRIPT_FIELD(USHORT, uint16_t);
+								READ_SCRIPT_FIELD(UINT, uint32_t);
+								READ_SCRIPT_FIELD(ULONG, uint64_t);
+								READ_SCRIPT_FIELD(VECTOR2, glm::vec2);
+								READ_SCRIPT_FIELD(VECTOR3, glm::vec3);
+								READ_SCRIPT_FIELD(VECTOR4, glm::vec4);
+								READ_SCRIPT_FIELD(ENTITY, UUID);
+							}
+						}
+					}
+				}
 			}
+			// MeshRendererComponent
+			// RigidbodyComponent
+			// BoxColliderComponent
+			// SphereColliderComponent
+			// CapsuleColliderComponent
+			// CylinderColliderComponent
 		}
 	}
 	return true;
