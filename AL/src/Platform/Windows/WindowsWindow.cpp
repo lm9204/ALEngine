@@ -128,8 +128,6 @@ void WindowsWindow::init(const WindowProps &props)
 		data.eventCallback(event);
 		// data.scene->mouseMove(xPos, yPos);
 	});
-
-	AL_CORE_INFO("Init window end!");
 }
 
 void WindowsWindow::shutDown()
