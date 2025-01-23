@@ -2,18 +2,26 @@
 #include "ALpch.h"
 #include <GLFW/glfw3.h>
 
+#include "Scripting/ScriptingEngine.h"
+
 namespace ale
 {
 
 App *App::s_Instance = nullptr;
 
-App::App()
+App::App(const ApplicationSpecification &spec) : m_Spec(spec)
 {
 	// ASSERT s_Instance
+	AL_CORE_INFO("App::App");
 	s_Instance = this;
 
 	m_Window = std::unique_ptr<Window>(Window::create());
 	m_Window->setEventCallback(AL_BIND_EVENT_FN(App::onEvent));
+
+	if (!m_Spec.m_WorkingDirectory.empty())
+	{
+		std::filesystem::current_path(m_Spec.m_WorkingDirectory);
+	}
 
 	// init renderer
 	m_Renderer = Renderer::createRenderer(m_Window->getNativeWindow());
@@ -27,6 +35,7 @@ App::App()
 
 App::~App()
 {
+	ScriptingEngine::shutDown();
 }
 
 void App::pushLayer(Layer *layer)
@@ -73,7 +82,7 @@ void App::onEvent(Event &e)
 {
 	EventDispatcher dispatcher(e);
 	dispatcher.dispatch<WindowCloseEvent>(AL_BIND_EVENT_FN(App::onWindowClose));
-	dispatcher.dispatch<KeyPressedEvent>(AL_BIND_EVENT_FN(App::onWindowClose));
+	// dispatcher.dispatch<KeyPressedEvent>(AL_BIND_EVENT_FN(App::onWindowClose));
 	dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(App::onWindowResize));
 
 	// AL_CORE_INFO("{0}", e.toString());

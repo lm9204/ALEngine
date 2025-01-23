@@ -16,10 +16,28 @@
 
 namespace ale
 {
+struct ApplicationCommandLineArgs
+{
+	int count = 0;
+	char **args = nullptr;
+
+	const char *operator[](int index) const
+	{
+		return args[index];
+	}
+};
+
+struct ApplicationSpecification
+{
+	std::string m_Name = "ALEngine";
+	std::string m_WorkingDirectory;
+	ApplicationCommandLineArgs m_CommandLineArgs;
+};
+
 class App
 {
   public:
-	App();
+	App(const ApplicationSpecification &spec);
 	virtual ~App();
 
 	void run();
@@ -38,6 +56,12 @@ class App
 	{
 		return *m_Renderer;
 	}
+
+	const ApplicationSpecification &getSpecification() const
+	{
+		return m_Spec;
+	}
+
 	static App &get();
 
   private:
@@ -51,6 +75,8 @@ class App
 
 	LayerStack m_LayerStack;
 
+	ApplicationSpecification m_Spec;
+
 	float m_LastFrameTime = 0.0f;
 	bool m_Running = true;
 	bool m_Minimized = false;
@@ -60,7 +86,7 @@ class App
 };
 
 // To be defined in CLIENT
-App *createApp();
+App *createApp(ApplicationCommandLineArgs args);
 
 } // namespace ale
 
