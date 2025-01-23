@@ -8,6 +8,7 @@
 #include <utility>
 #include <vector>
 
+#include <filesystem>
 #include <functional>
 #include <memory>
 #include <sstream>
