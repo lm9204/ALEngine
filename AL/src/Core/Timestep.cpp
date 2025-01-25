@@ -1,4 +1,5 @@
 #include "Core/Timestep.h"
+#include "Renderer/Common.h"
 
 namespace ale
 {
@@ -24,20 +25,20 @@ bool Timestep::operator<=(const std::chrono::duration<float, std::chrono::second
 	return (m_Timestep - other) <= 0ms;
 }
 
-std::chrono::duration<float, std::chrono::seconds::period> Timestep::GetSeconds() const { return m_Timestep; }
+std::chrono::duration<float, std::chrono::seconds::period> Timestep::getSeconds() const { return m_Timestep; }
 
-std::chrono::duration<float, std::chrono::milliseconds::period> Timestep::GetMilliseconds() const
+std::chrono::duration<float, std::chrono::milliseconds::period> Timestep::getMilliseconds() const
 {
 	return (std::chrono::duration<float, std::chrono::milliseconds::period>)m_Timestep;
 }
 
-void Timestep::Print() const
+void Timestep::print() const
 {
-	auto inMilliSeconds = GetMilliseconds();
+	auto inMilliSeconds = getMilliseconds();
 	std::cout << "timestep in milli seconds: " << inMilliSeconds.count() << "ms\n";
-	auto inSeconds = GetSeconds();
+	auto inSeconds = getSeconds();
 	std::cout << "timestep in seconds: " << inSeconds.count() << "s\n";
 }
 
-float Timestep::Count() const { return m_Timestep.count(); }
+float Timestep::count() const { return m_Timestep.count(); }
 } //namespace ale
