@@ -30,8 +30,8 @@ void SkeletalAnimation::update(const Timestep& timestep, Armature::Skeleton& ske
 	}
 	for (auto& channel : m_Channels)
 	{
-		auto& sampler = m_Samplers[channel.m_SamplerIndex];
-		int boneIndex = skeleton.m_GlobalNodeToBoneIndex[channel.m_Node];
+		auto& sampler = m_Samplers[channel.m_samplerIndex];
+		int boneIndex = skeleton.m_NodeNameToBoneIndex[channel.m_NodeName];
 		auto& bone = skeleton.m_Bones[boneIndex]; // the joint to be animated
 
 		for (size_t i = 0; i < sampler.m_Timestamps.size() - 1; i++)
