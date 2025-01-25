@@ -6,6 +6,15 @@
 
 namespace ale
 {
+
+struct SAData
+{
+	bool m_Repeat;
+	float m_FirstKeyFrameTime;
+	float m_LastKeyFrameTime;
+	float m_CurrentKeyFrameTime;
+};
+
 class Timestep;
 class SkeletalAnimation
 {
@@ -47,9 +56,11 @@ class SkeletalAnimation
 		bool willExpire(const Timestep& timestep) const;
 		std::string const& getName() const { return m_Name; }
 		void setRepeat(bool repeat) { m_Repeat = repeat; }
+		void uploadData(const SAData& data);
 		void update(const Timestep& timestep, Armature::Skeleton& skeleton);
 		float getDuration() const { return m_LastKeyFrameTime - m_FirstKeyFrameTime; }
 		float getCurrentTime() const { return m_CurrentKeyFrameTime - m_FirstKeyFrameTime; }
+		struct SAData getData() const;
 
 		std::vector<SkeletalAnimation::Sampler> m_Samplers;
 		std::vector<SkeletalAnimation::Channel> m_Channels;

@@ -124,4 +124,23 @@ void SkeletalAnimation::update(const Timestep& timestep, Armature::Skeleton& ske
 		}
 	}
 }
+
+void SkeletalAnimation::uploadData(const SAData& data)
+{
+	m_Repeat = data.m_Repeat;
+	m_FirstKeyFrameTime = data.m_FirstKeyFrameTime;
+	m_LastKeyFrameTime = data.m_LastKeyFrameTime;
+	m_CurrentKeyFrameTime = data.m_CurrentKeyFrameTime;
+}
+
+struct SAData SkeletalAnimation::getData() const
+{
+	struct SAData data{};
+	data.m_Repeat = m_Repeat;
+	data.m_FirstKeyFrameTime = m_FirstKeyFrameTime;
+	data.m_LastKeyFrameTime = m_LastKeyFrameTime;
+	data.m_CurrentKeyFrameTime = m_CurrentKeyFrameTime;
+
+	return data;
+}
 }
