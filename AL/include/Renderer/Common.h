@@ -24,6 +24,9 @@
 #include <stdexcept>
 #include <vector>
 
+//헤더위치가 좀 애매
+#include "Renderer/Animation/Bones.h"
+
 namespace ale
 {
 // 동시에 처리할 최대 프레임 수
@@ -96,7 +99,7 @@ struct Vertex
 	static std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions()
 	{
 		// 정점 속성의 데이터 형식과 위치를 지정하는 구조체
-		std::array<VkVertexInputAttributeDescription, 4> attributeDescriptions{};
+		std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
 
 		// pos 속성 정보 입력
 		attributeDescriptions[0].binding = 0;  // 버텍스 버퍼의 바인딩 포인트
@@ -158,6 +161,7 @@ struct GeometryPassVertexUniformBufferObject {
     alignas(16) glm::mat4 model;      // 64바이트
     alignas(16) glm::mat4 view;       // 64바이트
     alignas(16) glm::mat4 proj;       // 64바이트
+	glm::mat4 finalBonesMatrices[MAX_BONES];
     alignas(4) bool heightFlag;       // 4바이트
     alignas(4) float heightScale;     // 4바이트
     alignas(8) glm::vec2 padding;     // 8바이트 (패딩)
