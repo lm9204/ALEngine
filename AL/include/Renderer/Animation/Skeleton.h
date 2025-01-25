@@ -6,9 +6,8 @@
 #include "Renderer/Common.h"
 #include "Renderer/Animation/Bones.h"
 #include <iostream>
-#include <map>
+#include <unordered_map>
 
-#include "Bones.h"
 
 namespace ale
 {
@@ -54,11 +53,12 @@ namespace ale
 			void update();
 			void updateBone(int16_t boneIndex);
 
-			bool m_isAnimated = true;
-			std::string m_Name;
-			std::vector<Bone> m_Bones;
-			std::map<int, int> m_GlobalNodeToBoneIndex;
+			std::string								m_Name;
+			std::vector<Bone>						m_Bones;
+			std::unordered_map<std::string, int>	m_NodeNameToBoneIndex;
+
 			ShaderData m_ShaderData;
+			bool m_isAnimated = true;
 		};
 	};
 }

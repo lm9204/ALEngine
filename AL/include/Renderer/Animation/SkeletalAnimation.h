@@ -26,16 +26,16 @@ class SkeletalAnimation
 		
 		struct Channel
 		{
-			EPath m_Path;
-			int m_SamplerIndex;
-			int m_Node;
+			size_t		m_samplerIndex;
+			std::string	m_NodeName;
+			EPath		m_Path;
 		};
 
 		struct Sampler
 		{
-			std::vector<float> m_Timestamps;
-			std::vector<glm::vec4> m_TRSoutputValuesToBeInterpolated;
-			EInterpolationMethod m_Interpolation;
+			EInterpolationMethod	m_Interpolation;
+			std::vector<float>		m_Timestamps;
+			std::vector<glm::vec4>	m_TRSoutputValuesToBeInterpolated;
 		};
 
 	public:
