@@ -2,7 +2,7 @@
 #define SKELETALANIMATION_H
 
 #include "Core/Timestep.h"
-#include "Skeleton.h"
+#include "Renderer/Animation/Skeleton.h"
 
 namespace ale
 {

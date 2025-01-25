@@ -1,7 +1,10 @@
 #ifndef SKELETON_H
 #define SKELETON_H
 
+#include "Core/Base.h"
+#include "alpch.h"
 #include "Renderer/Common.h"
+#include "Renderer/Animation/Bones.h"
 #include <iostream>
 #include <map>
 
