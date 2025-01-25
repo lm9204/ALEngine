@@ -3,7 +3,7 @@
 
 #include <map>
 
-#include "SkeletalAnimation.h"
+#include "Renderer/Animation/SkeletalAnimation.h"
 
 namespace ale
 {
@@ -45,7 +45,10 @@ class SkeletalAnimations
 		bool willExpire(const Timestep& timestep) const;
 		float getDuration(std::string const& animation);
 		float getCurrentTime();
+		uint16_t getCurrentFrame();
 		std::string getName();
+		// TODO
+		void uploadData(SkeletalAnimation* animation, uint16_t frameCounter, const SAData& keyframe);
 		void update(const Timestep& timestep, Armature::Skeleton& skeleton, uint16_t frameCounter);
 		int getIndex(std::string const& animation);
 
