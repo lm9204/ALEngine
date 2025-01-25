@@ -24,6 +24,9 @@
 #include <stdexcept>
 #include <vector>
 
+//헤더위치가 좀 애매
+#include "Renderer/Animation/Bones.h"
+
 namespace ale
 {
 // 동시에 처리할 최대 프레임 수
@@ -96,7 +99,7 @@ struct Vertex
 	static std::array<VkVertexInputAttributeDescription, 6> getAttributeDescriptions()
 	{
 		// 정점 속성의 데이터 형식과 위치를 지정하는 구조체
-		std::array<VkVertexInputAttributeDescription, 3> attributeDescriptions{};
+		std::array<VkVertexInputAttributeDescription, 6> attributeDescriptions{};
 
 		// pos 속성 정보 입력
 		attributeDescriptions[0].binding = 0;  // 버텍스 버퍼의 바인딩 포인트
@@ -146,10 +149,47 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 };
 
-struct GeometryPassUniformBufferObject {
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
+struct Transform
+{
+	glm::vec3 position;
+	glm::vec3 rotation;
+	glm::vec3 scale;
+};
+
+
+struct GeometryPassVertexUniformBufferObject {
+    alignas(16) glm::mat4 model;      // 64바이트
+    alignas(16) glm::mat4 view;       // 64바이트
+    alignas(16) glm::mat4 proj;       // 64바이트
+	glm::mat4 finalBonesMatrices[MAX_BONES];
+    alignas(4) bool heightFlag;       // 4바이트
+    alignas(4) float heightScale;     // 4바이트
+    alignas(8) glm::vec2 padding;     // 8바이트 (패딩)
+};
+
+
+struct GeometryPassFragmentUniformBufferObject {
+    alignas(16) glm::vec4 albedoValue; // 16바이트 (정렬 우선순위)
+    alignas(4) float roughnessValue;
+    alignas(4) float metallicValue;
+    alignas(4) float aoValue;
+
+    alignas(4) bool albedoFlag;
+    alignas(4) bool normalFlag;
+    alignas(4) bool roughnessFlag;
+    alignas(4) bool metallicFlag;
+    alignas(4) bool aoFlag;
+    alignas(8) glm::vec2 padding; // 패딩 추가 (8바이트)
+};
+
+struct Light {
+	alignas(16) glm::vec3 position;      // 광원의 위치 (점광원, 스포트라이트)
+    alignas(16) glm::vec3 direction;     // 광원의 방향 (스포트라이트, 방향성 광원)
+    alignas(16) glm::vec3 color;         // 광원의 색상
+    alignas(4) float intensity;          // 광원의 강도
+    alignas(4) float innerCutoff;        // 스포트라이트 내부 각도 (cosine 값)
+    alignas(4) float outerCutoff;        // 스포트라이트 외부 각도 (cosine 값)
+    alignas(4) uint32_t type;                 // 광원 타입 (0: 점광원, 1: 스포트라이트, 2: 방향성 광원)
 };
 
 struct LightingPassUniformBufferObject {
