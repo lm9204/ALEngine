@@ -41,6 +41,8 @@ float SkeletalAnimations::getCurrentTime()
 	}
 }
 
+uint16_t SkeletalAnimations::getCurrentFrame() { return m_FrameCounter; }
+
 std::string SkeletalAnimations::getName()
 {
 	if (m_CurrentAnimation)
@@ -116,6 +118,14 @@ bool SkeletalAnimations::willExpire(const Timestep& timestep) const
 	{
 		return false;
 	}
+}
+
+void SkeletalAnimations::uploadData(SkeletalAnimation* animation, uint16_t frameCounter, const SAData& keyframe)
+{
+	m_CurrentAnimation = animation;
+	m_FrameCounter = frameCounter;
+
+	m_CurrentAnimation->uploadData(keyframe);
 }
 
 void SkeletalAnimations::update(const Timestep& timestep, Armature::Skeleton& skeleton, uint16_t frameCounter)
