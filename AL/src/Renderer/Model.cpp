@@ -1,6 +1,8 @@
 #include "Renderer/Model.h"
 #include "Renderer/ShaderResourceManager.h"
 
+#include <glm/gtx/string_cast.hpp>
+
 namespace ale
 {
 std::shared_ptr<Model> Model::createModel(std::string path, std::shared_ptr<Material> &defaultMaterial)
@@ -52,6 +54,16 @@ void Model::draw(DrawInfo& drawInfo)
 		vertexUbo.model = drawInfo.model;
 		vertexUbo.view = drawInfo.view;
 		vertexUbo.proj = drawInfo.projection;
+
+		for (size_t i = 0; i < MAX_BONES; ++i)
+			vertexUbo.finalBonesMatrices[i] = glm::mat4(1.0f);
+
+		for (size_t boneIndex = 0; boneIndex < m_ShaderData.m_FinalBonesMatrices.size(); ++boneIndex)
+		{
+			AL_INFO("data:{0}", glm::to_string(m_ShaderData.m_FinalBonesMatrices[boneIndex]));
+			vertexUbo.finalBonesMatrices[boneIndex] = m_ShaderData.m_FinalBonesMatrices[boneIndex];
+		}
+
 		vertexUbo.heightFlag = drawInfo.materials[i]->getHeightMap().flag;
 		vertexUbo.heightScale = 0.1;
 		vertexUbo.padding = glm::vec2(0.0f);
@@ -135,6 +147,7 @@ void Model::loadGLTFModel(std::string path, std::shared_ptr<Material>& defaultMa
 	}
 
 	processGLTFNode(scene->mRootNode, scene, materials);
+	processGLTFSkeleton(scene);
 }
 
 std::string Model::getMaterialPath(std::string &path, std::string materialPath) {
@@ -266,6 +279,9 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 	std::vector<Vertex> vertices;
 	std::vector<uint32_t> indices;
 
+	AL_INFO("Model: processGLTFMesh start");
+	vertices.reserve(mesh->mNumVertices);
+
 	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
 	{
 		Vertex vertex{};
@@ -287,8 +303,68 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 		{
 			vertex.texCoord = {0.0f, 0.0f};
 		}
+
+		vertex.boneIds = glm::ivec4(-1, -1, -1, -1);
+		vertex.weights = glm::vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
 		vertices.push_back(vertex);
 	}
+
+	if (mesh->mNumBones > 0)
+	{
+		AL_INFO("Model: processGLTFMesh get BoneData");
+		AL_INFO("Model: m_Skeleton->m_NodeNameToBoneIndex.size(): {1}", m_Skeleton->m_NodeNameToBoneIndex.size());
+		std::vector<VertexBoneData> vertexBoneData(mesh->mNumVertices);
+
+		// 영향을 미치는 모든 본 정보 처리
+		for (unsigned int boneIndex = 0; boneIndex < mesh->mNumVertices; ++boneIndex)
+		{
+			std::string boneName(mesh->mBones[boneIndex]->mName.C_Str());
+
+			auto it = m_Skeleton->m_NodeNameToBoneIndex.find(boneName);
+			if (it == m_Skeleton->m_NodeNameToBoneIndex.end())
+				continue;
+
+			int targetBoneIndex = it->second;
+
+			for (unsigned int i = 0; i < mesh->mBones[boneIndex]->mNumWeights; ++i)
+			{
+				unsigned int vertexID = mesh->mBones[boneIndex]->mWeights[i].mVertexId;
+				float weight = mesh->mBones[boneIndex]->mWeights[i].mWeight;
+
+				vertexBoneData[vertexID].bones.emplace_back(targetBoneIndex, weight);
+			}
+		}
+		AL_INFO("Model: processGLTFMesh apply BoneIds, Weights");
+
+		// 정점에 본ids, 가중치 할당
+		for (unsigned int vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
+		{
+			auto& bones = vertexBoneData[vertexIndex].bones;
+
+			std::sort(bones.begin(), bones.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b) -> bool {
+				return a.second > b.second;
+			});
+
+			int numBones = std::min((int)bones.size(), 4);
+			float totalWeight = 0.0f;
+
+			for (unsigned int boneIndex = 0; boneIndex < numBones; ++boneIndex)
+			{
+				vertices[vertexIndex].boneIds[boneIndex] = bones[boneIndex].first;
+				vertices[vertexIndex].weights[boneIndex] = bones[boneIndex].second;
+				totalWeight += bones[boneIndex].second;
+			}
+
+			if (totalWeight > 0.0f)
+			{
+				for (unsigned int boneIndex = 0; boneIndex < numBones; ++boneIndex)
+					vertices[vertexIndex].weights[boneIndex] /= totalWeight;
+			}
+		}
+	}
+
+	AL_INFO("Model: processGLTFMesh get indices");
 
 	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
 	{
@@ -300,8 +376,237 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 	}
 
 	m_materials.push_back(material);
+	AL_INFO("Model: processGLTFMesh done");
 	return Mesh::createMesh(vertices, indices);
 }
+
+void Model::processGLTFSkeleton(const aiScene* scene)
+{
+	if (!scene || !scene->HasAnimations())
+	{
+		m_SkeletalAnimations = false;
+		AL_CORE_INFO("Model::processGLTFSkeleton(): No animations or invalid scene.");
+		return;
+	}
+
+	m_SkeletalAnimations = true;
+	m_Animations = std::make_shared<SkeletalAnimations>();
+	m_Skeleton = std::make_shared<Armature::Skeleton>();
+
+	// 1) 본 정보 수집
+	std::vector<aiBone*> allAiBones;
+	collectAllBones(scene, allAiBones);
+
+	// unique 처리
+	buildSkeletonBoneArray(allAiBones);
+
+	// 2) 노드 트리를 통해 본 계층 관계 구성
+	loadBone(scene->mRootNode, -1);
+
+	// 3) 변환 행렬 UBO 버퍼 생성 -> 인스턴스화
+}
+
+void Model::collectAllBones(const aiScene* scene, std::vector<aiBone*>& outBones)
+{
+	for (size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
+	{
+		aiMesh* mesh = scene->mMeshes[meshIndex];
+		for (size_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
+		{
+			aiBone* bone = mesh->mBones[boneIndex];
+			outBones.push_back(bone);
+		}
+	}
+}
+
+void Model::buildSkeletonBoneArray(const std::vector<aiBone*>& allAiBones)
+{
+	std::unordered_map<std::string, int> boneNameToIndex;
+
+	for (aiBone* bone : allAiBones)
+	{
+		std::string boneName = bone->mName.C_Str();
+
+		// 중복 체크
+		if (boneNameToIndex.find(boneName) == boneNameToIndex.end())
+		{
+			Armature::Bone newBone;
+			newBone.m_Name = boneName;
+			newBone.m_InverseBindMatrix = convertMatrix(bone->mOffsetMatrix);
+
+			m_Skeleton->m_Bones.emplace_back(newBone);
+			boneNameToIndex[boneName] = static_cast<int>(m_Skeleton->m_Bones.size());
+		}
+	}
+
+	m_Skeleton->m_ShaderData.m_FinalBonesMatrices.resize(m_Skeleton->m_Bones.size());
+	m_Skeleton->m_NodeNameToBoneIndex = boneNameToIndex;
+}
+
+void Model::loadBone(aiNode* node, int parentBoneIndex)
+{
+	if (!node)
+		return;
+
+	std::string nodeName = node->mName.C_Str();
+
+	// 해당 노드가 본 목록(m_Skeleton->m_NodeNameToBoneIndex) 에 있다면,
+	// 해당 본의 부모/자식 연결
+	auto it = m_Skeleton->m_NodeNameToBoneIndex.find(nodeName);
+	int currentBoneIndex = -1;
+	if (it != m_Skeleton->m_NodeNameToBoneIndex.end())
+	{
+		currentBoneIndex = it->second;
+		auto& bone = m_Skeleton->m_Bones[currentBoneIndex];
+
+		bone.m_ParentBone = parentBoneIndex;
+
+		if (parentBoneIndex >= 0 && parentBoneIndex < static_cast<int>(m_Skeleton->m_Bones.size()))
+			m_Skeleton->m_Bones[parentBoneIndex].m_Children.push_back(currentBoneIndex);
+	}
+
+	for (size_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
+		loadBone(node->mChildren[childIndex], currentBoneIndex);
+}
+
+void Model::loadAnimations(const aiScene* scene)
+{
+	size_t numberOfAnimations = scene->mNumAnimations;
+	for (size_t animationIndex = 0; animationIndex < numberOfAnimations; ++animationIndex)
+	{
+		aiAnimation* aiAnim = scene->mAnimations[animationIndex];
+		std::string animationName = (aiAnim->mName.length > 0
+									? std::string(aiAnim->mName.C_Str())
+									: ("Anim" + std::to_string(animationIndex)));
+
+		std::shared_ptr<SkeletalAnimation> animation = 
+			std::make_shared<SkeletalAnimation>(animationName);
+
+		double ticksPerSecond = (aiAnim->mTicksPerSecond != 0.0) ? aiAnim->mTicksPerSecond : 25.0;
+		double durationTicks = aiAnim->mDuration;
+
+		float durationSeconds = static_cast<float>(durationTicks / ticksPerSecond);
+
+		size_t totalChannelsBefore = animation->m_Channels.size();
+		size_t totalSamplersBefore = animation->m_Samplers.size();
+		size_t numberOfChannels = aiAnim->mNumChannels;
+
+		for (size_t channelIndex = 0; channelIndex < numberOfChannels; ++channelIndex)
+		{
+			aiNodeAnim* nodeAnim = aiAnim->mChannels[channelIndex];
+			std::string nodeName = nodeAnim->mNodeName.C_Str();
+
+			// (A) Translation
+			if (nodeAnim->mNumPositionKeys > 0)
+			{
+				size_t numberOfKeys = nodeAnim->mNumPositionKeys;
+				SkeletalAnimation::Sampler samplerPos;
+				// assimp는 보간방법을 명시하지 않음
+				samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+				
+				samplerPos.m_Timestamps.resize(numberOfKeys);
+				samplerPos.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
+
+				for (size_t keyIndex = 0; keyIndex < numberOfKeys; ++keyIndex)
+				{
+					float timeSec = static_cast<float>(nodeAnim->mPositionKeys[keyIndex].mTime / ticksPerSecond);
+					aiVector3D aiPos = nodeAnim->mPositionKeys[keyIndex].mValue;
+					glm::vec3 pos(aiPos.x, aiPos.y, aiPos.z);
+
+					samplerPos.m_Timestamps[keyIndex] = timeSec;
+					samplerPos.m_TRSoutputValuesToBeInterpolated[keyIndex] = glm::vec4(pos, 0.0f);
+				}
+
+				size_t samplerIndexPos = animation->m_Samplers.size();
+				animation->m_Samplers.emplace_back(samplerPos);
+
+				SkeletalAnimation::Channel channel;
+				channel.m_samplerIndex = samplerIndexPos;
+				channel.m_NodeName = nodeName;
+				channel.m_Path = SkeletalAnimation::EPath::TRANSLATION;
+
+				animation->m_Channels.push_back(channel);
+			}
+			// (B) Rotation
+			if (nodeAnim->mNumRotationKeys > 0)
+			{
+				size_t numberOfKeys = nodeAnim->mNumRotationKeys;
+				SkeletalAnimation::Sampler samplerRot;
+				samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+
+				samplerRot.m_Timestamps.resize(numberOfKeys);
+				samplerRot.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
+
+				for (size_t keyIndex = 0; keyIndex < numberOfKeys; ++keyIndex)
+				{
+					float timeSec = static_cast<float>(nodeAnim->mRotationKeys[keyIndex].mTime / ticksPerSecond);
+					aiQuaternion aiQuat = nodeAnim->mRotationKeys[keyIndex].mValue;
+					glm::quat rot(aiQuat.w, aiQuat.x, aiQuat.y, aiQuat.z);
+
+					samplerRot.m_Timestamps[keyIndex] = timeSec;
+					samplerRot.m_TRSoutputValuesToBeInterpolated[keyIndex] = glm::vec4(rot.x, rot.y, rot.z, rot.w);
+				}
+
+				size_t samplerIndexRot = animation->m_Samplers.size();
+				animation->m_Samplers.emplace_back(samplerRot);
+
+				SkeletalAnimation::Channel channel;
+				channel.m_samplerIndex = samplerIndexRot;
+				channel.m_NodeName = nodeName;
+				channel.m_Path = SkeletalAnimation::EPath::ROTATION;
+
+				animation->m_Channels.emplace_back(channel);
+			}
+			// (C) Scale
+			if (nodeAnim->mNumScalingKeys > 0)
+			{
+				size_t numberOfKeys = nodeAnim->mNumScalingKeys;
+				SkeletalAnimation::Sampler samplerScl;
+				samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+
+				samplerScl.m_Timestamps.resize(numberOfKeys);
+				samplerScl.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
+
+				for (size_t keyIndex = 0; keyIndex < numberOfKeys; ++keyIndex)
+				{
+					float timeSec = static_cast<float>(nodeAnim->mScalingKeys[keyIndex].mTime / ticksPerSecond);
+					aiVector3D aiScale = nodeAnim->mScalingKeys[keyIndex].mValue;
+					glm::vec3 scl(aiScale.x, aiScale.y, aiScale.z);
+
+					samplerScl.m_Timestamps[keyIndex] = timeSec;
+					samplerScl.m_TRSoutputValuesToBeInterpolated[keyIndex] = glm::vec4(scl, 0.0f);
+				}
+
+				size_t samplerIndexScl = animation->m_Samplers.size();
+				animation->m_Samplers.emplace_back(samplerScl);
+
+				SkeletalAnimation::Channel channel;
+				channel.m_samplerIndex = samplerIndexScl;
+				channel.m_NodeName = nodeName;
+				channel.m_Path = SkeletalAnimation::EPath::SCALE;
+
+				animation->m_Channels.emplace_back(channel);
+			}
+		}
+
+		// set duration
+		animation->setFirstKeyFrameTime(0.0f);
+		animation->setLastKeyFrameTime(durationSeconds);
+
+		m_Animations->push(animation);
+	}
+}
+
+glm::mat4 Model::convertMatrix(const aiMatrix4x4& m)
+{
+	return glm::mat4(
+		m.a1, m.b1, m.c1, m.d1,
+		m.a2, m.b2, m.c2, m.d2,
+		m.a3, m.b3, m.c3, m.d3,
+		m.a4, m.b4, m.c4, m.d4
+	);
+}
+
 
 void Model::loadOBJModel(std::string path, std::shared_ptr<Material>& defaultMaterial) {
     // Assimp를 사용하여 OBJ 파일 로드
@@ -382,5 +687,18 @@ void Model::updateMaterial(std::vector<std::shared_ptr<Material>> materials)
 		m_materials[i] = materials[i];
 	}
 }
+
+void Model::updateAnimations(const Timestep& timestep, uint32_t currentImage)
+{
+	m_Animations->update(timestep, *m_Skeleton, currentImage);
+	m_Skeleton->update();
+
+	if (m_SkeletalAnimations)
+		m_ShaderData.m_FinalBonesMatrices = m_Skeleton->m_ShaderData.m_FinalBonesMatrices;
+}
+
+uint16_t Model::getAnimCurrentFrame() { return m_Animations->getCurrentFrame(); }
+
+SkeletalAnimations& Model::getAnimations()  { return *(m_Animations.get()); }
 
 } // namespace ale

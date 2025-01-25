@@ -5,6 +5,7 @@
 #include "Renderer/Common.h"
 #include "Renderer/Mesh.h"
 #include "Renderer/Material.h"
+#include "Renderer/Animation/SkeletalAnimations.h"
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
@@ -17,6 +18,7 @@ struct DrawInfo {
 	glm::mat4 model;
 	glm::mat4 view;
 	glm::mat4 projection;
+	glm::mat4 finalBonesMatrices[MAX_BONES];
 	ShaderResourceManager* shaderResourceManager;
 	VkCommandBuffer commandBuffer;
 	VkPipelineLayout pipelineLayout;
@@ -39,12 +41,25 @@ class AL_API Model
 	std::vector<std::shared_ptr<Mesh>>& getMeshes() {return m_meshes;}
 	std::vector<std::shared_ptr<Material>>& getMaterials() {return m_materials;}
 	void updateMaterial(std::vector<std::shared_ptr<Material>> materials);
+	void updateAnimations(const Timestep& timestep, uint32_t currentImage);
+	uint16_t getAnimCurrentFrame();
+	SkeletalAnimations& getAnimations();
 	
   private:
 	Model() = default;
 
 	std::vector<std::shared_ptr<Mesh>> m_meshes;
 	std::vector<std::shared_ptr<Material>> m_materials;
+	// animation
+	std::shared_ptr<SkeletalAnimations> m_Animations;
+	std::shared_ptr<Armature::Skeleton> m_Skeleton;
+	Armature::ShaderData m_ShaderData;
+	bool m_SkeletalAnimations;
+
+	struct VertexBoneData
+	{
+		std::vector<std::pair<int, float>> bones;
+	};
 
 	void initModel(std::string path, std::shared_ptr<Material> &defaultMaterial);
 	void initBoxModel(std::shared_ptr<Material> &defaultMaterial);
@@ -58,6 +73,13 @@ class AL_API Model
 	std::shared_ptr<Material> processGLTFMaterial(aiMaterial *material, std::shared_ptr<Material> &defaultMaterial, std::string path);
 	void processGLTFNode(aiNode *node, const aiScene *scene, std::vector<std::shared_ptr<Material>> &materials);
 	std::shared_ptr<Mesh> processGLTFMesh(aiMesh *mesh, const aiScene *scene, std::shared_ptr<Material> &material);
+	void processGLTFSkeleton(const aiScene* scene);
+	void collectAllBones(const aiScene* scene, std::vector<aiBone*>& outBones);
+	void buildSkeletonBoneArray(const std::vector<aiBone*>& allAiBones);
+	void loadBone(aiNode* node, int parentBoneIndex);
+	void loadAnimations(const aiScene* scene);
+	glm::mat4 convertMatrix(const aiMatrix4x4& m);
+
 
 	void processOBJNode(aiNode *node, const aiScene *scene, std::shared_ptr<Material> &defaultMaterial);
 	std::shared_ptr<Mesh> processOBJMesh(aiMesh *mesh, const aiScene *scene, std::shared_ptr<Material> &defaultMaterial);
