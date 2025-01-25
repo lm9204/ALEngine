@@ -4,6 +4,7 @@
 #include <chrono>
 
 #include "Core/Base.h"
+#include "Renderer/Common.h"
 
 using namespace std::chrono_literals;
 
