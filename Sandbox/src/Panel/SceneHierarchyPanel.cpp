@@ -1,6 +1,7 @@
 #include "SceneHierarchyPanel.h"
 #include "Scene/Component.h"
 
+#include "Renderer/RenderingComponent.h"
 #include "Scripting/ScriptingEngine.h"
 
 #include "imgui/imgui.h"
@@ -279,7 +280,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		displayAddComponentEntry<CameraComponent>("Camera");
 		displayAddComponentEntry<ScriptComponent>("Script");
 		displayAddComponentEntry<MeshRendererComponent>("Mesh Renderer");
-		// displayAddComponentEntry<LightComponent>("Light");
+		displayAddComponentEntry<LightComponent>("Light");
 		// displayAddComponentEntry<RigidbodyComponent>("Rigidbody");
 		// displayAddComponentEntry<BoxColliderComponent>("Box Collider");
 		// displayAddComponentEntry<SphereColliderComponent>("Sphere Collider");
@@ -312,6 +313,56 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		float perspectiveFar = camera.getPerspectiveFarClip();
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setPerspectiveFarClip(perspectiveFar);
+	});
+
+	drawComponent<MeshRendererComponent>("MeshRenderer", entity, [entity, scene = m_Context](auto &component) mutable {
+		uint32_t meshType = component.type;
+		std::shared_ptr<RenderingComponent> rc = component.m_RenderingComponent;
+
+		const char *meshTypeStrings[] = {"Box", "Sphere", "Plane", "None"};
+		const char *currentMeshTypeString = meshTypeStrings[(int)meshType];
+
+		if (ImGui::BeginCombo("Primitive Type", currentMeshTypeString))
+		{
+			for (int32_t i = 0; i < 4; ++i)
+			{
+				bool isSelected = currentMeshTypeString == meshTypeStrings[i];
+
+				if (ImGui::Selectable(meshTypeStrings[i], isSelected))
+				{
+					currentMeshTypeString = meshTypeStrings[i];
+					// model 정보 바꾸기
+
+					std::shared_ptr<Material> mat = scene->getDefaultMaterial();
+					component.type = i;
+					if (i == 0)
+					{
+						component.m_RenderingComponent =
+							RenderingComponent::createRenderingComponent(Model::createBoxModel(mat));
+					}
+					else if (i == 1)
+					{
+						component.m_RenderingComponent =
+							RenderingComponent::createRenderingComponent(Model::createSphereModel(mat));
+					}
+					else if (i == 2)
+					{
+						component.m_RenderingComponent =
+							RenderingComponent::createRenderingComponent(Model::createPlaneModel(mat));
+					}
+				}
+
+				if (isSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+	});
+
+	drawComponent<LightComponent>("Light", entity, [](auto &component) {
+
 	});
 
 	drawComponent<ScriptComponent>("Script", entity, [entity, scene = m_Context](auto &component) mutable {
