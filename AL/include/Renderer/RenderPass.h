@@ -14,10 +14,10 @@ class RenderPass
 	static std::unique_ptr<RenderPass> createRenderPass(VkFormat swapChainImageFormat);
 	static std::unique_ptr<RenderPass> createDeferredRenderPass(VkFormat swapChainImageFormat);
 	static std::unique_ptr<RenderPass> createImGuiRenderPass(VkFormat swapChainImageFormat);
+	static std::unique_ptr<RenderPass> createShadowMapRenderPass();
 
-	~RenderPass()
-	{
-	}
+	~RenderPass() = default;
+
 	void cleanup();
 
 	VkRenderPass getRenderPass()
@@ -31,6 +31,7 @@ class RenderPass
 	void initRenderPass(VkFormat swapChainImageFormat);
 	void initDeferredRenderPass(VkFormat swapChainImageFormat);
 	void initImGuiRenderPass(VkFormat swapChainImageFormat);
+	void initShadowMapRenderPass();
 };
 } // namespace ale
 

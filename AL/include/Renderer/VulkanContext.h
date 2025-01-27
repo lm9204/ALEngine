@@ -59,6 +59,32 @@ class VulkanContext
 	}
 	uint32_t getQueueFamily();
 
+	VkDescriptorSetLayout getGeometryPassDescriptorSetLayout()
+	{
+		return geometryPassDescriptorSetLayout;
+	}
+	VkDescriptorSetLayout getShadowMapDescriptorSetLayout()
+	{
+		return shadowMapDescriptorSetLayout;
+	}
+	VkDescriptorSetLayout getShadowCubeMapDescriptorSetLayout()
+	{
+		return shadowCubeMapDescriptorSetLayout;
+	}
+
+	void setGeometryPassDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout)
+	{
+		geometryPassDescriptorSetLayout = descriptorSetLayout;
+	}
+	void setShadowMapDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout)
+	{
+		shadowMapDescriptorSetLayout = descriptorSetLayout;
+	}
+	void setShadowCubeMapDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout)
+	{
+		shadowCubeMapDescriptorSetLayout = descriptorSetLayout;
+	}
+
   private:
 	VulkanContext()
 	{
@@ -76,6 +102,9 @@ class VulkanContext
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
 	VkDescriptorPool descriptorPool;
+	VkDescriptorSetLayout geometryPassDescriptorSetLayout;
+	VkDescriptorSetLayout shadowMapDescriptorSetLayout;
+	VkDescriptorSetLayout shadowCubeMapDescriptorSetLayout;
 
 	void createInstance();
 	bool checkValidationLayerSupport();

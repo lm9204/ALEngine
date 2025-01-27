@@ -33,6 +33,13 @@ class VulkanUtil
 	static VkSampler createSampler();
 	static ImTextureID createIconTexture(VkDevice device, VkDescriptorPool descriptorpool, VkImageView imageView,
 										 VkSampler sampler);
+
+	static void createCubeMapImage(uint32_t width, uint32_t height, uint32_t mipLevels,
+								   VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling,
+								   VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image,
+								   VkDeviceMemory &imageMemory);
+	static VkImageView createCubeMapImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags,
+											  uint32_t mipLevels);
 };
 } // namespace ale
 

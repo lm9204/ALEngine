@@ -12,21 +12,26 @@ class FrameBuffers
 {
   public:
 	static std::unique_ptr<FrameBuffers> createSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
-	static std::unique_ptr<FrameBuffers> createFinalFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createShadowMapFrameBuffers(VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createShadowCubeMapFrameBuffers(VkRenderPass renderPass);
 
-	~FrameBuffers()
-	{
-	}
+	~FrameBuffers() = default;
+
 	void cleanup();
 
 	void initSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
-	void initFinalFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 	void initImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	void initShadowMapFrameBuffers(VkRenderPass renderPass);
+	void initShadowCubeMapFrameBuffers(VkRenderPass renderPass);
 
 	std::vector<VkFramebuffer> &getFramebuffers()
 	{
 		return framebuffers;
+	}
+	VkImage &getDepthImage()
+	{
+		return depthImage;
 	}
 	VkImageView &getDepthImageView()
 	{
@@ -44,13 +49,9 @@ class FrameBuffers
 	{
 		return albedoImageView;
 	}
-	VkImageView &getFinalImageView()
+	VkImageView &getPbrImageView()
 	{
-		return finalImageView;
-	}
-	VkImage &getFinalImage()
-	{
-		return finalImage;
+		return pbrImageView;
 	}
 
   private:
@@ -70,9 +71,9 @@ class FrameBuffers
 	VkDeviceMemory albedoImageMemory;
 	VkImageView albedoImageView;
 
-	VkImage finalImage;
-	VkDeviceMemory finalMemory;
-	VkImageView finalImageView;
+	VkImage pbrImage;
+	VkDeviceMemory pbrImageMemory;
+	VkImageView pbrImageView;
 
 	std::vector<VkFramebuffer> framebuffers;
 };

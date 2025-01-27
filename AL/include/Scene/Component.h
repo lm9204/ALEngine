@@ -58,9 +58,13 @@ struct TransformComponent
 // RENDERER
 // Mesh Renderer - Cube, Sphere, Cylinder, Capsule
 
+class RenderingComponent;
+
 struct MeshRendererComponent
 {
-	std::shared_ptr<Model> m_Model;
+	std::shared_ptr<RenderingComponent> m_RenderingComponent;
+	uint32_t type;
+	std::string path;
 
 	MeshRendererComponent() = default;
 	MeshRendererComponent(const MeshRendererComponent &) = default;
@@ -85,7 +89,8 @@ struct TextureComponent
 struct LightComponent
 {
 	// Color
-	glm::vec4 color;
+	std::shared_ptr<Light> m_Light;
+
 	// Type - Directional, Spot, Point
 	LightComponent() = default;
 	LightComponent(const LightComponent &) = default;
@@ -167,8 +172,8 @@ template <typename... Component> struct ComponentGroup
 {
 };
 
-using AllComponents =
-	ComponentGroup<TransformComponent, ModelComponent, TextureComponent, CameraComponent, ScriptComponent>;
+using AllComponents = ComponentGroup<TransformComponent, MeshRendererComponent, TextureComponent, CameraComponent,
+									 ScriptComponent, LightComponent>;
 
 } // namespace ale
 

@@ -5,6 +5,8 @@
 
 #include "Core/App.h"
 
+#include "Renderer/RenderingComponent.h"
+
 #include "Scripting/ScriptingEngine.h"
 
 namespace ale
@@ -60,6 +62,7 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
 
 	auto view = newScene->m_Registry.view<CameraComponent>();
+	newScene->initScene();
 
 	return newScene;
 }
@@ -67,7 +70,7 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 std::shared_ptr<Scene> Scene::createScene()
 {
 	std::shared_ptr<Scene> scene = std::shared_ptr<Scene>(new Scene());
-	// scene->initScene();
+	scene->initScene();
 	return scene;
 }
 
@@ -125,6 +128,7 @@ void Scene::onRuntimeStop()
 
 void Scene::onUpdateEditor(EditorCamera &camera)
 {
+	setCamPos(camera.getPosition());
 	renderScene(camera);
 }
 
@@ -179,6 +183,7 @@ void Scene::onUpdateRuntime(Timestep ts)
 	if (mainCamera)
 	{
 		Renderer &renderer = App::get().getRenderer();
+		setCamPos(mainCamera->getPosition());
 		renderer.beginScene(this, *mainCamera);
 	}
 	else
@@ -210,6 +215,21 @@ void Scene::onViewportResize(uint32_t width, uint32_t height)
 void Scene::step(int32_t frames)
 {
 	m_StepFrames = frames;
+}
+
+void Scene::initScene()
+{
+	m_defaultTextures.albedo = Texture::createDefaultTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	m_defaultTextures.normal = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	m_defaultTextures.roughness = Texture::createDefaultTexture(glm::vec4(0.5f, 0.5f, 0.5f, 1.0f));
+	m_defaultTextures.metallic = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+	m_defaultTextures.ao = Texture::createDefaultTexture(glm::vec4(1.0f, 1.0f, 1.0f, 1.0f));
+	m_defaultTextures.height = Texture::createDefaultTexture(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+	m_defaultMaterial = Material::createMaterial(
+		{glm::vec3(1.0f, 1.0f, 1.0f), m_defaultTextures.albedo, false}, {m_defaultTextures.normal, false},
+		{0.5f, m_defaultTextures.roughness, false}, {0.0f, m_defaultTextures.metallic, false},
+		{1.0f, m_defaultTextures.ao, false}, {0.0f, m_defaultTextures.height, false});
 }
 
 void Scene::renderScene(EditorCamera &camera)
@@ -279,6 +299,9 @@ template <> void Scene::onComponentAdded<CameraComponent>(Entity entity, CameraC
 
 template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent &component)
 {
+	component.type = 0;
+	component.m_RenderingComponent =
+		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
@@ -291,6 +314,11 @@ template <> void Scene::onComponentAdded<TextureComponent>(Entity entity, Textur
 
 template <> void Scene::onComponentAdded<LightComponent>(Entity entity, LightComponent &component)
 {
+	auto &tc = entity.getComponent<TransformComponent>();
+
+	component.m_Light = std::make_shared<Light>(Light{tc.m_Position, glm::vec3(0.0f, -1.0f, 0.0f),
+													  glm::vec3(1.0f, 1.0f, 1.0f), 1.0f, glm::cos(glm::radians(12.5f)),
+													  glm::cos(glm::radians(17.5f)), 1, 1, 0, glm::vec2(0.0f, 0.0f)});
 }
 
 template <> void Scene::onComponentAdded<RigidbodyComponent>(Entity entity, RigidbodyComponent &component)

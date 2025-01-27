@@ -13,9 +13,11 @@ class DescriptorSetLayout
 	static std::unique_ptr<DescriptorSetLayout> createDescriptorSetLayout();
 	static std::unique_ptr<DescriptorSetLayout> createGeometryPassDescriptorSetLayout();
 	static std::unique_ptr<DescriptorSetLayout> createLightingPassDescriptorSetLayout();
-	~DescriptorSetLayout()
-	{
-	}
+	static std::unique_ptr<DescriptorSetLayout> createShadowMapDescriptorSetLayout();
+	static std::unique_ptr<DescriptorSetLayout> createShadowCubeMapDescriptorSetLayout();
+
+	~DescriptorSetLayout() = default;
+
 	void cleanup();
 
 	VkDescriptorSetLayout getDescriptorSetLayout()
@@ -29,6 +31,8 @@ class DescriptorSetLayout
 	void initDescriptorSetLayout();
 	void initGeometryPassDescriptorSetLayout();
 	void initLightingPassDescriptorSetLayout();
+	void initShadowMapDescriptorSetLayout();
+	void initShadowCubeMapDescriptorSetLayout();
 };
 } // namespace ale
 #endif
