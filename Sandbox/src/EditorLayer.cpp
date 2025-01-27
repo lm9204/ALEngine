@@ -2,6 +2,8 @@
 #include "Scene/SceneSerializer.h"
 #include "Utils/PlatformUtils.h"
 
+#include "Renderer/RenderingComponent.h"
+
 #include "Scripting/ScriptingEngine.h"
 
 #include "Project/Project.h"
@@ -407,20 +409,7 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 		m_EditorScenePath = path;
 	}
 
-	// temp
-	{
-		auto plane = m_ActiveScene->createEntity("Plane");
-		plane.addComponent<ModelComponent>();
-		plane.getComponent<ModelComponent>().m_Model = Model::createPlaneModel();
-
-		plane.addComponent<TextureComponent>();
-		plane.getComponent<TextureComponent>().m_Texture = Texture::createTexture("textures/karina.jpg");
-		plane.getComponent<TransformComponent>().m_Position = glm::vec3(0.0f, 0.0f, -3.0f);
-		plane.getComponent<TransformComponent>().m_Rotation = glm::vec3(0.0f, 0.0f, glm::radians(180.0f));
-		plane.getComponent<TransformComponent>().m_Scale = glm::vec3(5.0f * 0.74f, 5.0f, 1.0f);
-	}
-
-	loadSceneToRenderer(m_ActiveScene);
+	// loadSceneToRenderer(m_ActiveScene);
 }
 
 void EditorLayer::saveScene()
@@ -457,7 +446,7 @@ void EditorLayer::onScenePlay()
 
 	m_ActiveScene = Scene::copyScene(m_EditorScene);
 
-	loadSceneToRenderer(m_ActiveScene);
+	// loadSceneToRenderer(m_ActiveScene);
 
 	// active scene runtime start
 	m_ActiveScene->onRuntimeStart();
@@ -479,7 +468,7 @@ void EditorLayer::onSceneStop()
 	m_SceneState = ESceneState::EDIT;
 
 	m_ActiveScene = m_EditorScene;
-	loadSceneToRenderer(m_ActiveScene);
+	// loadSceneToRenderer(m_ActiveScene);
 
 	m_SceneHierarchyPanel.setContext(m_ActiveScene);
 }
