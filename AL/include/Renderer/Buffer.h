@@ -6,14 +6,14 @@
 #include "Renderer/VulkanContext.h"
 #include "Renderer/VulkanUtil.h"
 
+#include "assimp/texture.h"
+
 namespace ale
 {
 class Buffer
 {
   public:
-	virtual ~Buffer()
-	{
-	}
+	virtual ~Buffer() = default;
 	virtual void cleanup() = 0;
 
   protected:
@@ -36,9 +36,8 @@ class VertexBuffer : public Buffer
 {
   public:
 	static std::unique_ptr<VertexBuffer> createVertexBuffer(std::vector<Vertex> &vertices);
-	~VertexBuffer()
-	{
-	}
+	~VertexBuffer() = default;
+
 	void cleanup();
 
 	void bind(VkCommandBuffer commandBuffer);
@@ -51,9 +50,8 @@ class IndexBuffer : public Buffer
 {
   public:
 	static std::unique_ptr<IndexBuffer> createIndexBuffer(std::vector<uint32_t> &indices);
-	~IndexBuffer()
-	{
-	}
+	~IndexBuffer() = default;
+
 	void cleanup();
 
 	void bind(VkCommandBuffer commandBuffer);
@@ -72,10 +70,14 @@ class IndexBuffer : public Buffer
 class ImageBuffer : public Buffer
 {
   public:
-	static std::unique_ptr<ImageBuffer> createImageBuffer(std::string path);
-	~ImageBuffer()
-	{
-	}
+	static std::unique_ptr<ImageBuffer> createImageBuffer(std::string path, bool flipVertically = false);
+	static std::unique_ptr<ImageBuffer> createMaterialImageBuffer(std::string path, bool flipVertically = false);
+	static std::unique_ptr<ImageBuffer> createImageBufferFromMemory(const aiTexture *texture);
+	static std::unique_ptr<ImageBuffer> createDefaultImageBuffer(glm::vec4 color);
+	static std::unique_ptr<ImageBuffer> createDefaultSingleChannelImageBuffer(float value);
+
+	~ImageBuffer() = default;
+
 	void cleanup();
 
 	uint32_t getMipLevels()
@@ -96,7 +98,11 @@ class ImageBuffer : public Buffer
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 
-	void initImageBuffer(std::string path);
+	void initImageBuffer(std::string path, bool flipVertically);
+	void initMaterialImageBuffer(std::string path, bool flipVertically);
+	void initImageBufferFromMemory(const aiTexture *texture);
+	void initDefaultImageBuffer(glm::vec4 color);
+	void initDefaultSingleChannelImageBuffer(float value);
 	void transitionImageLayout(VkImage image, VkFormat format, VkImageLayout oldLayout, VkImageLayout newLayout,
 							   uint32_t mipLevels);
 	void copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t width, uint32_t height);
@@ -107,9 +113,8 @@ class UniformBuffer : public Buffer
 {
   public:
 	static std::shared_ptr<UniformBuffer> createUniformBuffer(VkDeviceSize buffersize);
-	~UniformBuffer()
-	{
-	}
+	~UniformBuffer() = default;
+
 	void cleanup();
 
 	void updateUniformBuffer(void *data, VkDeviceSize size);
