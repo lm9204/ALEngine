@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 943649188941713944
+  - Entity: 12929734623730401295
     TagComponent:
       Tag: Camera
     TransformComponent:
@@ -14,10 +14,25 @@ Entities:
         PerspectiveFar: 100
       Primary: true
       FixedAspectRatio: false
-  - Entity: 10829253971587418347
+  - Entity: 10840198791030058307
     TagComponent:
       Tag: Light
     TransformComponent:
       Position: [0, 1, 0]
       Rotation: [0, 0, 0]
       Scale: [0.100000001, 0.100000001, 0.100000001]
+  - Entity: 9804635683025109119
+    TagComponent:
+      Tag: Plane
+    TransformComponent:
+      Position: [0, 0, -3]
+      Rotation: [0, 0, 3.14159274]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      MeshType: 0
+    ScriptComponent:
+      ClassName: Sandbox.Player
+      ScriptFields:
+        - Name: Speed
+          Type: Float
+          Data: 43
