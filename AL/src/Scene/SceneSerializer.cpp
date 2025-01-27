@@ -1,5 +1,7 @@
 #include "alpch.h"
 
+#include "Renderer/RenderingComponent.h"
+
 #include "Scene/Component.h"
 #include "Scene/Entity.h"
 #include "Scene/SceneSerializer.h"
@@ -184,6 +186,21 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 
 		out << YAML::EndMap; // Camera
 	}
+	// MeshRendererComponent
+	if (entity.hasComponent<MeshRendererComponent>())
+	{
+		out << YAML::Key << "MeshRendererComponent";
+		out << YAML::BeginMap;
+
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		out << YAML::Key << "MeshType" << YAML::Value << mc.type;
+
+		if (!mc.path.empty())
+		{
+			out << YAML::Key << "Path" << YAML::Value << mc.path;
+		}
+		out << YAML::EndMap;
+	}
 	if (entity.hasComponent<ScriptComponent>())
 	{
 		auto &scriptComponent = entity.getComponent<ScriptComponent>();
@@ -239,7 +256,6 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::EndMap; // End ScriptComponent
 	}
 
-	// MeshRendererComponent
 	// LightComponent
 	// RigidbodyComponent
 	// BoxColliderComponent
@@ -342,6 +358,37 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				cc.m_FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 			}
 
+			// MeshRendererComponent
+			auto meshComponent = entity["MeshRendererComponent"];
+			if (meshComponent)
+			{
+				auto &mc = deserializedEntity.addComponent<MeshRendererComponent>();
+
+				// type에 따라 Primitive Mesh 생성
+				mc.type = meshComponent["MeshType"].as<uint32_t>();
+				std::shared_ptr<Model> model;
+				switch (mc.type)
+				{
+				case 0:
+					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
+					break;
+				case 1:
+					model = Model::createSphereModel(m_Scene->getDefaultMaterial());
+					break;
+				case 2:
+					model = Model::createPlaneModel(m_Scene->getDefaultMaterial());
+					break;
+				case 3:
+					mc.path = meshComponent["Path"].as<std::string>();
+					model = Model::createModel(mc.path, m_Scene->getDefaultMaterial());
+				// 그 외의 이상한 값은 box로 임의로 처리
+				default:
+					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
+					break;
+				}
+				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+			}
+
 			// ScriptComponent
 			auto scriptComponent = entity["ScriptComponent"];
 			if (scriptComponent)
@@ -393,7 +440,7 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 					}
 				}
 			}
-			// MeshRendererComponent
+
 			// RigidbodyComponent
 			// BoxColliderComponent
 			// SphereColliderComponent
