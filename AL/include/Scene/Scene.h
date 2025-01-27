@@ -7,10 +7,12 @@
 #include <glm/glm.hpp>
 
 #include "Renderer/EditorCamera.h"
+#include "Renderer/Material.h"
 
 namespace ale
 {
 class Entity;
+class Material;
 
 class Scene
 {
@@ -48,6 +50,18 @@ class Scene
 	{
 		return m_lightPos;
 	}
+	glm::vec3 &getCamPos()
+	{
+		return m_CameraPos;
+	}
+	float &getAmbientStrength()
+	{
+		return m_ambientStrength;
+	}
+	std::shared_ptr<Material> &getDefaultMaterial()
+	{
+		return m_defaultMaterial;
+	}
 
 	Entity findEntityByName(std::string_view name);
 	Entity getEntityByUUID(UUID uuid);
@@ -60,20 +74,32 @@ class Scene
   private:
 	template <typename T> void onComponentAdded(Entity entity, T &component);
 
+	void initScene();
 	void renderScene(EditorCamera &camera);
 	void onPhysicsStart();
 	void onPhysicsStop();
+
+	void setCamPos(glm::vec3 &pos)
+	{
+		m_CameraPos = pos;
+	}
 
   private:
 	entt::registry m_Registry;
 	uint32_t m_ViewportWidth = 0, m_ViewportHeight = 0;
 
 	glm::vec3 m_lightPos{0.0f, 1.0f, 0.0f};
+	glm::vec3 m_CameraPos{0.0f, 0.0f, 10.0f};
 	bool m_IsPaused = false;
 	bool m_IsRunning = false;
 	int32_t m_StepFrames = 0;
 
 	std::unordered_map<UUID, entt::entity> m_EntityMap;
+
+	DefaultTextures m_defaultTextures;
+	std::shared_ptr<Material> m_defaultMaterial;
+
+	float m_ambientStrength{0.1f};
 
 	friend class Entity;
 	friend class SceneSerializer;
