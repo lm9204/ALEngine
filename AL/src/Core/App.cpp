@@ -45,6 +45,17 @@ void App::pushOverlay(Layer *layer)
 void App::run()
 {
 	AL_CORE_INFO("App::run");
+	auto time = std::chrono::high_resolution_clock::now();
+	Timestep timestep;
+	Chrono::TimePoint timeLastFrame;
+	timestep = time - timeLastFrame;
+	timeLastFrame = time;
+
+	SkeletalAnimations animations = m_Scene->m_SAComponent->m_Model->getAnimations();
+	m_Scene->m_SAComponent->m_CurrentAnimation = &animations[1];
+	m_Scene->m_SAComponent->m_CurrentAnimation->start();
+	m_Scene->m_SAComponent->m_CurrentAnimation->setRepeat(true);
+	m_Scene->m_SAComponent->setData(m_Renderer->getCurrentFrame(), m_Scene->m_SAComponent->m_CurrentAnimation->getData());
 	while (m_Running && !glfwWindowShouldClose(m_Window->getNativeWindow()))
 	{
 		// set delta time
@@ -67,7 +78,11 @@ void App::run()
 		}
 		m_Window->onUpdate();
 		m_Scene->processInput(m_Window->getNativeWindow());
+		m_Scene->updateAnimation(timestep, m_Renderer->getCurrentFrame());
 		m_Renderer->drawFrame(m_Scene.get());
+		time = std::chrono::high_resolution_clock::now();
+		timestep = time - timeLastFrame;
+		timeLastFrame = time;
 	}
 	vkDeviceWaitIdle(m_Renderer->getDevice());
 }

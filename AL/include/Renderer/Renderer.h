@@ -26,6 +26,8 @@ class AL_API Renderer
 	void loadScene(Scene *scene);
 	void drawFrame(Scene *scene);
 	void recreateSwapChain();
+	// SA_TEST
+	uint32_t getCurrentFrame() const;
 
 	VkDevice getDevice()
 	{

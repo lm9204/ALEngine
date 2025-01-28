@@ -188,6 +188,8 @@ void Renderer::drawFrame(Scene* scene) {
     currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
+uint32_t Renderer::getCurrentFrame() const { return currentFrame; }
+
 
 /*
     [커맨드 버퍼에 작업 기록]

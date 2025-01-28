@@ -5,6 +5,7 @@
 #include "Renderer/Common.h"
 #include "Renderer/Object.h"
 #include "Renderer/Material.h"
+#include "Renderer/SAComponent.h"
 
 namespace ale
 {
@@ -33,8 +34,9 @@ public:
 	void mouseButton(int button, int action, double x, double y);
 	void mouseMove(double x, double y);
 	void processInput(GLFWwindow* window);
+	void updateAnimation(const Timestep& timestep, uint32_t currentFrame);
 
-
+	std::shared_ptr<SAComponent> m_SAComponent;
 
 
 private:
@@ -46,7 +48,7 @@ private:
 	std::shared_ptr<Model> m_sphereModel;
 	std::shared_ptr<Model> m_planeModel;
 
-
+	// TEST
 
 	std::vector< std::shared_ptr<Object> > m_objects;
 	

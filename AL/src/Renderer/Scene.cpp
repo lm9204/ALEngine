@@ -41,6 +41,11 @@ glm::mat4 Scene::getProjMatrix(VkExtent2D swapChainExtent) {
     return glm::perspective(glm::radians(45.0f), swapChainExtent.width / (float) swapChainExtent.height, 0.1f, 100.0f);
 }
 
+void Scene::updateAnimation(const Timestep& timestep, uint32_t currentFrame)
+{
+    m_SAComponent->updateAnimation(timestep, currentFrame);
+}
+
 
 // void Scene::updateLightPos(glm::vec3 lightPos) {
 //     m_lightInfo.lightPos = lightPos;
@@ -115,11 +120,9 @@ void Scene::initScene() {
         Transform{light.position, glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.1f, 0.1f, 0.1f)}));
     }
     
-
     m_floorDiffuseTexture = Texture::createTexture("textures/laminate_floor_02_diff_2k.jpg");
     m_floorNormalTexture = Texture::createMaterialTexture("textures/laminate_floor_02_nor_gl_2k.jpg");
     m_floorRoughnessTexture = Texture::createMaterialTexture("textures/laminate_floor_02_rough_2k.jpg");
-    
 
     m_floorMaterial = Material::createMaterial(
         {glm::vec3(1.0f, 1.0f, 1.0f), m_floorDiffuseTexture, true},
@@ -172,6 +175,12 @@ void Scene::initScene() {
     m_plant2Object = Object::createObject("plant2", m_plant2Model, 
     Transform{glm::vec3(-1.6f, -0.56f, -1.25f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
     m_objects.push_back(m_plant2Object);
+
+    m_SAComponent = std::make_shared<SAComponent>();
+    m_SAComponent->m_Model = Model::createModel("models/animated.gltf/animated.gltf", m_defaultMaterial);
+    std::shared_ptr<Object> SAplayerObject = Object::createObject("SAplayer", m_SAComponent->m_Model,
+    Transform{glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(0.01f, 0.01f, 0.01f)});
+    m_objects.push_back(SAplayerObject);
 
     m_objectCount = m_objects.size();
 

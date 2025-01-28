@@ -14,6 +14,7 @@
 #include "Renderer/Common.h"
 #include "Renderer/Renderer.h"
 #include "Renderer/Scene.h"
+#include "Renderer/SAComponent.h"
 
 namespace ale
 {
