@@ -10,6 +10,12 @@ using namespace std::chrono_literals;
 
 namespace ale
 {
+
+namespace Chrono
+{
+	using TimePoint = std::chrono::time_point<std::chrono::high_resolution_clock>;
+	using Duration = std::chrono::duration<float, std::chrono::seconds::period>;
+} // namespace Chrono
 class Timestep
 {
   public:
@@ -25,6 +31,7 @@ class Timestep
 	Timestep& operator=(const std::chrono::duration<float, std::chrono::seconds::period>& timestep);
 	Timestep& operator-=(const Timestep& other);
 	Timestep operator-(const Timestep& other) const;
+	Timestep operator*(float factor) const;
 	bool operator<=(const std::chrono::duration<float, std::chrono::seconds::period>& other) const;
 
 	operator float() const { return m_Timestep.count(); }
