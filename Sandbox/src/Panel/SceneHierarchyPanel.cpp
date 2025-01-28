@@ -23,6 +23,9 @@
 
 namespace ale
 {
+static std::string s_DroppedFilePath;
+static bool s_IsHovered = false;
+
 SceneHierarchyPanel::SceneHierarchyPanel(const std::shared_ptr<Scene> &context)
 {
 	setContext(context);
@@ -194,6 +197,154 @@ static void drawVec3Control(const std::string &label, glm::vec3 &values, float r
 	ImGui::PopID();
 }
 
+static void drawFloatControl(const std::string &label, float &value, float resetValue = 0.0f,
+							 float columnWidth = 100.0f)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	auto boldFont = io.Fonts->Fonts[0];
+
+	ImGui::PushID(label.c_str());
+
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, columnWidth);
+	ImGui::Text(label.c_str());
+	ImGui::NextColumn();
+
+	ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2{0, 0});
+
+	float lineHeight = GImGui->Font->FontSize + GImGui->Style.FramePadding.y * 2.0f;
+	ImVec2 buttonSize = {lineHeight + 3.0f, lineHeight};
+
+	ImGui::PushStyleColor(ImGuiCol_Button, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
+	ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4{0.2f, 0.35f, 0.9f, 1.0f});
+	ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4{0.1f, 0.25f, 0.8f, 1.0f});
+	ImGui::PushFont(boldFont);
+
+	if (ImGui::Button("R", buttonSize))
+		value = resetValue;
+
+	ImGui::PopFont();
+	ImGui::PopStyleColor(3);
+
+	ImGui::SameLine();
+
+	// DragFloat
+	ImGui::DragFloat("##SingleValue", &value, 0.1f, 0.0f, 0.0f, "%.2f");
+
+	ImGui::PopStyleVar();
+
+	// 컬럼 닫기
+	ImGui::Columns(1);
+
+	ImGui::PopID();
+}
+
+static void drawColorControl(const std::string &label, glm::vec3 &color, float columnWidth = 100.0f)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	auto boldFont = io.Fonts->Fonts[0];
+
+	ImGui::PushID(label.c_str()); // 고유 ID를 추가하여 UI 충돌 방지
+
+	// 컬럼 설정
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, columnWidth);
+	ImGui::Text(label.c_str()); // 레이블 표시
+	ImGui::NextColumn();
+
+	// ColorEdit3을 사용하여 색상 조정
+	ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2{2, 2});						 // 패딩 조정
+	ImGui::ColorEdit3("##Color", glm::value_ptr(color), ImGuiColorEditFlags_DisplayRGB); // 컬러 조정
+	ImGui::PopStyleVar();
+
+	// 컬럼 마무리
+	ImGui::Columns(1);
+	ImGui::PopID();
+}
+
+void drawDragDropUI(const std::string &label, float columnWidth = 100.0f)
+{
+	ImGuiIO &io = ImGui::GetIO();
+	auto boldFont = io.Fonts->Fonts[0];
+
+	// 고유 ID 푸시 (label 중복 방지)
+	ImGui::PushID(label.c_str());
+
+	// 2개의 컬럼 구성
+	ImGui::Columns(2);
+	ImGui::SetColumnWidth(0, columnWidth);
+
+	// 왼쪽 컬럼: 레이블
+	ImGui::Text(label.c_str());
+	ImGui::NextColumn();
+
+	// 오른쪽 컬럼: 드래그 앤 드롭 Child 영역
+	// -- Unity 스타일을 위해 스타일 설정 --
+	ImGui::PushStyleColor(ImGuiCol_ChildBg, ImVec4(0.2f, 0.2f, 0.2f, 1.0f)); // 배경색
+	ImGui::PushStyleColor(ImGuiCol_Border, ImVec4(0.6f, 0.6f, 0.6f, 1.0f));	 // 테두리 색
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 5.0f);					 // 둥근 모서리
+	ImGui::PushStyleVar(ImGuiStyleVar_FrameBorderSize, 1.0f);				 // 테두리 두께
+
+	// 적절한 크기의 드래그 영역 (가로 자동, 높이 60px 예시)
+	ImVec2 dragDropSize = ImVec2(ImGui::GetContentRegionAvail().x, 20.0f);
+
+	ImGui::BeginChild("DragDropArea", dragDropSize, true, ImGuiWindowFlags_NoScrollbar);
+	{
+		if (!s_DroppedFilePath.empty())
+		{
+			// 이미 드롭된 파일이 있는 경우 표시
+			ImGui::TextWrapped("Dropped File: %s", s_DroppedFilePath.c_str());
+			ImGui::Separator();
+			if (ImGui::Button("Clear"))
+			{
+				s_DroppedFilePath.clear();
+			}
+		}
+		else
+		{
+			ImVec2 availableSpace = ImGui::GetContentRegionAvail();				  // 사용 가능한 영역 크기
+			ImVec2 textSize = ImGui::CalcTextSize("Drag & Drop Model file here"); // 텍스트 크기 계산
+
+			// 수평 및 수직으로 텍스트를 중앙 정렬
+			ImGui::SetCursorPosX((availableSpace.x - textSize.x) * 0.5f);
+			ImGui::SetCursorPosY((availableSpace.y - textSize.y) * 0.5f + 6.5f);
+
+			// 아직 드롭된 파일이 없는 경우: 안내 문구
+			if (s_IsHovered)
+				ImGui::TextColored(ImVec4(0.9f, 0.9f, 1.0f, 1.0f), "Drop Here!");
+			else
+				ImGui::Text("Drag & Drop Model file here");
+		}
+
+		// 드래그 앤 드롭 처리
+		if (ImGui::BeginDragDropTarget())
+		{
+			s_IsHovered = true; // 드래그 중이면 하이라이트 표시
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t *path = (const wchar_t *)payload->Data;
+				std::filesystem::path gltfPath(path);
+				std::cout << "gltf: " << gltfPath.string() << '\n';
+			}
+			ImGui::EndDragDropTarget();
+		}
+		else
+		{
+			s_IsHovered = false; // 드래그가 끝나면 해제
+		}
+	}
+	ImGui::EndChild();
+
+	// 스타일 되돌리기
+	ImGui::PopStyleVar(2);
+	ImGui::PopStyleColor(2);
+
+	// 컬럼 끝
+	ImGui::Columns(1);
+
+	ImGui::PopID();
+}
+
 template <typename T, typename UIFunction>
 static void drawComponent(const std::string &name, Entity entity, UIFunction uiFunction)
 {
@@ -319,10 +470,15 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		uint32_t meshType = component.type;
 		std::shared_ptr<RenderingComponent> rc = component.m_RenderingComponent;
 
-		const char *meshTypeStrings[] = {"Box", "Sphere", "Plane", "None"};
+		const char *meshTypeStrings[] = {"Box", "Sphere", "Plane", "None", "Model"};
 		const char *currentMeshTypeString = meshTypeStrings[(int)meshType];
 
-		if (ImGui::BeginCombo("Primitive Type", currentMeshTypeString))
+		ImGui::Columns(2);
+		ImGui::SetColumnWidth(0, 100.0f);
+
+		ImGui::Text("Primitive Type");
+		ImGui::NextColumn();
+		if (ImGui::BeginCombo("##MeshTypeCombo", currentMeshTypeString))
 		{
 			for (int32_t i = 0; i < 4; ++i)
 			{
@@ -333,23 +489,65 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					currentMeshTypeString = meshTypeStrings[i];
 					// model 정보 바꾸기
 
-					std::shared_ptr<Material> mat = scene->getDefaultMaterial();
 					component.type = i;
-					if (i == 0)
+					if (i == 3) // None
+					{
+					}
+					else
 					{
 						component.m_RenderingComponent =
-							RenderingComponent::createRenderingComponent(Model::createBoxModel(mat));
+							RenderingComponent::createRenderingComponent(scene->getDefaultModel(i));
 					}
-					else if (i == 1)
-					{
-						component.m_RenderingComponent =
-							RenderingComponent::createRenderingComponent(Model::createSphereModel(mat));
-					}
-					else if (i == 2)
-					{
-						component.m_RenderingComponent =
-							RenderingComponent::createRenderingComponent(Model::createPlaneModel(mat));
-					}
+				}
+				if (isSelected)
+				{
+					ImGui::SetItemDefaultFocus();
+				}
+			}
+			ImGui::EndCombo();
+		}
+		ImGui::Columns(1);
+
+		// Drag & Drop Model
+		// drawDragDropUI("Model");
+		ImGui::Button("Model", ImVec2(200.0f, 0.0f));
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t *path = (const wchar_t *)payload->Data;
+				std::filesystem::path filePath(path);
+				if (filePath.extension().string() == ".gltf" || filePath.extension().string() == ".glb" ||
+					filePath.extension().string() == ".obj")
+				{
+					std::shared_ptr<Model> model = Model::createModel(filePath.string(), scene->getDefaultMaterial());
+					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+					component.type = 4;
+					component.path = filePath.string();
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
+	});
+
+	drawComponent<LightComponent>("Light", entity, [entity, scene = m_Context](auto &component) mutable {
+		auto &tc = entity.getComponent<TransformComponent>();
+
+		Light *light = component.m_Light.get();
+
+		uint32_t lightType = light->type;
+		const char *lightTypeStrings[] = {"Point", "Spotlight", "Directional"};
+		const char *currentLightTypeString = lightTypeStrings[(int)lightType];
+		if (ImGui::BeginCombo("Light Type", currentLightTypeString))
+		{
+			for (int32_t i = 0; i < 3; ++i)
+			{
+				bool isSelected = currentLightTypeString == lightTypeStrings[i];
+
+				if (ImGui::Selectable(lightTypeStrings[i], isSelected))
+				{
+					currentLightTypeString = lightTypeStrings[i];
+					light->type = i;
 				}
 
 				if (isSelected)
@@ -359,10 +557,23 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			}
 			ImGui::EndCombo();
 		}
-	});
 
-	drawComponent<LightComponent>("Light", entity, [](auto &component) {
+		bool onShadow = light->onShadowMap == 1 ? true : false;
+		ImGui::Checkbox("Shadow Map", &onShadow);
+		light->onShadowMap = onShadow == true ? 1 : 0;
 
+		drawVec3Control("Position", light->position);
+		tc.m_Position = light->position;
+		drawVec3Control("Direction", light->direction);
+
+		ImGui::Spacing();
+		drawColorControl("Color", light->color);
+
+		ImGui::Spacing();
+		drawFloatControl("Ambient Strength", scene->getAmbientStrength());
+		drawFloatControl("Intesntiy", light->intensity);
+		drawFloatControl("Inner Cutoff", light->innerCutoff);
+		drawFloatControl("Outer Cutoff", light->outerCutoff);
 	});
 
 	drawComponent<ScriptComponent>("Script", entity, [entity, scene = m_Context](auto &component) mutable {
