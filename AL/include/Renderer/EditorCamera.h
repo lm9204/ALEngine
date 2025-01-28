@@ -37,8 +37,8 @@ class EditorCamera : public Camera
   private:
 	float m_Fov = glm::radians(45.0f);
 	float m_AspectRatio = WINDOW_WIDTH / (float)WINDOW_HEIGHT;
-	float m_NearClip = 0.01F;
-	float m_FarClip = 100.0F;
+	float m_NearClip = 0.001F;
+	float m_FarClip = 1000.0F;
 
 	glm::vec3 m_CameraPos{0.0f, 0.0f, 10.0f};
 	glm::vec2 m_prevMousePos{0.0f, 0.0f};
