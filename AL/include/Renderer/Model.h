@@ -40,7 +40,7 @@ class AL_API Model
 	std::vector<std::shared_ptr<Mesh>>& getMeshes() {return m_meshes;}
 	std::vector<std::shared_ptr<Material>>& getMaterials() {return m_materials;}
 	void updateMaterial(std::vector<std::shared_ptr<Material>> materials);
-	void updateAnimations(const Timestep& timestep, uint32_t currentImage);
+	void updateAnimations(SkeletalAnimation* animation, const Timestep& timestep, const float speedFactor, uint32_t prevImage, uint32_t currentImage);
 	uint16_t getAnimCurrentFrame();
 	SkeletalAnimations& getAnimations();
 	
