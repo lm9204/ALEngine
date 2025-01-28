@@ -26,7 +26,7 @@ layout(location = 2) out vec2 fragTexCoord;
 layout(location = 3) out mat3 fragTBN;
 
 void main() {
-    vec4 animatedPosition = vec4(1.0f);
+    vec4 animatedPosition = vec4(0.0f);
 	mat4 boneTransform = mat4(0.0f);
 	for (int i = 0; i < MAX_BONE_INFLUENCE; ++i)
 	{
@@ -42,7 +42,7 @@ void main() {
 		animatedPosition += localPosition * inWeights[i];
 		boneTransform += ubo.finalJointsMatrices[inBoneIds[i]] * inWeights[i];
 	}
-    if (animatedPosition == vec4(1.0f) && determinant(mat3(boneTransform)) == 0.0)
+    if (animatedPosition == vec4(0.0f) && determinant(mat3(boneTransform)) == 0.0)
     {
         animatedPosition = vec4(inPosition, 1.0f);
         boneTransform = mat4(1.0f);
@@ -56,8 +56,6 @@ void main() {
     vec4 positionWorld = ubo.model * animatedPosition;
     gl_Position = ubo.proj * ubo.view * positionWorld;
     fragPosition = positionWorld.xyz;
-
-
 
     mat3 normalMatrix = transpose(inverse(mat3(ubo.model) * mat3(boneTransform)));
     fragNormal = normalMatrix * inNormal;
