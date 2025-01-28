@@ -201,6 +201,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		}
 		out << YAML::EndMap;
 	}
+	// ScriptComponent
 	if (entity.hasComponent<ScriptComponent>())
 	{
 		auto &scriptComponent = entity.getComponent<ScriptComponent>();
@@ -221,7 +222,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 			for (const auto &[name, field] : fields)
 			{
 				if (entityFields.find(name) == entityFields.end())
-					return;
+					continue;
 				out << YAML::BeginMap;
 				out << YAML::Key << "Name" << YAML::Value << name;
 				out << YAML::Key << "Type" << YAML::Value << utils::scriptFieldTypeToString(field.m_Type);
@@ -257,12 +258,28 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 	}
 
 	// LightComponent
+	if (entity.hasComponent<LightComponent>())
+	{
+		out << YAML::Key << "LightComponent";
+		out << YAML::BeginMap;
+
+		auto &lc = entity.getComponent<LightComponent>();
+		Light &light = *lc.m_Light.get();
+		out << YAML::Key << "Type" << YAML::Value << light.type;
+		out << YAML::Key << "ShadowMap" << YAML::Value << light.onShadowMap;
+		out << YAML::Key << "Position" << YAML::Value << light.position;
+		out << YAML::Key << "Direction" << YAML::Value << light.direction;
+		out << YAML::Key << "Color" << YAML::Value << light.color;
+		out << YAML::Key << "Intensity" << YAML::Value << light.intensity;
+		out << YAML::Key << "InnerCutoff" << YAML::Value << light.innerCutoff;
+		out << YAML::Key << "OuterCutoff" << YAML::Value << light.outerCutoff;
+		out << YAML::EndMap;
+	}
 	// RigidbodyComponent
 	// BoxColliderComponent
 	// SphereColliderComponent
 	// CapsuleColliderComponent
 	// CylinderColliderComponent
-	// ScriptComponent
 
 	out << YAML::EndMap; // End Serialize Entity
 }
@@ -378,15 +395,31 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				case 2:
 					model = Model::createPlaneModel(m_Scene->getDefaultMaterial());
 					break;
-				case 3:
+				case 4:
 					mc.path = meshComponent["Path"].as<std::string>();
+					AL_CORE_TRACE("{}", mc.path);
 					model = Model::createModel(mc.path, m_Scene->getDefaultMaterial());
+					break;
 				// 그 외의 이상한 값은 box로 임의로 처리
 				default:
 					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
 					break;
 				}
 				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+			}
+
+			auto lightComponent = entity["LightComponent"];
+			if (lightComponent)
+			{
+				Light &light = *deserializedEntity.addComponent<LightComponent>().m_Light.get();
+				light.type = lightComponent["Type"].as<uint32_t>();
+				light.onShadowMap = lightComponent["ShadowMap"].as<uint32_t>();
+				light.position = lightComponent["Position"].as<glm::vec3>();
+				light.direction = lightComponent["Direction"].as<glm::vec3>();
+				light.color = lightComponent["Color"].as<glm::vec3>();
+				light.intensity = lightComponent["Intensity"].as<float>();
+				light.innerCutoff = lightComponent["InnerCutoff"].as<float>();
+				light.outerCutoff = lightComponent["OuterCutoff"].as<float>();
 			}
 
 			// ScriptComponent
