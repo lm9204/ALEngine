@@ -12,7 +12,7 @@
 namespace ale
 {
 class Entity;
-class Material;
+class Model;
 
 class Scene
 {
@@ -62,6 +62,7 @@ class Scene
 	{
 		return m_defaultMaterial;
 	}
+	std::shared_ptr<Model> getDefaultModel(int32_t idx);
 
 	Entity findEntityByName(std::string_view name);
 	Entity getEntityByUUID(UUID uuid);
@@ -98,6 +99,9 @@ class Scene
 
 	DefaultTextures m_defaultTextures;
 	std::shared_ptr<Material> m_defaultMaterial;
+	std::shared_ptr<Model> m_boxModel;
+	std::shared_ptr<Model> m_sphereModel;
+	std::shared_ptr<Model> m_planeModel;
 
 	float m_ambientStrength{0.1f};
 
