@@ -17,17 +17,18 @@ public:
 	void setData(uint16_t currentFrame, const SAData& data);
 
 	SkeletalAnimation* m_CurrentAnimation;
+	std::shared_ptr<SkeletalAnimations> m_Animations;
 	std::shared_ptr<Model> m_Model;
 
 private:
-	uint16_t m_FrameCounter;
+	float	m_SpeedFactor;
+	uint32_t m_FrameCounter;
 
 	bool	m_Repeat;
 	float	m_FirstKeyFrameTime;
 	float	m_LastKeyFrameTime;
 	float	m_CurrentKeyFrameTime;
 
-	
 };
 } //namespace ale
 
