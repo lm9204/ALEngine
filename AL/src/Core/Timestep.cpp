@@ -20,6 +20,8 @@ Timestep& Timestep::operator-=(const Timestep& other)
 }
 Timestep Timestep::operator-(const Timestep& other) const { return m_Timestep - other.m_Timestep; }
 
+Timestep Timestep::operator*(float factor) const { return Timestep(m_Timestep * factor); }
+
 bool Timestep::operator<=(const std::chrono::duration<float, std::chrono::seconds::period>& other) const
 {
 	return (m_Timestep - other) <= 0ms;
