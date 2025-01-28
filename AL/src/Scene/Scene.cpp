@@ -230,6 +230,10 @@ void Scene::initScene()
 		{glm::vec3(1.0f, 1.0f, 1.0f), m_defaultTextures.albedo, false}, {m_defaultTextures.normal, false},
 		{0.5f, m_defaultTextures.roughness, false}, {0.0f, m_defaultTextures.metallic, false},
 		{1.0f, m_defaultTextures.ao, false}, {0.0f, m_defaultTextures.height, false});
+
+	m_boxModel = Model::createBoxModel(m_defaultMaterial);
+	m_sphereModel = Model::createSphereModel(m_defaultMaterial);
+	m_planeModel = Model::createPlaneModel(m_defaultMaterial);
 }
 
 void Scene::renderScene(EditorCamera &camera)
@@ -251,6 +255,22 @@ void Scene::onPhysicsStart()
 void Scene::onPhysicsStop()
 {
 	// delete world
+}
+
+std::shared_ptr<Model> Scene::getDefaultModel(int32_t idx)
+{
+	// ASSERT idx
+	switch (idx)
+	{
+	case 0:
+		return m_boxModel;
+	case 1:
+		return m_sphereModel;
+	case 2:
+		return m_planeModel;
+	default:
+		return nullptr;
+	}
 }
 
 Entity Scene::findEntityByName(std::string_view name)
