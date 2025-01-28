@@ -48,7 +48,7 @@ class SkeletalAnimations
 		uint16_t getCurrentFrame();
 		std::string getName();
 		// TODO
-		void uploadData(SkeletalAnimation* animation, uint16_t frameCounter, const SAData& keyframe);
+		void uploadData(SkeletalAnimation* animation, uint32_t frameCounter);
 		void update(const Timestep& timestep, Armature::Skeleton& skeleton, uint16_t frameCounter);
 		int getIndex(std::string const& animation);
 
@@ -56,7 +56,7 @@ class SkeletalAnimations
 		std::map<std::string, std::shared_ptr<SkeletalAnimation>> m_Animations;
 		std::vector<std::shared_ptr<SkeletalAnimation>> m_AnimationsVector;
 		SkeletalAnimation* m_CurrentAnimation;
-		uint16_t m_FrameCounter;
+		uint32_t m_FrameCounter;
 		std::map<std::string, int> m_NameToIndex;
 };
 }
