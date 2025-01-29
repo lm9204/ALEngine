@@ -8,6 +8,8 @@
 
 #include "Scene/SceneCamera.h"
 
+#include "Scene/entt.hpp"
+
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 #include <glm/gtx/quaternion.hpp>
@@ -40,6 +42,8 @@ struct TransformComponent
 	glm::vec3 m_Rotation = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Scale = {1.0f, 1.0f, 1.0f};
 
+	glm::mat4 m_WorldTransform = glm::mat4(1.0f);
+
 	// 생성자
 	TransformComponent() = default;
 	TransformComponent(const TransformComponent &) = default;
@@ -53,6 +57,15 @@ struct TransformComponent
 
 		return glm::translate(glm::mat4(1.0f), m_Position) * rotation * glm::scale(glm::mat4(1.0f), m_Scale);
 	}
+};
+
+struct RelationshipComponent
+{
+	entt::entity parent = entt::null;
+	std::vector<entt::entity> children;
+
+	RelationshipComponent() = default;
+	RelationshipComponent(const RelationshipComponent &) = default;
 };
 
 // RENDERER
@@ -172,8 +185,8 @@ template <typename... Component> struct ComponentGroup
 {
 };
 
-using AllComponents = ComponentGroup<TransformComponent, MeshRendererComponent, TextureComponent, CameraComponent,
-									 ScriptComponent, LightComponent>;
+using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, MeshRendererComponent, TextureComponent,
+									 CameraComponent, ScriptComponent, LightComponent>;
 
 } // namespace ale
 
