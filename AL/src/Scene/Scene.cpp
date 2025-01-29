@@ -84,6 +84,7 @@ Entity Scene::createEntityWithUUID(UUID uuid, const std::string &name)
 	Entity entity = {m_Registry.create(), this};
 	entity.addComponent<IDComponent>();
 	entity.addComponent<TransformComponent>();
+	entity.addComponent<RelationshipComponent>();
 	auto &tag = entity.addComponent<TagComponent>();
 	tag.m_Tag = name.empty() ? "Entity" : name;
 
@@ -308,6 +309,10 @@ template <> void Scene::onComponentAdded(Entity entity, TagComponent &component)
 }
 
 template <> void Scene::onComponentAdded(Entity entity, TransformComponent &component)
+{
+}
+
+template <> void Scene::onComponentAdded(Entity entity, RelationshipComponent &component)
 {
 }
 
