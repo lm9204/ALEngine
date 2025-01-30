@@ -22,6 +22,10 @@ class SceneHierarchyPanel
 	void drawEntityNode(Entity entity);
 	void drawComponents(Entity entity);
 
+	void updateRelationship(Entity &newParent, Entity &child);
+	void updateTransforms(Entity entity);
+	void updateTransformRecursive(Entity entity, const glm::mat4 &parentWorldTransform);
+
   private:
 	std::shared_ptr<Scene> m_Context;
 	Entity m_SelectionContext;

@@ -21,6 +21,11 @@
 #define _CRT_SECURE_NO_WARNINGS
 #endif
 
+namespace utils
+{
+
+} // namespace utils
+
 namespace ale
 {
 static std::string s_DroppedFilePath;
@@ -42,18 +47,18 @@ void SceneHierarchyPanel::onImGuiRender()
 	ImGui::Begin("Scene Hierarchy");
 	if (m_Context)
 	{
-		// std::cout << "Scene Hierarchy\n";
-		// m_Context->m_Registry.view<entt::entity>().each([&](auto entityID) {
-		// 	Entity entity{entityID, m_Context.get()};
-		// 	drawEntityNode(entity);
-		// });
+		auto view = m_Context->m_Registry.view<RelationshipComponent>();
 
-		auto view = m_Context->m_Registry.view<entt::entity>();
-
-		for (auto it = view.begin(); it != view.end(); ++it)
+		for (auto e : view)
 		{
-			Entity entity(*it, m_Context.get());
-			drawEntityNode(entity);
+			Entity entity(e, m_Context.get());
+			auto p = entity.getComponent<RelationshipComponent>().parent;
+
+			// Root node만 보이게
+			if (p == entt::null)
+			{
+				drawEntityNode(entity);
+			}
 		}
 
 		// 왼쪽 클릭 && Hovered(마우스를 window에 올려뒀을 때)
@@ -91,8 +96,66 @@ void SceneHierarchyPanel::onImGuiRender()
 	ImGui::End();
 }
 
+void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
+{
+	std::cout << "updateRelationship\n";
+
+	// 1. 기존 부모에게서 제거
+	auto &childRelation = child.getComponent<RelationshipComponent>();
+	entt::entity oldParent = childRelation.parent;
+
+	// Memory pool needed
+	// if (oldParent != entt::null)
+	// {
+	// 	auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
+	// 	auto &siblings = oldParentRelation.children;
+	// 	siblings.erase(std::remove(siblings.begin(), siblings.end(), &child), siblings.end());
+	// }
+
+	// 2. 새 부모로 교체
+	childRelation.parent = newParent;
+
+	// 3. 새 부모의 children 목록에 추가
+	auto &parentRelation = newParent.getComponent<RelationshipComponent>();
+	parentRelation.children.push_back(child);
+
+	// 4. 자식의 위치를 부모 기준 local좌표로 변환
+	child.getComponent<TransformComponent>().m_Position -= newParent.getComponent<TransformComponent>().m_Position;
+}
+
+void SceneHierarchyPanel::updateTransforms(Entity entity)
+{
+	auto view = m_Context->m_Registry.view<RelationshipComponent, TransformComponent>();
+
+	auto &relate = entity.getComponent<RelationshipComponent>();
+	if (!relate.children.empty())
+	{
+		updateTransformRecursive(entity, glm::mat4(1.0f));
+	}
+}
+
+void SceneHierarchyPanel::updateTransformRecursive(Entity entity, const glm::mat4 &parentWorldTransform)
+{
+	auto &transform = entity.getComponent<TransformComponent>();
+
+	// 2. 로컬 행렬 계산
+	glm::mat4 localTransform = transform.getTransform();
+
+	// 3. 월드 변환 = 부모 월드 변환 x 로컬 변환
+	transform.m_WorldTransform = parentWorldTransform * localTransform;
+
+	auto &relation = entity.getComponent<RelationshipComponent>();
+	// 4. 자식들 업데이트
+	for (auto child : relation.children)
+	{
+		Entity entity{child, m_Context.get()};
+		updateTransformRecursive(entity, transform.m_WorldTransform);
+	}
+}
+
 void SceneHierarchyPanel::drawEntityNode(Entity entity)
 {
+	// std::cout << "SceneHierarchyPanel::drawEntityNode\n";
 	auto &tag = entity.getComponent<TagComponent>().m_Tag;
 
 	ImGuiTreeNodeFlags flags =
@@ -104,6 +167,27 @@ void SceneHierarchyPanel::drawEntityNode(Entity entity)
 		m_SelectionContext = entity;
 	}
 
+	if (ImGui::BeginDragDropSource())
+	{
+		Entity e = entity;
+		ImGui::SetDragDropPayload("EntityPayload", &e, sizeof(Entity));
+		ImGui::Text("%s", tag.c_str());
+		ImGui::EndDragDropSource();
+	}
+
+	if (ImGui::BeginDragDropTarget())
+	{
+		if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("EntityPayload"))
+		{
+			Entity *droppedEntity = (Entity *)payload->Data;
+			// droppedEntity가 entity의 자식이 되도록 설정
+
+			if (*droppedEntity != entity)
+				updateRelationship(entity, *droppedEntity);
+		}
+		ImGui::EndDragDropTarget();
+	}
+
 	bool entityDeleted = false;
 	if (ImGui::BeginPopupContextItem())
 	{
@@ -113,12 +197,15 @@ void SceneHierarchyPanel::drawEntityNode(Entity entity)
 		ImGui::EndPopup();
 	}
 
+	// If node opened, draw child nodes
 	if (opened)
 	{
-		ImGuiTreeNodeFlags flags = ImGuiTreeNodeFlags_OpenOnArrow | ImGuiTreeNodeFlags_SpanAvailWidth;
-		bool opened = ImGui::TreeNodeEx((void *)9817239, flags, tag.c_str());
-		if (opened)
-			ImGui::TreePop();
+		auto &relation = entity.getComponent<RelationshipComponent>();
+		for (auto child : relation.children)
+		{
+			Entity entity(child, m_Context.get());
+			drawEntityNode(entity);
+		}
 		ImGui::TreePop();
 	}
 
@@ -442,12 +529,14 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 	}
 	ImGui::PopItemWidth();
 
-	drawComponent<TransformComponent>("Transform", entity, [](auto &component) {
+	drawComponent<TransformComponent>("Transform", entity, [this, entity](auto &component) mutable {
+		// Update Recursively
 		drawVec3Control("Position", component.m_Position);
 		auto &rotation = glm::degrees(component.m_Rotation);
 		drawVec3Control("Rotation", rotation);
 		component.m_Rotation = glm::radians(rotation);
 		drawVec3Control("Scale", component.m_Scale, 1.0f);
+		updateTransforms(entity);
 	});
 
 	drawComponent<CameraComponent>("Camera", entity, [](auto &component) {
@@ -497,6 +586,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					{
 						component.m_RenderingComponent =
 							RenderingComponent::createRenderingComponent(scene->getDefaultModel(i));
+						component.path.clear();
 					}
 				}
 				if (isSelected)
