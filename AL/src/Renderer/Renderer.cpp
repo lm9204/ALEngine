@@ -305,7 +305,7 @@ void Renderer::drawFrame(Scene *scene)
 	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
 	submitInfo.waitSemaphoreCount = 1;			 // 대기 세마포어 개수
 	submitInfo.pWaitSemaphores = waitSemaphores; // 대기 세마포어 등록
-	submitInfo.pWaitDstStageMask = waitStages; // 대기할 시점 등록 (그 전까지는 세마포어 상관없이 그냥 진행)
+	submitInfo.pWaitDstStageMask = waitStages;	 // 대기할 시점 등록 (그 전까지는 세마포어 상관없이 그냥 진행)
 
 	// 커맨드 버퍼 등록
 	submitInfo.commandBufferCount = 1;							// 커맨드 버퍼 개수 등록
@@ -509,7 +509,7 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
-		drawInfo.model = view.get<TransformComponent>(entity).getTransform();
+		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		view.get<MeshRendererComponent>(entity).m_RenderingComponent->draw(drawInfo);
 	}
 
@@ -709,7 +709,7 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 		drawInfo.commandBuffer = commandBuffer;
 		drawInfo.pipelineLayout = shadowMapPipelineLayout[shadowMapIndex];
 		drawInfo.currentFrame = currentFrame;
-		drawInfo.model = view.get<TransformComponent>(entity).getTransform();
+		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
 	}
 
@@ -743,7 +743,7 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 	// Render Pass 시작 정보 설정
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-	renderPassInfo.renderPass = shadowCubeMapRenderPass[shadowMapIndex]; // Shadow Map 전용 RenderPass
+	renderPassInfo.renderPass = shadowCubeMapRenderPass[shadowMapIndex];				  // Shadow Map 전용 RenderPass
 	renderPassInfo.framebuffer = shadowCubeMapFramebuffers[shadowMapIndex][currentFrame]; // 첫 번째 Framebuffer
 	renderPassInfo.renderArea.offset = {0, 0};
 	renderPassInfo.renderArea.extent = {2048, 2048}; // 고정된 Shadow Map 크기
@@ -793,7 +793,7 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
-		drawInfo.model = view.get<TransformComponent>(entity).getTransform();
+		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
 	}
 

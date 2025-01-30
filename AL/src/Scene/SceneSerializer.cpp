@@ -358,6 +358,7 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				tf.m_Position = tfComponent["Position"].as<glm::vec3>();
 				tf.m_Rotation = tfComponent["Rotation"].as<glm::vec3>();
 				tf.m_Scale = tfComponent["Scale"].as<glm::vec3>();
+				tf.m_WorldTransform = tf.getTransform();
 			}
 
 			// CameraComponent
