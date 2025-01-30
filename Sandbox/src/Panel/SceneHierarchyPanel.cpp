@@ -11,6 +11,7 @@
 #include "UI/UI.h"
 
 #include <glm/gtc/type_ptr.hpp>
+#include <glm/gtx/matrix_decompose.hpp>
 
 #include <cstring>
 
@@ -96,10 +97,25 @@ void SceneHierarchyPanel::onImGuiRender()
 	ImGui::End();
 }
 
+static bool decomposeMatrix(const glm::mat4 &transform, glm::vec3 &outScale, glm::vec3 &outRotation,
+							glm::vec3 &outTranslation)
+{
+	glm::vec3 skew;
+	glm::vec4 perspective;
+
+	glm::quat &orientation = glm::quat(glm::radians(outRotation));
+
+	// glm::decompose(매트릭스, 스케일, 로테이션, 위치, skew, perspective)
+	if (!glm::decompose(transform, outScale, orientation, outTranslation, skew, perspective))
+		return false;
+
+	outRotation = glm::eulerAngles(orientation);
+
+	return true;
+}
+
 void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 {
-	std::cout << "updateRelationship\n";
-
 	// 1. 기존 부모에게서 제거
 	auto &childRelation = child.getComponent<RelationshipComponent>();
 	entt::entity oldParent = childRelation.parent;
@@ -120,7 +136,14 @@ void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 	parentRelation.children.push_back(child);
 
 	// 4. 자식의 위치를 부모 기준 local좌표로 변환
-	child.getComponent<TransformComponent>().m_Position -= newParent.getComponent<TransformComponent>().m_Position;
+	auto &tc = child.getComponent<TransformComponent>();
+	glm::mat4 parentWorld = newParent.getComponent<TransformComponent>().m_WorldTransform; // 부모의 월드 매트릭스
+	glm::mat4 childWorld = child.getComponent<TransformComponent>().m_WorldTransform;	   // 자식의 현재 월드 매트릭스
+	// tc.m_LocalTransform = glm::inverse(parentWorld) * childWorld;
+	glm::mat4 childLocalMat = glm::inverse(parentWorld) * childWorld;
+
+	decomposeMatrix(childLocalMat, tc.m_Scale, tc.m_Rotation, tc.m_Position);
+	// updateTransforms(newParent);
 }
 
 void SceneHierarchyPanel::updateTransforms(Entity entity)
@@ -128,23 +151,37 @@ void SceneHierarchyPanel::updateTransforms(Entity entity)
 	auto view = m_Context->m_Registry.view<RelationshipComponent, TransformComponent>();
 
 	auto &relate = entity.getComponent<RelationshipComponent>();
-	if (!relate.children.empty())
+	auto &tc = entity.getComponent<TransformComponent>();
+
+	// tc.m_WorldTransform = tc.getTransform();
+
+	entt::entity top = (entt::entity)entity;
+	while (true)
 	{
-		updateTransformRecursive(entity, glm::mat4(1.0f));
+		auto &parentRel = m_Context->m_Registry.get<RelationshipComponent>(top);
+		if (parentRel.parent == entt::null)
+			break;
+		top = parentRel.parent;
 	}
+
+	Entity t{top, m_Context.get()};
+	updateTransformRecursive(t, glm::mat4(1.0f));
 }
 
 void SceneHierarchyPanel::updateTransformRecursive(Entity entity, const glm::mat4 &parentWorldTransform)
 {
 	auto &transform = entity.getComponent<TransformComponent>();
+	auto &relation = entity.getComponent<RelationshipComponent>();
 
 	// 2. 로컬 행렬 계산
-	glm::mat4 localTransform = transform.getTransform();
+	// if (relation.parent != entt::null)
+	// 	// 3. 월드 변환 = 부모 월드 변환 x 로컬 변환
+	// 	transform.m_WorldTransform = parentWorldTransform * transform.m_LocalTransform;
+	// else
+	// 	transform.m_WorldTransform = transform.getTransform();
 
-	// 3. 월드 변환 = 부모 월드 변환 x 로컬 변환
-	transform.m_WorldTransform = parentWorldTransform * localTransform;
+	transform.m_WorldTransform = parentWorldTransform * transform.getTransform();
 
-	auto &relation = entity.getComponent<RelationshipComponent>();
 	// 4. 자식들 업데이트
 	for (auto child : relation.children)
 	{
