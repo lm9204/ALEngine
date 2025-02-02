@@ -22,9 +22,7 @@ jobs:
       - name: Check formatting for all files using .clang-format
         run: |
           errors=0
-          # 검사할 파일 확장자(.cpp, .h 등)를 필요에 따라 조정하세요.
-          for file in $(find . -type f \( -name "*.cpp" -o -name "*.h" \)); do
-            # .clang-format 파일에 정의된 설정을 사용하여 파일 포맷팅 결과를 생성합니다.
+          while IFS= read -r -d '' file; do
             diff_output=$(diff -u "$file" <(clang-format "$file"))
             if [ -n "$diff_output" ]; then
               echo "Formatting issues found in $file:"
@@ -32,8 +30,8 @@ jobs:
               echo "-----------------------------------------"
               errors=1
             fi
-          done
-      
+          done < <(find . -type f \( -name "*.cpp" -o -name "*.h" \) -print0)
+          
           if [ $errors -ne 0 ]; then
             echo "Some files do not follow the coding convention."
             exit 1
