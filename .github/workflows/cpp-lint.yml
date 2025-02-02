@@ -19,12 +19,27 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-format clang-tidy
 
-      - name: Run clang-format check
+      - name: Check formatting for all files using .clang-format
         run: |
-          FILES=$(find . -type f \( -name "*.cpp" -o -name "*.h" \))
-          echo "Running clang-format on the following files:"
-          echo "$FILES"
-          echo "$FILES" | xargs clang-format --dry-run --Werror
+          errors=0
+          # 검사할 파일 확장자(.cpp, .h 등)를 필요에 따라 조정하세요.
+          for file in $(find . -type f \( -name "*.cpp" -o -name "*.h" \)); do
+            # .clang-format 파일에 정의된 설정을 사용하여 파일 포맷팅 결과를 생성합니다.
+            diff_output=$(diff -u "$file" <(clang-format "$file"))
+            if [ -n "$diff_output" ]; then
+              echo "Formatting issues found in $file:"
+              echo "$diff_output"
+              echo "-----------------------------------------"
+              errors=1
+            fi
+          done
+      
+          if [ $errors -ne 0 ]; then
+            echo "Some files do not follow the coding convention."
+            exit 1
+          else
+            echo "All files are correctly formatted."
+          fi
 
       - name: Run clang-tidy check
         run: |
