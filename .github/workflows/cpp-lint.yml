@@ -7,29 +7,22 @@ on:
       - '**/*.h'
 
 jobs:
-  lint:
-    name: Lint Check
+  format-check:
+    name: Check code format with clang-format
     runs-on: ubuntu-latest
 
     steps:
-      # 1. 리포지토리 체크아웃
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      # 2. Python 설치 (cpplint 설치에 필요)
-      - name: Set up Python
-        uses: actions/setup-python@v4
-        with:
-          python-version: '3.x'
-
-      # 3. cpplint 설치
-      - name: Install cpplint
+      - name: Install clang-format
         run: |
-          python -m pip install --upgrade pip
-          pip install cpplint
+          sudo apt-get update
+          sudo apt-get install -y clang-format
 
-      # 4. cpplint 실행
-      - name: Run cpplint
+      - name: Run clang-format check
         run: |
-          cpplint --recursive --extensions=cpp,h .
-        continue-on-error: false
+          FILES=$(find . -regex '.*\.\(cpp\|h\)$')
+          echo "Checking files:"
+          echo "$FILES"
+          echo "$FILES" | xargs clang-format --dry-run --Werror -style=Microsoft
