@@ -7,22 +7,30 @@ on:
       - '**/*.h'
 
 jobs:
-  format-check:
-    name: Check code format with clang-format
+  code-style:
     runs-on: ubuntu-latest
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
 
-      - name: Install clang-format
+      - name: Install dependencies
         run: |
           sudo apt-get update
-          sudo apt-get install -y clang-format
+          sudo apt-get install -y clang-format clang-tidy
 
       - name: Run clang-format check
         run: |
-          FILES=$(find . -regex '.*\.\(cpp\|h\)$')
-          echo "Checking files:"
+          FILES=$(find . -type f \( -name "*.cpp" -o -name "*.h" \))
+          echo "Running clang-format on the following files:"
           echo "$FILES"
-          echo "$FILES" | xargs clang-format --dry-run --Werror -style=Microsoft
+          echo "$FILES" | xargs clang-format --dry-run --Werror
+
+      - name: Run clang-tidy check
+        run: |
+          FILES=$(find . -type f -name "*.cpp")
+          echo "Running clang-tidy on the following files:"
+          echo "$FILES"
+          for file in $FILES; do
+            clang-tidy "$file" -- -I.
+          done
