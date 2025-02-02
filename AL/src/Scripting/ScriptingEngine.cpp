@@ -143,7 +143,8 @@ void ScriptingEngine::init()
 	initMono();
 	ScriptGlue::registerFunctions();
 
-	bool status = loadAssembly("Sandbox/Resources/Scripts/Debug/AL-ScriptCore.dll");
+	auto scriptCorePath = Project::getAssetDirectory() / Project::getActive()->getConfig().m_ScriptCorePath;
+	bool status = loadAssembly(scriptCorePath);
 	if (!status)
 	{
 		AL_CORE_ERROR("[ScriptEngine] Could not load AL-ScriptCore assembly!");

@@ -9,10 +9,12 @@ struct ProjectConfig
 {
 	std::string m_Name = "Untitled";
 
+	std::filesystem::path m_ProjectPath;
 	std::filesystem::path m_StartScene;
 
 	std::filesystem::path m_AssetDirectory;
 	std::filesystem::path m_ScriptModulePath;
+	std::filesystem::path m_ScriptCorePath;
 };
 
 class Project
