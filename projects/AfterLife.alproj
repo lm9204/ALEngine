@@ -1,0 +1,7 @@
+Project:
+    Name: SandboxProject
+    ProjectPath: "Sandbox/Project"
+    StartScene: "Scenes/3DExample.ale"
+    AssetDirectory: "Assets"
+    ScriptModulePath: "Scripts/Release/SandboxProject.dll"
+    ScriptCorePath: "Scripts/Release/AL-ScriptCore.dll"
