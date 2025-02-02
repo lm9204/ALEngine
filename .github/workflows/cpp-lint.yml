@@ -21,10 +21,14 @@ jobs:
 
       - name: Check formatting for all files using .clang-format
         run: |
+          set +e
+      
           errors=0
           while IFS= read -r -d '' file; do
+            echo "Checking $file"
             diff_output=$(diff -u "$file" <(clang-format "$file"))
-            if [ -n "$diff_output" ]; then
+            diff_status=$?
+            if [ $diff_status -ne 0 ]; then
               echo "Formatting issues found in $file:"
               echo "$diff_output"
               echo "-----------------------------------------"
