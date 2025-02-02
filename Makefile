@@ -1,40 +1,20 @@
-NAME :=	ALEngine
+###############################################################################
+#  Makefile (최상위)
+###############################################################################
+#  이 파일은 운영체제/환경을 감지하여, 알맞은 Makefile (msvc/mingw)을 include 합니다.
+###############################################################################
 
-all: $(NAME)_debug
-
-release: $(NAME)_release
-
-$(NAME)_debug:
-	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .
-	@cmake --build build --config Debug
-	@echo [SUCCESS] $@ compiled successfully with debug mode and validation layers!
-
-$(NAME)_release:
-	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .
-	@cmake --build build --config Release
-	@echo [SUCCESS] $@ compiled successfully without validation layers!
-
-clean:
-	@if exist build rmdir /s /q build
-	@echo [CLEAN] Build files have been removed!
-
-fclean: clean
-	@rm -rf $(NAME)_debug $(NAME)_release
-	@echo [FCLEAN] Executable files have been fully removed!
-
-re: fclean all
-
-shader :
-	@mkdir -p ./spvs
-	@for file in ./shaders/*.vert; do \
-		glslc $$file -o ./spvs/$$(basename $$file .vert).vert.spv; \
-	done
-	@for file in ./shaders/*.frag; do \
-		glslc $$file -o ./spvs/$$(basename $$file .frag).frag.spv; \
-	done
-	@echo [SUCCESS] Shaders have been compiled successfully!
-
-run : $(NAME)_debug
-	@./build/bin/Debug/Sandbox.exe
-
-.PHONY: all clean fclean re debug release
+# OS 감지 (Windows_NT 여부)
+ifeq ($(OS),Windows_NT)
+  # MinGW(Git Bash) 여부 판단
+  UNAME_S := $(shell uname -s 2>/dev/null)
+  ifneq (,$(findstring MINGW,$(UNAME_S)))
+    # MinGW 환경
+    include Makefile.mingw
+  else
+    # MSVC CMD 환경
+    include makefiles/Makefile.msvc
+  endif
+else
+  include makefiles/Makefile.mingw
+endif
