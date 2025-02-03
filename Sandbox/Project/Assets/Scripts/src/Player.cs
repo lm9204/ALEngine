@@ -24,8 +24,8 @@ namespace Sandbox
 
         void onUpdate(float ts)
         {
-            Time += ts;
-            Console.WriteLine($"Player.OnUpdate: {ts}");
+            // Time += ts;
+            // Console.WriteLine($"Player.OnUpdate: {ts}");
         }
 
     }
