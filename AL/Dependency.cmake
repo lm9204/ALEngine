@@ -38,7 +38,10 @@ ExternalProject_Add(
 )
 
 set(DEP_LIST ${DEP_LIST} dep_spdlog)
-set(DEP_LIBS ${DEP_LIBS} spdlogd)
+set(DEP_LIBS ${DEP_LIBS} 
+    $<$<CONFIG:Debug>:spdlogd>
+    $<$<CONFIG:Release>:spdlog>
+)
 
 # imgui 추가
 ExternalProject_Add(
@@ -61,8 +64,8 @@ ExternalProject_Add(
 	GIT_SHALLOW 1
 	UPDATE_COMMAND ""
 	PATCH_COMMAND ""
-	CONFIGURE_COMMAND ""
-	BUILD_COMMAND ""
+    CMAKE_ARGS
+        -DGLM_TEST_ENABLE=OFF  # 🔥 GLM 테스트 코드 비활성화
 	TEST_COMMAND ""
 	INSTALL_COMMAND ${CMAKE_COMMAND} -E copy_directory
 		${PROJECT_BINARY_DIR}/dep_glm-prefix/src/dep_glm/glm
@@ -91,25 +94,27 @@ set(DEP_LIST ${DEP_LIST} dep_stb)
 ExternalProject_Add(
 	dep_assimp
 	GIT_REPOSITORY "https://github.com/assimp/assimp"
-	GIT_TAG "v5.0.1"
+	GIT_TAG "v5.4.3"
 	GIT_SHALLOW 1
 	UPDATE_COMMAND ""
 	PATCH_COMMAND ""
 	CMAKE_ARGS
 		-DCMAKE_INSTALL_PREFIX=${DEP_INSTALL_DIR}
+        -DCMAKE_BUILD_TYPE=$<CONFIG>
 		-DBUILD_SHARED_LIBS=OFF
 		-DASSIMP_BUILD_ASSIMP_TOOLS=OFF
 		-DASSIMP_BUILD_TESTS=OFF
-		-DASSIMP_INJECT_DEBUG_POSTFIX=OFF
+		-DASSIMP_INJECT_DEBUG_POSTFIX=ON
 		-DASSIMP_BUILD_ZLIB=ON
 	TEST_COMMAND ""
 )
 set(DEP_LIST ${DEP_LIST} dep_assimp)
 set(DEP_LIBS ${DEP_LIBS}
-	assimp-vc143-mt$<$<CONFIG:Debug>:d>
-	zlibstatic$<$<CONFIG:Debug>:d>
-	IrrXML$<$<CONFIG:Debug>:d>
-	)
+    $<$<CONFIG:Debug>:assimp-vc143-mtd>
+    $<$<CONFIG:Release>:assimp-vc143-mt>
+    $<$<CONFIG:Debug>:zlibstaticd>
+    $<$<CONFIG:Release>:zlibstatic>
+)
 	
 # yaml-cpp
 ExternalProject_Add(
@@ -128,7 +133,8 @@ ExternalProject_Add(
 )
 set(DEP_LIST ${DEP_LIST} dep_yaml_cpp)
 set(DEP_LIBS ${DEP_LIBS}
-    yaml-cpp$<$<CONFIG:Debug>:d>
+    $<$<CONFIG:Debug>:yaml-cppd>
+    $<$<CONFIG:Release>:yaml-cpp>
 )
 
 # Mono
@@ -146,8 +152,21 @@ ExternalProject_Add(
         <SOURCE_DIR>/mono  
         ${DEP_INCLUDE_DIR}/mono
         COMMAND ${CMAKE_COMMAND} -E copy
-        <SOURCE_DIR>/libmono-static-sgen.lib 
-        ${DEP_LIB_DIR}/libmono-static-sgen.lib
+        <SOURCE_DIR>/Debug/libmono-static-sgen.lib
+        ${DEP_INSTALL_DIR}/lib/libmono-static-sgen-debug.lib
+        COMMAND ${CMAKE_COMMAND} -E copy
+        <SOURCE_DIR>/Release/libmono-static-sgen.lib
+        ${DEP_INSTALL_DIR}/lib/libmono-static-sgen.lib
 )
+
+# Dependency 리스트 추가
 set(DEP_LIST ${DEP_LIST} dep_mono)
-set(DEP_LIBS ${DEP_LIBS} libmono-static-sgen)
+# Mono 라이브러리 경로 설정
+set(MONO_LIB_DEBUG ${DEP_INSTALL_DIR}/lib/libmono-static-sgen-debug.lib)
+set(MONO_LIB_RELEASE ${DEP_INSTALL_DIR}/lib/libmono-static-sgen.lib)
+
+# CMake에서 빌드 타입에 따라 올바른 라이브러리를 링크
+set(DEP_LIBS ${DEP_LIBS} 
+    $<$<CONFIG:Debug>:${MONO_LIB_DEBUG}>
+    $<$<CONFIG:Release>:${MONO_LIB_RELEASE}>
+)

@@ -55,9 +55,20 @@ bool ProjectSerializer::deserialize(const std::filesystem::path &filepath)
 		return false;
 
 	config.m_Name = projectNode["Name"].as<std::string>();
+	// ProjectPath를 상대 경로로 변환
+	std::filesystem::path projectPath = projectNode["ProjectPath"].as<std::string>();
+	if (projectPath.is_absolute())
+	{
+		config.m_ProjectPath = projectPath;
+	}
+	else
+	{
+		config.m_ProjectPath = std::filesystem::relative(projectPath, "projects");
+	}
 	config.m_StartScene = projectNode["StartScene"].as<std::string>();
-	config.m_AssetDirectory = projectNode["AssetDirectory"].as<std::string>();
+	config.m_AssetDirectory = config.m_ProjectPath / projectNode["AssetDirectory"].as<std::string>();
 	config.m_ScriptModulePath = projectNode["ScriptModulePath"].as<std::string>();
+	config.m_ScriptCorePath = projectNode["ScriptCorePath"].as<std::string>();
 	return true;
 }
 } // namespace ale

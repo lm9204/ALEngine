@@ -1,47 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 10426962269943978493
-    TagComponent:
-      Tag: Box
-    TransformComponent:
-      Position: [0, 1, 0]
-      Rotation: [0, 0, 0]
-      Scale: [3, 3, 3]
-    MeshRendererComponent:
-      MeshType: 4
-      Path: .\Sandbox\Project\Assets\Models\Camera_01_2k.gltf\Camera_01_2k.gltf
-  - Entity: 12026550646510062349
-    TagComponent:
-      Tag: Plane
-    TransformComponent:
-      Position: [0, -3.0999999, 0]
-      Rotation: [1.57079637, 0, 0]
-      Scale: [50, 50, 1]
-    MeshRendererComponent:
-      MeshType: 2
-    ScriptComponent:
-      ClassName: Sandbox.Player
-      ScriptFields:
-        - Name: Speed
-          Type: Float
-          Data: 43
-  - Entity: 5340378461293961456
-    TagComponent:
-      Tag: Light
-    TransformComponent:
-      Position: [8.30000019, 7.9000001, 0]
-      Rotation: [0, 0, 0]
-      Scale: [0.100000001, 0.100000001, 0.100000001]
-    LightComponent:
-      Type: 0
-      ShadowMap: 1
-      Position: [8.30000019, 7.9000001, 0]
-      Direction: [0, -1, 0]
-      Color: [1, 1, 1]
-      Intensity: 5.69999981
-      InnerCutoff: 0.976296008
-      OuterCutoff: 0.953716934
-  - Entity: 15507111895808714800
+  - Entity: 271500451064461467
     TagComponent:
       Tag: Camera
     TransformComponent:
@@ -55,3 +14,44 @@ Entities:
         PerspectiveFar: 100
       Primary: true
       FixedAspectRatio: false
+  - Entity: 1620006740157882608
+    TagComponent:
+      Tag: Light
+    TransformComponent:
+      Position: [-0.200000003, 7.9000001, -0.100000001]
+      Rotation: [0, 0, 0]
+      Scale: [0.100000001, 0.100000001, 0.100000001]
+    LightComponent:
+      Type: 0
+      ShadowMap: 1
+      Position: [-0.200000003, 7.9000001, -0.100000001]
+      Direction: [0, -1, 0]
+      Color: [1, 1, 1]
+      Intensity: 5.69999981
+      InnerCutoff: 0.976296008
+      OuterCutoff: 0.953716934
+  - Entity: 12150223840110181684
+    TagComponent:
+      Tag: Plane
+    TransformComponent:
+      Position: [0, -3.0999999, 0]
+      Rotation: [-1.57079637, 0, 0]
+      Scale: [50, 50, 1]
+    MeshRendererComponent:
+      MeshType: 2
+    ScriptComponent:
+      ClassName: Sandbox.Player
+      ScriptFields:
+        - Name: Speed
+          Type: Float
+          Data: 43
+  - Entity: 13319686418590563602
+    TagComponent:
+      Tag: Box
+    TransformComponent:
+      Position: [0, 1, 0]
+      Rotation: [0, 0, 0]
+      Scale: [3, 3, 3]
+    MeshRendererComponent:
+      MeshType: 4
+      Path: .\Sandbox\Project\Assets\Models\Camera_01_2k.gltf\Camera_01_2k.gltf
