@@ -161,7 +161,6 @@ void Model::loadModel(std::string path, std::shared_ptr<Material> &defaultMateri
 
 void Model::loadGLTFModel(std::string path, std::shared_ptr<Material> &defaultMaterial)
 {
-	// Assimp를 사용하여 OBJ 파일 로드
 	Assimp::Importer importer;
 	const aiScene *scene =
 		importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices |
@@ -183,17 +182,135 @@ void Model::loadGLTFModel(std::string path, std::shared_ptr<Material> &defaultMa
 	processGLTFNode(scene->mRootNode, scene, materials);
 }
 
+std::shared_ptr<Material> Model::processOBJMaterial(MTL &mtl, std::shared_ptr<Material> &defaultMaterial)
+{
+	Albedo albedo;
+	NormalMap normalMap;
+	Roughness roughness;
+	Metallic metallic;
+	AOMap ao;
+	HeightMap heightMap;
+
+	if (mtl.illum >= 1) // albedo, normal, ao, heightmap
+	{
+		albedo.albedo = glm::vec3(mtl.Ka.x, mtl.Ka.y, mtl.Ka.z);
+		if (mtl.map_Kd != "")
+		{
+			albedo.albedoTexture = Texture::createTexture(mtl.map_Kd);
+			albedo.flag = true;
+		}
+		else
+		{
+			albedo.albedoTexture = defaultMaterial->getAlbedo().albedoTexture;
+			albedo.flag = false;
+		}
+
+		if (mtl.map_Bump != "")
+		{
+			normalMap.normalTexture = Texture::createMaterialTexture(mtl.map_Bump);
+			normalMap.flag = true;
+		}
+		else
+		{
+			normalMap.normalTexture = defaultMaterial->getNormalMap().normalTexture;
+			normalMap.flag = false;
+		}
+
+		ao.ao = defaultMaterial->getAOMap().ao;
+		if (mtl.map_Ao != "")
+		{
+			ao.aoTexture = Texture::createMaterialTexture(mtl.map_Ao);
+			ao.flag = true;
+		}
+		else
+		{
+			ao.aoTexture = defaultMaterial->getAOMap().aoTexture;
+			ao.flag = false;
+		}
+
+		heightMap.height = defaultMaterial->getHeightMap().height;
+		if (mtl.disp != "")
+		{
+			heightMap.heightTexture = Texture::createMaterialTexture(mtl.disp);
+			heightMap.flag = true;
+		}
+		else
+		{
+			heightMap.heightTexture = defaultMaterial->getHeightMap().heightTexture;
+			heightMap.flag = false;
+		}
+	}
+	else
+	{
+		albedo.albedo = defaultMaterial->getAlbedo().albedo;
+		albedo.albedoTexture = defaultMaterial->getAlbedo().albedoTexture;
+		albedo.flag = false;
+
+		normalMap.normalTexture = defaultMaterial->getNormalMap().normalTexture;
+		normalMap.flag = false;
+
+		ao.ao = defaultMaterial->getAOMap().ao;
+		ao.aoTexture = defaultMaterial->getAOMap().aoTexture;
+		ao.flag = false;
+
+		heightMap.height = defaultMaterial->getHeightMap().height;
+		heightMap.heightTexture = defaultMaterial->getHeightMap().heightTexture;
+		heightMap.flag = false;
+	}
+
+	if (mtl.illum >= 2) // roughness, metallic
+	{
+		roughness.roughness = 1.0f - (mtl.Ns / 1000.0f);
+		if (mtl.map_Ns != "")
+		{
+			roughness.roughnessTexture = Texture::createMaterialTexture(mtl.map_Ns);
+			roughness.flag = true;
+		}
+		else
+		{
+			roughness.roughnessTexture = defaultMaterial->getRoughness().roughnessTexture;
+			roughness.flag = false;
+		}
+
+		metallic.metallic = (mtl.Ks.x + mtl.Ks.y + mtl.Ks.z) / 3.0f;
+		if (mtl.map_Ks != "")
+		{
+			metallic.metallicTexture = Texture::createMaterialTexture(mtl.map_Ks);
+			metallic.flag = true;
+		}
+		else
+		{
+			metallic.metallicTexture = defaultMaterial->getMetallic().metallicTexture;
+			metallic.flag = false;
+		}
+	}
+	else
+	{
+		roughness.roughness = defaultMaterial->getRoughness().roughness;
+		roughness.roughnessTexture = defaultMaterial->getRoughness().roughnessTexture;
+		roughness.flag = false;
+
+		metallic.metallic = defaultMaterial->getMetallic().metallic;
+		metallic.metallicTexture = defaultMaterial->getMetallic().metallicTexture;
+		metallic.flag = false;
+	}
+
+	return Material::createMaterial(albedo, normalMap, roughness, metallic, ao, heightMap);
+}
+
 std::string Model::getMaterialPath(std::string &path, std::string materialPath)
 {
 	// 모델 경로에서 마지막 슬래시 위치 찾기
 	size_t lastSlashPos = path.find_last_of("/\\");
-	if (lastSlashPos == std::string::npos)
+	size_t lastBlackSlachPos = path.find_last_of("\\");
+	size_t lastPos = std::max(lastSlashPos, lastBlackSlachPos);
+	if (lastPos == std::string::npos)
 	{
 		throw std::runtime_error("Invalid model path: " + path);
 	}
 
 	// 모델 디렉토리 경로 추출
-	std::string modelDirectory = path.substr(0, lastSlashPos + 1);
+	std::string modelDirectory = path.substr(0, lastPos + 1);
 
 	// 모델 디렉토리와 텍스처 상대 경로 결합
 	return modelDirectory + materialPath;
@@ -374,75 +491,33 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 
 void Model::loadOBJModel(std::string path, std::shared_ptr<Material> &defaultMaterial)
 {
-	// Assimp를 사용하여 OBJ 파일 로드
-	Assimp::Importer importer;
-	const aiScene *scene =
-		importer.ReadFile(path, aiProcess_Triangulate | aiProcess_FlipUVs | aiProcess_JoinIdenticalVertices |
-									aiProcess_OptimizeMeshes | aiProcess_OptimizeGraph);
-
-	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
+	auto objLoader = OBJLoader::ReadFile(path);
+	if (!objLoader->getFlag())
 	{
 		std::cerr << "Failed to load OBJ model!" << std::endl;
 		throw std::runtime_error("Failed to load OBJ model!");
 	}
 
-	processOBJNode(scene->mRootNode, scene, defaultMaterial);
-}
-
-void Model::processOBJNode(aiNode *node, const aiScene *scene, std::shared_ptr<Material> &defaultMaterial)
-{
-	for (unsigned int i = 0; i < node->mNumMeshes; i++)
+	auto &subMeshMap = objLoader->getSubMesh();
+	auto &mtlMap = objLoader->getMtlMap();
+	for (auto &map : subMeshMap)
 	{
-		aiMesh *mesh = scene->mMeshes[node->mMeshes[i]];
-		m_meshes.push_back(std::move(processOBJMesh(mesh, scene, defaultMaterial)));
-	}
+		std::cout << "Submesh: " << map.first << std::endl;
+		auto &subMesh = map.second;
+		auto &vertices = subMesh.vertices;
+		auto &indices = subMesh.indices;
 
-	for (unsigned int i = 0; i < node->mNumChildren; i++)
-	{
-		processOBJNode(node->mChildren[i], scene, defaultMaterial);
-	}
-}
-
-std::shared_ptr<Mesh> Model::processOBJMesh(aiMesh *mesh, const aiScene *scene,
-											std::shared_ptr<Material> &defaultMaterial)
-{
-	std::vector<Vertex> vertices;
-	std::vector<uint32_t> indices;
-
-	for (unsigned int i = 0; i < mesh->mNumVertices; i++)
-	{
-		Vertex vertex{};
-		vertex.pos = {mesh->mVertices[i].x, mesh->mVertices[i].y, mesh->mVertices[i].z};
-		if (mesh->mNormals)
+		if (mtlMap.find(map.first) != mtlMap.end())
 		{
-			vertex.normal = {mesh->mNormals[i].x, mesh->mNormals[i].y, mesh->mNormals[i].z};
+			MTL &mtl = mtlMap[map.first];
+			m_materials.push_back(processOBJMaterial(mtl, defaultMaterial));
 		}
 		else
 		{
-			vertex.normal = {0.0f, 0.0f, 0.0f};
+			m_materials.push_back(defaultMaterial);
 		}
-		if (mesh->mTextureCoords[0])
-		{
-			vertex.texCoord = {mesh->mTextureCoords[0][i].x, mesh->mTextureCoords[0][i].y};
-		}
-		else
-		{
-			vertex.texCoord = {0.0f, 0.0f};
-		}
-		vertices.push_back(vertex);
+		m_meshes.push_back(Mesh::createMesh(vertices, indices));
 	}
-
-	for (unsigned int i = 0; i < mesh->mNumFaces; i++)
-	{
-		aiFace face = mesh->mFaces[i];
-		for (unsigned int j = 0; j < face.mNumIndices; j++)
-		{
-			indices.push_back(face.mIndices[j]);
-		}
-	}
-
-	m_materials.push_back(defaultMaterial);
-	return Mesh::createMesh(vertices, indices);
 }
 
 void Model::updateMaterial(std::vector<std::shared_ptr<Material>> materials)
