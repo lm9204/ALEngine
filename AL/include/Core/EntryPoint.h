@@ -14,6 +14,11 @@ int main(int argc, char **argv)
 
 	try
 	{
+		if (argc == 1)
+		{
+			argc = 2;
+			argv[1] = "./Sandbox/Project/AfterLife.alproj";
+		}
 		auto app = ale::createApp({argc, argv});
 		app->run();
 		delete app;
