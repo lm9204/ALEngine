@@ -19,6 +19,8 @@ class ShaderResourceManager
 		VkSampler shadowMapSamplers, std::vector<VkImageView> &shadowCubeMapImageViews, VkSampler shadowCubeMapSampler);
 	static std::unique_ptr<ShaderResourceManager> createShadowMapShaderResourceManager();
 	static std::unique_ptr<ShaderResourceManager> createShadowCubeMapShaderResourceManager();
+	static std::unique_ptr<ShaderResourceManager> createViewPortShaderResourceManager(
+		VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView, VkSampler viewPortSampler);
 
 	~ShaderResourceManager() = default;
 
@@ -79,6 +81,10 @@ class ShaderResourceManager
 	void initShadowCubeMapShaderResourceManager();
 	void createShadowCubeMapUniformBuffers();
 	void createShadowCubeMapDescriptorSets();
+	void initViewPortShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
+										   VkSampler viewPortSampler);
+	void createViewPortDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
+									  VkSampler viewPortSampler);
 };
 } // namespace ale
 

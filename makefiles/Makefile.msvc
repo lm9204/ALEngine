@@ -16,14 +16,15 @@ release: $(NAME)_release
 ###############################################################################
 $(NAME)_debug:
 	@echo [MSVC] Building Debug...
-	@make shader
+#	@make shader
 	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .
 	@cmake --build build --config Debug
-	@if exist ".\build\bin\Debug\$(NAME).exe" ( \
-		cmd /c move ".\build\bin\Debug\$(NAME).exe" ".\$(NAME)_debug.exe" \
-	) else ( \
-		echo [ERROR] .\build\bin\Debug\$(NAME).exe not found! & exit 1 \
-	)
+#	@if exist ".\build\bin\Debug\$(NAME).exe" ( \
+#		cmd /c move ".\build\bin\Debug\$(NAME).exe" ".\$(NAME)_debug.exe" \
+#	) else ( \
+#		echo [ERROR] .\build\bin\Debug\$(NAME).exe not found! & exit 1 \
+#	)
+
 	@echo [SUCCESS] $@ compiled successfully with debug mode!
 
 ###############################################################################
@@ -31,14 +32,15 @@ $(NAME)_debug:
 ###############################################################################
 $(NAME)_release:
 	@echo [MSVC] Building Release...
-	@make shader
+#	@make shader
 	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .
 	@cmake --build build --config Release
-	@if exist ".\build\bin\Release\$(NAME).exe" ( \
-		cmd /c move ".\build\bin\Release\$(NAME).exe" ".\$(NAME)_release.exe" \
-	) else ( \
-		echo [ERROR] .\build\bin\Release\$(NAME).exe not found! & exit 1 \
-	)
+#	@if exist ".\build\bin\Release\$(NAME).exe" ( \
+#		cmd /c move ".\build\bin\Release\$(NAME).exe" ".\$(NAME)_release.exe" \
+#	) else ( \
+#		echo [ERROR] .\build\bin\Release\$(NAME).exe not found! & exit 1 \
+#	)
+
 	@echo [SUCCESS] $@ compiled successfully with release mode!
 
 ###############################################################################

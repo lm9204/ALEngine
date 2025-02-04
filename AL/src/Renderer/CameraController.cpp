@@ -14,8 +14,8 @@ CameraController::CameraController()
 {
 	s_Instance = this;
 
-	m_AspectRatio = WINDOW_WIDTH / (float)WINDOW_HEIGHT;
-	m_Camera.setProjMatrix(glm::radians(45.0f), m_AspectRatio, 0.01f, 100.0f);
+	// m_AspectRatio = WINDOW_WIDTH / (float)WINDOW_HEIGHT;
+	// m_Camera.setProjMatrix(glm::radians(45.0f), m_AspectRatio, 0.01f, 100.0f);
 }
 
 void CameraController::onUpdate(Timestep ts)
@@ -70,8 +70,8 @@ Camera &CameraController::getCamera()
 
 void CameraController::setCamera(VkExtent2D swapChainExtent, float fov, float _near, float _far)
 {
-	m_AspectRatio = swapChainExtent.width / (float)swapChainExtent.height;
-	m_Camera.setProjMatrix(fov, m_AspectRatio, _near, _far);
+	// m_AspectRatio = swapChainExtent.width / (float)swapChainExtent.height;
+	// m_Camera.setProjMatrix(fov, m_AspectRatio, _near, _far);
 }
 
 glm::mat4 CameraController::getViewMatrix()

@@ -45,7 +45,7 @@ class EditorCamera : public Camera
 	bool m_CameraControl{false};
 	glm::vec3 m_CameraFront{0.0f, 0.0f, -1.0f};
 	glm::vec3 m_CameraUp{0.0f, 1.0f, 0.0f};
-	const float m_Speed{0.05f};
+	const float m_Speed{0.005f};
 	const float m_RotSpeed{0.8f};
 	float m_CameraPitch{0.0f};
 	float m_CameraYaw{0.0f};

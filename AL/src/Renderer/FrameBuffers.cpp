@@ -4,10 +4,10 @@
 namespace ale
 {
 
-std::unique_ptr<FrameBuffers> FrameBuffers::createSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass)
+std::unique_ptr<FrameBuffers> FrameBuffers::createViewPortFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass)
 {
 	std::unique_ptr<FrameBuffers> frameBuffers = std::unique_ptr<FrameBuffers>(new FrameBuffers());
-	frameBuffers->initSwapChainFrameBuffers(swapChain, renderPass);
+	frameBuffers->initViewPortFrameBuffers(viewPortSize, renderPass);
 	return frameBuffers;
 }
 
@@ -43,19 +43,22 @@ void FrameBuffers::cleanup()
 	vkDestroyImage(device, pbrImage, nullptr);
 	vkFreeMemory(device, pbrImageMemory, nullptr);
 
+	vkDestroyImageView(device, viewPortImageView, nullptr);
+	vkDestroyImage(device, viewPortImage, nullptr);
+	vkFreeMemory(device, viewPortImageMemory, nullptr);
+
 	for (auto framebuffer : framebuffers)
 	{
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
 	}
 }
 
-void FrameBuffers::initSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass)
+void FrameBuffers::initViewPortFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass)
 {
 	auto &context = VulkanContext::getContext();
 	VkDevice device = context.getDevice();
-	VkFormat colorFormat = swapChain->getSwapChainImageFormat();
-	VkExtent2D extent = swapChain->getSwapChainExtent();
-	std::vector<VkImageView> swapChainImageViews = swapChain->getSwapChainImageViews();
+
+	VkExtent2D extent = {viewPortSize.x, viewPortSize.y};
 
 	VulkanUtil::createImage(extent.width, extent.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R16G16B16A16_SFLOAT,
 							VK_IMAGE_TILING_OPTIMAL,
@@ -89,12 +92,18 @@ void FrameBuffers::initSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass 
 							depthImage, depthImageMemory);
 	depthImageView = VulkanUtil::createImageView(depthImage, depthFormat, VK_IMAGE_ASPECT_DEPTH_BIT, 1);
 
-	framebuffers.resize(swapChainImageViews.size());
+	VulkanUtil::createImage(extent.width, extent.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM,
+							VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, viewPortImage, viewPortImageMemory);
+	viewPortImageView =
+		VulkanUtil::createImageView(viewPortImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT, 1);
 
-	for (size_t i = 0; i < swapChainImageViews.size(); i++)
+	framebuffers.resize(MAX_FRAMES_IN_FLIGHT);
+
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
 	{
 		std::array<VkImageView, 6> attachments = {positionImageView, normalImageView, albedoImageView,
-												  pbrImageView,		 depthImageView,  swapChainImageViews[i]};
+												  pbrImageView,		 depthImageView,  viewPortImageView};
 
 		VkFramebufferCreateInfo framebufferInfo{};
 		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;

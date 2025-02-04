@@ -15,6 +15,7 @@ class DescriptorSetLayout
 	static std::unique_ptr<DescriptorSetLayout> createLightingPassDescriptorSetLayout();
 	static std::unique_ptr<DescriptorSetLayout> createShadowMapDescriptorSetLayout();
 	static std::unique_ptr<DescriptorSetLayout> createShadowCubeMapDescriptorSetLayout();
+	static std::unique_ptr<DescriptorSetLayout> createViewPortDescriptorSetLayout();
 
 	~DescriptorSetLayout() = default;
 
@@ -33,6 +34,7 @@ class DescriptorSetLayout
 	void initLightingPassDescriptorSetLayout();
 	void initShadowMapDescriptorSetLayout();
 	void initShadowCubeMapDescriptorSetLayout();
+	void initViewPortDescriptorSetLayout();
 };
 } // namespace ale
 #endif

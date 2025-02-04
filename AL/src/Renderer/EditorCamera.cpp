@@ -8,14 +8,14 @@ namespace ale
 {
 EditorCamera::EditorCamera()
 {
-	setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
+	// setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
 	setViewMatrix(m_CameraPos, m_CameraFront, m_CameraUp);
 }
 
 EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
 	: m_Fov(fov), m_AspectRatio(aspectRatio), m_NearClip(nearClip), m_FarClip(farClip)
 {
-	setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
+	// setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
 	setViewMatrix(m_CameraPos, m_CameraFront, m_CameraUp);
 }
 
@@ -118,7 +118,7 @@ void EditorCamera::updateView()
 
 void EditorCamera::updateProj()
 {
-	m_AspectRatio = m_ViewportWidth / (float)m_ViewportHeight;
-	setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
+	// m_AspectRatio = m_ViewportWidth / (float)m_ViewportHeight;
+	// setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
 }
 } // namespace ale
