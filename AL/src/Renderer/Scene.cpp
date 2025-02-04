@@ -176,10 +176,10 @@ void Scene::initScene() {
     Transform{glm::vec3(-1.6f, -0.56f, -1.25f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
     m_objects.push_back(m_plant2Object);
 
-    m_SAComponent = std::make_shared<SAComponent>();
-    m_SAComponent->m_Model = Model::createModel("models/animated.gltf/animated.gltf", m_defaultMaterial);
-    std::shared_ptr<Object> SAplayerObject = Object::createObject("SAplayer", m_SAComponent->m_Model,
+    std::shared_ptr<Model> saModel = Model::createModel("models/animated.gltf/animated.gltf", m_defaultMaterial);
+    std::shared_ptr<Object> SAplayerObject = Object::createObject("SAplayer", saModel,
     Transform{glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(0.01f, 0.01f, 0.01f)});
+    m_SAComponent = std::make_shared<SAComponent>(saModel);
     m_objects.push_back(SAplayerObject);
 
     m_objectCount = m_objects.size();
