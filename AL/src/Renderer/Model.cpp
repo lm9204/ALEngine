@@ -490,30 +490,43 @@ void Model::loadAnimations(const aiScene* scene)
 		double durationTicks = aiAnim->mDuration;
 
 		float durationSeconds = static_cast<float>(durationTicks / ticksPerSecond);
-std::cout << "Animation: " << aiAnim->mName.C_Str() 
-          << ", TicksPerSecond: " << aiAnim->mTicksPerSecond
-          << ", Duration(ticks): " << aiAnim->mDuration 
-          << ", Duration(seconds): " << durationSeconds << std::endl;
+		std::cout << "Animation: " << aiAnim->mName.C_Str() 
+				<< ", TicksPerSecond: " << aiAnim->mTicksPerSecond
+				<< ", Duration(ticks): " << aiAnim->mDuration 
+				<< ", Duration(seconds): " << durationSeconds << std::endl;
 
 		size_t numberOfChannels = aiAnim->mNumChannels;
-
 		for (size_t channelIndex = 0; channelIndex < numberOfChannels; ++channelIndex)
 		{
 			aiNodeAnim* nodeAnim = aiAnim->mChannels[channelIndex];
 			std::string nodeName = nodeAnim->mNodeName.C_Str();
-			AL_INFO("Model::loadAnimations: currentChannelName:{0}", nodeName);
 
 			// (A) Translation
 			if (nodeAnim->mNumPositionKeys > 0)
 			{
 				size_t numberOfKeys = nodeAnim->mNumPositionKeys;
-				AL_INFO("\tPositionKeys:{0}", numberOfKeys);
 				SkeletalAnimation::Sampler samplerPos;
-				// assimp는 보간방법을 명시하지 않음
-				samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
 				
 				samplerPos.m_Timestamps.resize(numberOfKeys);
 				samplerPos.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
+
+				if (numberOfKeys > 0)
+				{
+					switch (nodeAnim->mPositionKeys[0].mInterpolation)
+					{
+						case 0:
+							samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
+							break;
+						case 1:
+							samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+							break;
+						case 3:
+							samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
+						default:
+							AL_ERROR("Model::loadAnimations: No Support Interpolate");
+							return ;
+					}
+				}
 
 				for (size_t keyIndex = 0; keyIndex < numberOfKeys; ++keyIndex)
 				{
@@ -539,12 +552,28 @@ std::cout << "Animation: " << aiAnim->mName.C_Str()
 			if (nodeAnim->mNumRotationKeys > 0)
 			{
 				size_t numberOfKeys = nodeAnim->mNumRotationKeys;
-				AL_INFO("\tRotationsKeys:{0}", numberOfKeys);
 				SkeletalAnimation::Sampler samplerRot;
-				samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
 
 				samplerRot.m_Timestamps.resize(numberOfKeys);
 				samplerRot.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
+
+				if (numberOfKeys > 0)
+				{
+					switch (nodeAnim->mRotationKeys[0].mInterpolation)
+					{
+						case 0:
+							samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
+							break;
+						case 1:
+							samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+							break;
+						case 3:
+							samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
+						default:
+							AL_ERROR("Model::loadAnimations: No Support Interpolate");
+							return ;
+					}
+				}
 
 				for (size_t keyIndex = 0; keyIndex < numberOfKeys; ++keyIndex)
 				{
@@ -570,12 +599,28 @@ std::cout << "Animation: " << aiAnim->mName.C_Str()
 			if (nodeAnim->mNumScalingKeys > 0)
 			{
 				size_t numberOfKeys = nodeAnim->mNumScalingKeys;
-				AL_INFO("\tScalingKeys:{0}", numberOfKeys);
 				SkeletalAnimation::Sampler samplerScl;
-				samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
 
 				samplerScl.m_Timestamps.resize(numberOfKeys);
 				samplerScl.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
+
+				if (numberOfKeys > 0)
+				{
+					switch (nodeAnim->mScalingKeys[0].mInterpolation)
+					{
+						case 0:
+							samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
+							break;
+						case 1:
+							samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+							break;
+						case 3:
+							samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
+						default:
+							AL_ERROR("Model::loadAnimations: No Support Interpolate");
+							return ;
+					}
+				}
 
 				for (size_t keyIndex = 0; keyIndex < numberOfKeys; ++keyIndex)
 				{
@@ -599,15 +644,15 @@ std::cout << "Animation: " << aiAnim->mName.C_Str()
 			}
 		}
 
-		// if (animation->m_Samplers.size() > 2)
-		// {
-		// 	auto& sampler = animation->m_Samplers[0];
-		// 	// set duration
-		// 	animation->setFirstKeyFrameTime(sampler.m_Timestamps[0]);
-		// 	animation->setLastKeyFrameTime(sampler.m_Timestamps.back());
-		// }
-		animation->setFirstKeyFrameTime(0);
-		animation->setLastKeyFrameTime(durationSeconds);
+		if (animation->m_Samplers.size() > 2)
+		{
+			auto& sampler = animation->m_Samplers[0];
+			// set duration
+			animation->setFirstKeyFrameTime(sampler.m_Timestamps[0]);
+			animation->setLastKeyFrameTime(sampler.m_Timestamps.back());
+		}
+		// animation->setFirstKeyFrameTime(0);
+		// animation->setLastKeyFrameTime(durationSeconds);
 
 		m_Animations->push(animation);
 	}
@@ -704,20 +749,24 @@ void Model::updateMaterial(std::vector<std::shared_ptr<Material>> materials)
 	}
 }
 
-void Model::updateAnimations(SkeletalAnimation* animation, const Timestep& timestep, const float speedFactor, uint32_t prevImage, uint32_t currentImage)
+void Model::setShaderData(const std::vector<glm::mat4>& shaderData)
 {
-	m_Animations->uploadData(animation, prevImage);
-	m_Animations->update(timestep * speedFactor, *m_Skeleton, currentImage);
-	m_Skeleton->update();
-
-	if (m_SkeletalAnimations)
-	{
-		m_ShaderData.m_FinalBonesMatrices = m_Skeleton->m_ShaderData.m_FinalBonesMatrices;
-	}
+	m_ShaderData.m_FinalBonesMatrices = shaderData;
 }
 
-uint16_t Model::getAnimCurrentFrame() { return m_Animations->getCurrentFrame(); }
+void Model::updateAnimations(SkeletalAnimation* animation, const Timestep& timestep, uint32_t prevImage, uint32_t currentImage)
+{
+	if (!m_SkeletalAnimations)
+		return;
 
-SkeletalAnimations& Model::getAnimations()  { return *(m_Animations.get()); }
+	m_Animations->uploadData(animation, prevImage);
+	m_Animations->update(timestep, *m_Skeleton, currentImage);
+	m_Skeleton->update();
+
+	m_ShaderData.m_FinalBonesMatrices = m_Skeleton->m_ShaderData.m_FinalBonesMatrices;
+}
+
+std::shared_ptr<SkeletalAnimations>& Model::getAnimations()  { return m_Animations; }
+std::shared_ptr<Armature::Skeleton>& Model::getSkeleton() { return m_Skeleton; }
 
 } // namespace ale
