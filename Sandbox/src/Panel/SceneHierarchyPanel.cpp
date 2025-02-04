@@ -10,6 +10,8 @@
 
 #include "UI/UI.h"
 
+#include "Physics/Rigidbody.h"
+
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
@@ -469,6 +471,14 @@ void drawDragDropUI(const std::string &label, float columnWidth = 100.0f)
 	ImGui::PopID();
 }
 
+static void drawCheckBox(const std::string &label, bool &values)
+{
+	// bool result = values ? true : false;
+	// ImGui::Checkbox(label.c_str(), &result);
+	// values = result;
+	ImGui::Checkbox(label.c_str(), &values);
+}
+
 template <typename T, typename UIFunction>
 static void drawComponent(const std::string &name, Entity entity, UIFunction uiFunction)
 {
@@ -556,11 +566,20 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		displayAddComponentEntry<ScriptComponent>("Script");
 		displayAddComponentEntry<MeshRendererComponent>("Mesh Renderer");
 		displayAddComponentEntry<LightComponent>("Light");
-		// displayAddComponentEntry<RigidbodyComponent>("Rigidbody");
-		// displayAddComponentEntry<BoxColliderComponent>("Box Collider");
-		// displayAddComponentEntry<SphereColliderComponent>("Sphere Collider");
-		// displayAddComponentEntry<CapsuleColliderComponent>("Capsule Collider");
-		// displayAddComponentEntry<CylinderColliderComponent>("Cylinder Collider");
+		displayAddComponentEntry<RigidbodyComponent>("Rigidbody");
+
+		bool hasCollider = m_SelectionContext.hasComponent<BoxColliderComponent>() ||
+						   m_SelectionContext.hasComponent<SphereColliderComponent>() ||
+						   m_SelectionContext.hasComponent<CapsuleColliderComponent>() ||
+						   m_SelectionContext.hasComponent<CylinderColliderComponent>();
+
+		if (!hasCollider)
+		{
+			displayAddComponentEntry<BoxColliderComponent>("Box Collider");
+			displayAddComponentEntry<SphereColliderComponent>("Sphere Collider");
+			displayAddComponentEntry<CapsuleColliderComponent>("Capsule Collider");
+			displayAddComponentEntry<CylinderColliderComponent>("Cylinder Collider");
+		}
 
 		ImGui::EndPopup();
 	}
@@ -775,6 +794,64 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				}
 			}
 		}
+	});
+	drawComponent<RigidbodyComponent>("Rigidbody", entity, [entity, scene = m_Context](auto &component) mutable {
+		drawFloatControl("Mass", component.m_Mass);
+		drawFloatControl("Drag", component.m_Damping);
+		drawFloatControl("Angular Drag", component.m_AngularDamping);
+
+		// bool useGravity = component.m_UseGravity ? true : false;
+		// ImGui::Checkbox("Gravity", &useGravity);
+		// component.m_UseGravity = useGravity ? true : false;
+		drawCheckBox("Gravity", component.m_UseGravity);
+
+		// FreezePos
+		// FreezeRot
+		// BodyType
+
+		if (scene->isRunning())
+		{
+			BodyDef bdDef;
+			bdDef.m_linearDamping = component.m_Damping;
+			bdDef.m_angularDamping = component.m_AngularDamping;
+			bdDef.m_useGravity = component.m_UseGravity;
+
+			Rigidbody *body = (Rigidbody *)component.body;
+			body->setRBComponentValue(bdDef);
+
+			// 관성텐서 추가된다면 setMassData로 교체
+			body->setMass(component.m_Mass);
+		}
+	});
+	drawComponent<BoxColliderComponent>("BoxCollider", entity, [](auto &component) {
+		drawVec3Control("Center", component.m_Center);
+		drawVec3Control("Size", component.m_Size);
+		drawCheckBox("IsTrigger", component.m_IsTrigger);
+
+		// Runtime 중 수정 기능
+	});
+	drawComponent<SphereColliderComponent>("SphereCollider", entity, [](auto &component) {
+		drawVec3Control("Center", component.m_Center);
+		drawFloatControl("Radius", component.m_Radius);
+		drawCheckBox("IsTrigger", component.m_IsTrigger);
+
+		// Runtime 중 수정 기능
+	});
+	drawComponent<CapsuleColliderComponent>("CapsuleCollider", entity, [](auto &component) {
+		drawVec3Control("Center", component.m_Center);
+		drawFloatControl("Radius", component.m_Radius);
+		drawFloatControl("Radius", component.m_Height);
+		drawCheckBox("IsTrigger", component.m_IsTrigger);
+
+		// Runtime 중 수정 기능
+	});
+	drawComponent<CylinderColliderComponent>("CylinderCollider", entity, [](auto &component) {
+		drawVec3Control("Center", component.m_Center);
+		drawFloatControl("Radius", component.m_Radius);
+		drawFloatControl("Radius", component.m_Height);
+		drawCheckBox("IsTrigger", component.m_IsTrigger);
+
+		// Runtime 중 수정 기능
 	});
 }
 
