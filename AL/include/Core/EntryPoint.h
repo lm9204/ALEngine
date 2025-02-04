@@ -17,7 +17,7 @@ int main(int argc, char **argv)
 		if (argc == 1)
 		{
 			argc = 2;
-			argv[1] = "./Sandbox/Project/AfterLife.alproj";
+			argv[1] = "./projects/AfterLife.alproj";
 		}
 		auto app = ale::createApp({argc, argv});
 		app->run();

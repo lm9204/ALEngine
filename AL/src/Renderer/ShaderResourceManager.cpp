@@ -93,7 +93,7 @@ void ShaderResourceManager::createGeometryPassDescriptorSets(Model *model)
 	allocInfo.descriptorPool = descriptorPool; // 디스크립터 셋을 할당할 디스크립터 풀 지정
 	allocInfo.descriptorSetCount =
 		static_cast<uint32_t>(MAX_FRAMES_IN_FLIGHT * meshCount); // 할당할 디스크립터 셋 개수 지정
-	allocInfo.pSetLayouts = layouts.data(); // 할당할 디스크립터 셋 의 레이아웃을 정의하는 배열
+	allocInfo.pSetLayouts = layouts.data();						 // 할당할 디스크립터 셋 의 레이아웃을 정의하는 배열
 
 	descriptorSets.resize(MAX_FRAMES_IN_FLIGHT * meshCount); // 디스크립터 셋을 저장할 벡터 크기 설정
 
@@ -624,4 +624,55 @@ void ShaderResourceManager::createShadowCubeMapDescriptorSets()
 	}
 }
 
+std::unique_ptr<ShaderResourceManager> ShaderResourceManager::createViewPortShaderResourceManager(
+	VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView, VkSampler viewPortSampler)
+{
+	std::unique_ptr<ShaderResourceManager> shaderResourceManager =
+		std::unique_ptr<ShaderResourceManager>(new ShaderResourceManager());
+	shaderResourceManager->initViewPortShaderResourceManager(descriptorSetLayout, viewPortImageView, viewPortSampler);
+	return shaderResourceManager;
+}
+
+void ShaderResourceManager::initViewPortShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout,
+															  VkImageView viewPortImageView, VkSampler viewPortSampler)
+{
+	createViewPortDescriptorSets(descriptorSetLayout, viewPortImageView, viewPortSampler);
+}
+
+void ShaderResourceManager::createViewPortDescriptorSets(VkDescriptorSetLayout descriptorSetLayout,
+														 VkImageView viewPortImageView, VkSampler viewPortSampler)
+{
+	auto &context = VulkanContext::getContext();
+	VkDevice device = context.getDevice();
+	VkDescriptorPool descriptorPool = context.getDescriptorPool();
+
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &descriptorSetLayout;
+
+	descriptorSets.resize(1);
+	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+
+	{
+		throw std::runtime_error("Failed to allocate view port descriptor set!");
+	}
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageView = viewPortImageView;
+	imageInfo.sampler = viewPortSampler;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	VkWriteDescriptorSet descriptorWrite{};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = descriptorSets[0];
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrite.descriptorCount = 1;
+
+	descriptorWrite.pImageInfo = &imageInfo;
+
+	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+}
 } // namespace ale
