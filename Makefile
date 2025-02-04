@@ -10,7 +10,7 @@ ifeq ($(OS),Windows_NT)
   UNAME_S := $(shell uname -s 2>/dev/null)
   ifneq (,$(findstring MINGW,$(UNAME_S)))
     # MinGW 환경
-    include Makefile.mingw
+    include makefiles/Makefile.mingw
   else
     # MSVC CMD 환경
     include makefiles/Makefile.msvc

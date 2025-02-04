@@ -16,7 +16,7 @@ release: $(NAME)_release
 ###############################################################################
 $(NAME)_debug:
 	@echo [MinGW] Building Debug...
-	@make shader
+	@mingw32-make shader
 	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .
 	@cmake --build build --config Debug
 	@if [ -f "./build/bin/Debug/$(NAME).exe" ]; then \
@@ -32,7 +32,7 @@ $(NAME)_debug:
 ###############################################################################
 $(NAME)_release:
 	@echo [MinGW] Building Release...
-	@make shader
+	@mingw32-make shader
 	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .
 	@cmake --build build --config Release
 	@if [ -f "./build/bin/Release/$(NAME).exe" ]; then \
