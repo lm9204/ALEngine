@@ -13,6 +13,7 @@ namespace ale
 {
 class Entity;
 class Model;
+class World;
 
 class Scene
 {
@@ -102,6 +103,8 @@ class Scene
 	std::shared_ptr<Model> m_boxModel;
 	std::shared_ptr<Model> m_sphereModel;
 	std::shared_ptr<Model> m_planeModel;
+
+	World *m_World = nullptr;
 
 	float m_ambientStrength{0.1f};
 
