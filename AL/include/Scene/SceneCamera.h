@@ -49,7 +49,7 @@ class SceneCamera : public Camera
   private:
 	glm::vec3 m_CameraFront{0.0f, 0.1f, -1.0f};
 	glm::vec3 m_CameraUp{0.0f, 1.0f, 0.0f};
-	glm::vec3 m_CameraPos{0.0f, 0.0f, 10.0f};
+	glm::vec3 m_CameraPos{0.0f, 0.0f, 50.0f};
 
 	float m_PerspectiveFOV = glm::radians(45.0f);
 	float m_PerspectiveNear = 0.01f, m_PerspectiveFar = 100.0f;
