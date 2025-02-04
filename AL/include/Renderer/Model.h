@@ -25,7 +25,7 @@ struct DrawInfo {
 	uint32_t currentFrame;
 };
 
-class AL_API Model
+class Model
 {
   public:
 	static std::shared_ptr<Model> createModel(std::string path);
@@ -40,9 +40,11 @@ class AL_API Model
 	std::vector<std::shared_ptr<Mesh>>& getMeshes() {return m_meshes;}
 	std::vector<std::shared_ptr<Material>>& getMaterials() {return m_materials;}
 	void updateMaterial(std::vector<std::shared_ptr<Material>> materials);
-	void updateAnimations(SkeletalAnimation* animation, const Timestep& timestep, const float speedFactor, uint32_t prevImage, uint32_t currentImage);
-	uint16_t getAnimCurrentFrame();
-	SkeletalAnimations& getAnimations();
+	void updateAnimations(SkeletalAnimation* animation, const Timestep& timestep, uint32_t prevImage, uint32_t currentImage);
+	void setShaderData(const std::vector<glm::mat4>& shaderData);
+	std::shared_ptr<SkeletalAnimations>& getAnimations();
+	std::shared_ptr<Armature::Skeleton>& getSkeleton();
+	bool m_SkeletalAnimations;
 	
   private:
 	Model() = default;
@@ -53,7 +55,6 @@ class AL_API Model
 	std::shared_ptr<SkeletalAnimations> m_Animations;
 	std::shared_ptr<Armature::Skeleton> m_Skeleton;
 	Armature::ShaderData m_ShaderData;
-	bool m_SkeletalAnimations;
 
 	struct VertexBoneData
 	{
