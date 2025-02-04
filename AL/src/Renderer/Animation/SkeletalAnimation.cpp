@@ -19,7 +19,7 @@ void SkeletalAnimation::update(const Timestep& timestep, Armature::Skeleton& ske
 {
 	if (!isRunning())
 	{
-		std::cout << "Animation expired\n";
+		AL_INFO("SkeletalAnimation::update(): {0} Animation expired", m_Name);
 		return;
 	}
 	m_CurrentKeyFrameTime += timestep;
@@ -33,7 +33,6 @@ void SkeletalAnimation::update(const Timestep& timestep, Armature::Skeleton& ske
 		auto& sampler = m_Samplers[channel.m_samplerIndex];
 		int boneIndex = skeleton.m_NodeNameToBoneIndex[channel.m_NodeName];
 		auto& bone = skeleton.m_Bones[boneIndex]; // the joint to be animated
-
 		for (size_t i = 0; i < sampler.m_Timestamps.size() - 1; i++)
 		{
 			if ((m_CurrentKeyFrameTime >= sampler.m_Timestamps[i]) &&
@@ -125,9 +124,9 @@ void SkeletalAnimation::update(const Timestep& timestep, Armature::Skeleton& ske
 	}
 }
 
-void SkeletalAnimation::uploadData(const SAData& data)
+void SkeletalAnimation::uploadData(const SAData& data, bool repeat)
 {
-	m_Repeat = data.m_Repeat;
+	m_Repeat = repeat;
 	m_FirstKeyFrameTime = data.m_FirstKeyFrameTime;
 	m_LastKeyFrameTime = data.m_LastKeyFrameTime;
 	m_CurrentKeyFrameTime = data.m_CurrentKeyFrameTime;
@@ -136,7 +135,7 @@ void SkeletalAnimation::uploadData(const SAData& data)
 struct SAData SkeletalAnimation::getData() const
 {
 	struct SAData data{};
-	data.m_Repeat = m_Repeat;
+	// data.m_Repeat = m_Repeat;
 	data.m_FirstKeyFrameTime = m_FirstKeyFrameTime;
 	data.m_LastKeyFrameTime = m_LastKeyFrameTime;
 	data.m_CurrentKeyFrameTime = m_CurrentKeyFrameTime;

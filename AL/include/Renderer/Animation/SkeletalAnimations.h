@@ -47,7 +47,6 @@ class SkeletalAnimations
 		float getCurrentTime();
 		uint16_t getCurrentFrame();
 		std::string getName();
-		// TODO
 		void uploadData(SkeletalAnimation* animation, uint32_t frameCounter);
 		void update(const Timestep& timestep, Armature::Skeleton& skeleton, uint16_t frameCounter);
 		int getIndex(std::string const& animation);
