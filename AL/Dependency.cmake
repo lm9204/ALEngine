@@ -108,5 +108,4 @@ set(DEP_LIST ${DEP_LIST} dep_assimp)
 set(DEP_LIBS ${DEP_LIBS}
 	assimp-vc143-mt$<$<CONFIG:Debug>:d>
 	zlibstatic$<$<CONFIG:Debug>:d>
-	# IrrXML$<$<CONFIG:Debug>:d>
 	)
