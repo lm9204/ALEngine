@@ -26,4 +26,12 @@ namespace ALEngine
             }
         }
     }
+
+    public class RigidbodyComponent : Component
+    {
+        public void addForce(Vector3 force)
+        {
+            InternalCalls.RigidbodyComponent_addForce(Entity.ID, ref force);
+        }
+    }
 }
