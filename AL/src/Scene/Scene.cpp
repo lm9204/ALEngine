@@ -91,7 +91,7 @@ Entity Scene::createEntity(const std::string &name)
 Entity Scene::createEntityWithUUID(UUID uuid, const std::string &name)
 {
 	Entity entity = {m_Registry.create(), this};
-	entity.addComponent<IDComponent>();
+	entity.addComponent<IDComponent>(uuid);
 	entity.addComponent<TransformComponent>();
 	entity.addComponent<RelationshipComponent>();
 	auto &tag = entity.addComponent<TagComponent>();
@@ -525,29 +525,19 @@ template <> void Scene::onComponentAdded<BoxColliderComponent>(Entity entity, Bo
 {
 	auto &tc = entity.getComponent<TransformComponent>();
 
-	component.m_Center = tc.m_Position;
 	component.m_Size = tc.m_Scale;
 }
 
 template <> void Scene::onComponentAdded<SphereColliderComponent>(Entity entity, SphereColliderComponent &component)
 {
-	auto &tc = entity.getComponent<TransformComponent>();
-
-	component.m_Center = tc.m_Position;
 }
 
 template <> void Scene::onComponentAdded<CapsuleColliderComponent>(Entity entity, CapsuleColliderComponent &component)
 {
-	auto &tc = entity.getComponent<TransformComponent>();
-
-	component.m_Center = tc.m_Position;
 }
 
 template <> void Scene::onComponentAdded<CylinderColliderComponent>(Entity entity, CylinderColliderComponent &component)
 {
-	auto &tc = entity.getComponent<TransformComponent>();
-
-	component.m_Center = tc.m_Position;
 }
 
 template <> void Scene::onComponentAdded<ScriptComponent>(Entity entity, ScriptComponent &component)
