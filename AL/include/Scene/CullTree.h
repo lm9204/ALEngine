@@ -46,7 +46,7 @@ struct CullSphere
 	}
 };
 
-struct Plane
+struct FrustumPlane
 {
 	float distance;
 	glm::vec3 normal;
@@ -61,7 +61,7 @@ enum class EFrustum
 
 struct Frustum
 {
-	Plane plane[6];
+	FrustumPlane plane[6];
 
 	EFrustum cullingSphere(const CullSphere &sphere) const 
 	{
