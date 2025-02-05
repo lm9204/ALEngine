@@ -78,6 +78,7 @@ struct MeshRendererComponent
 	std::shared_ptr<RenderingComponent> m_RenderingComponent;
 	uint32_t type;
 	std::string path;
+	bool renderEnabled;
 
 	MeshRendererComponent() = default;
 	MeshRendererComponent(const MeshRendererComponent &) = default;
