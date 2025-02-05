@@ -41,6 +41,7 @@ struct TransformComponent
 	glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Rotation = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Scale = {1.0f, 1.0f, 1.0f};
+	bool m_isMoved = false;
 
 	glm::mat4 m_WorldTransform = glm::mat4(1.0f);
 
@@ -78,6 +79,7 @@ struct MeshRendererComponent
 	std::shared_ptr<RenderingComponent> m_RenderingComponent;
 	uint32_t type;
 	std::string path;
+	int32_t nodeId;
 	bool renderEnabled;
 
 	MeshRendererComponent() = default;
