@@ -1,9 +1,6 @@
 #pragma once
 
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtx/quaternion.hpp>
-#include <vector>
+#include "Renderer/Common.h"
 
 namespace ale
 {
@@ -49,6 +46,53 @@ struct CullSphere
 	}
 };
 
+struct Plane
+{
+	float distance;
+	glm::vec3 normal;
+};
+
+enum class EFrustum
+{
+	OUTSIDE,
+	INSIDE,
+	INTERSECT,
+};
+
+struct Frustum
+{
+	Plane plane[6];
+
+	EFrustum cullingSphere(const CullSphere &sphere) const 
+	{
+		bool intersect = false;
+
+		for (int32_t i = 0; i < 6; ++i)
+		{
+			float dotResult = glm::dot(plane[i].normal, sphere.center);
+			float distance = plane[i].distance; 
+			if (dotResult > distance + sphere.radius)
+			{
+				return EFrustum::OUTSIDE;
+			}
+			else if (dotResult > distance - sphere.radius)
+			{
+				intersect = true;
+			}
+		}
+
+		if (intersect == true)
+		{
+			return EFrustum::INTERSECT;
+		}
+		else
+		{
+			return EFrustum::INSIDE;
+		}
+	};
+};
+
+
 struct CullTreeNode
 {
 	bool isLeaf() const
@@ -57,7 +101,7 @@ struct CullTreeNode
 	}
 
 	CullSphere sphere;
-	uint32_t handle;
+	void *entity;
 
 	union {
 		int32_t parent;
@@ -76,7 +120,7 @@ class CullTree
 	~CullTree() = default;
 
 	// 주어진 aabb와 userData로 node에 값 초기화, node 삽입
-	int32_t createNode(const CullSphere &sphere, uint32_t handle);
+	int32_t createNode(const CullSphere &sphere, void *entity);
 
 	void destroyNode(int32_t nodeId);
 
@@ -89,8 +133,8 @@ class CullTree
 	// 해당 노드부터 하위 노드들까지 render flag를 전부 false로 설정
 	void setRenderDisable(int32_t nodeId);
 
-	void frustumCulling(int32_t nodeId);
-	
+	void frustumCulling(const Frustum &frustum, int32_t nodeId);
+
 	// void printDynamicTree(int32_t nodeId)
 
 	// const AABB &getFatAABB(int32_t proxyId) const;

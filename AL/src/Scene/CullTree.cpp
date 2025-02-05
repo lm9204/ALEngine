@@ -1,4 +1,5 @@
 #include "Scene/CullTree.h"
+#include "Scene/Entity.h"
 
 namespace ale
 {
@@ -43,7 +44,7 @@ int32_t CullTree::allocateNode()
 	m_nodes[nodeId].child1 = NULL_NODE;
 	m_nodes[nodeId].child2 = NULL_NODE;
 	m_nodes[nodeId].height = 0;
-	m_nodes[nodeId].handle = 0;
+	m_nodes[nodeId].entity = nullptr;
 	++m_nodeCount;
 	return nodeId;
 }
@@ -56,7 +57,7 @@ void CullTree::freeNode(int32_t nodeId)
 	--m_nodeCount;
 }
 
-int32_t CullTree::createNode(const CullSphere &sphere, uint32_t handle)
+int32_t CullTree::createNode(const CullSphere &sphere, void *entity)
 {
 	// std::cout << "DynamicTree::createProxy\n";
 	int32_t nodeId = allocateNode();
@@ -64,7 +65,7 @@ int32_t CullTree::createNode(const CullSphere &sphere, uint32_t handle)
 
 	m_nodes[nodeId].sphere.center = sphere.center;
 	m_nodes[nodeId].sphere.radius = sphere.radius;
-	m_nodes[nodeId].handle = handle;
+	m_nodes[nodeId].entity = entity;
 	m_nodes[nodeId].height = 0;
 
 	// insert leaf
@@ -91,15 +92,58 @@ bool CullTree::moveNode(int32_t nodeId, const glm::vec3 &displacement)
 
 void CullTree::setRenderEnable(int32_t nodeId)
 {
+	CullTreeNode &node = m_nodes[nodeId];
+
+	if (node.isLeaf() == true)
+	{
+		Entity *entity = static_cast<Entity *>(node.entity);
+		MeshRendererComponent &component = entity->getComponent<MeshRendererComponent>();
+		component.renderEnabled = true;
+	}
+	else
+	{
+		setRenderEnable(node.child1);
+		setRenderEnable(node.child2);
+	}
 }
 
 void CullTree::setRenderDisable(int32_t nodeId)
 {
+	CullTreeNode &node = m_nodes[nodeId];
+
+	if (node.isLeaf() == true)
+	{
+		Entity *entity = static_cast<Entity *>(node.entity);
+		MeshRendererComponent &component = entity->getComponent<MeshRendererComponent>();
+		component.renderEnabled = false;
+	}
+	else
+	{
+		setRenderDisable(node.child1);
+		setRenderDisable(node.child2);
+	}
 }
 
-void CullTree::frustumCulling(int32_t nodeId)
+void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 {
+	CullTreeNode &node = m_nodes[nodeId];
 
+	EFrustum result = frustum.cullingSphere(node.sphere);
+	if (result == EFrustum::INSIDE)
+	{
+		setRenderEnable(nodeId);
+	} else if (result == EFrustum::INTERSECT)
+	{
+		if (node.isLeaf() == true)
+		{
+			setRenderEnable(nodeId);
+		}
+		else
+		{
+			frustumCulling(frustum, node.child1);
+			frustumCulling(frustum, node.child2);
+		}
+	}
 }
 
 void CullTree::insertLeaf(int32_t leaf)
@@ -162,14 +206,14 @@ void CullTree::insertLeaf(int32_t leaf)
 		}
 	}
 
-	// 짝꿍 
+	// 짝꿍
 	int32_t sibling = index;
 
 	int32_t oldParent = m_nodes[sibling].parent;
 	int32_t newParent = allocateNode();
 
 	m_nodes[newParent].parent = oldParent;
-	m_nodes[newParent].handle = 0;
+	m_nodes[newParent].entity = nullptr;
 	m_nodes[newParent].sphere.combine(leafSphere, m_nodes[sibling].sphere);
 	m_nodes[newParent].height = m_nodes[sibling].height + 1;
 
@@ -221,7 +265,7 @@ void CullTree::insertLeaf(int32_t leaf)
 void CullTree::removeLeaf(int32_t leaf)
 {
 	detachNode(leaf);
-	freeNode(leaf);	
+	freeNode(leaf);
 }
 
 void CullTree::detachNode(int32_t nodeId)
