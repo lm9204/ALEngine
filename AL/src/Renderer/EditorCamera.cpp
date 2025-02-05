@@ -6,18 +6,8 @@
 
 namespace ale
 {
-EditorCamera::EditorCamera()
-{
-	setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
-	setViewMatrix(m_CameraPos, m_CameraFront, m_CameraUp);
-}
 
-EditorCamera::EditorCamera(float fov, float aspectRatio, float nearClip, float farClip)
-	: m_Fov(fov), m_AspectRatio(aspectRatio), m_NearClip(nearClip), m_FarClip(farClip)
-{
-	setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
-	setViewMatrix(m_CameraPos, m_CameraFront, m_CameraUp);
-}
+EditorCamera::EditorCamera(float fov, float aspect, float _near, float _far) : Camera(fov, aspect, _near, _far) {};
 
 void EditorCamera::onUpdate(Timestep ts)
 {
@@ -26,23 +16,23 @@ void EditorCamera::onUpdate(Timestep ts)
 
 	if (Input::isKeyPressed(Key::W))
 	{
-		m_CameraPos += m_CameraFront * m_Speed * ts.getMiliSeconds();
+		m_cameraPos += m_cameraFront * m_Speed * ts.getMiliSeconds();
 	}
 	if (Input::isKeyPressed(Key::S))
 	{
-		m_CameraPos -= m_CameraFront * m_Speed * ts.getMiliSeconds();
+		m_cameraPos -= m_cameraFront * m_Speed * ts.getMiliSeconds();
 	}
 
-	auto cameraRight = glm::normalize(glm::cross(m_CameraUp, -m_CameraFront));
+	auto cameraRight = glm::normalize(glm::cross(m_cameraUp, -m_cameraFront));
 	if (Input::isKeyPressed(Key::A))
 	{
-		m_CameraPos -= cameraRight * m_Speed * ts.getMiliSeconds();
+		m_cameraPos -= cameraRight * m_Speed * ts.getMiliSeconds();
 	}
 	if (Input::isKeyPressed(Key::D))
 	{
-		m_CameraPos += cameraRight * m_Speed * ts.getMiliSeconds();
+		m_cameraPos += cameraRight * m_Speed * ts.getMiliSeconds();
 	}
-	setPosition(m_CameraPos);
+
 	updateView();
 }
 
@@ -108,17 +98,11 @@ bool EditorCamera::onMouseMoved(MouseMovedEvent &e)
 
 void EditorCamera::updateView()
 {
-	m_CameraFront = glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+	m_cameraFront = glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
 					glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraPitch), glm::vec3(1.0f, 0.0f, 0.0f)) *
 					glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
-	m_CameraPos = m_Position;
 	// m_View = glm::lookAt(m_CameraPos, m_CameraPos + m_CameraFront, m_CameraUp);
-	setViewMatrix(m_CameraPos, m_CameraFront, m_CameraUp);
+	setViewMatrix(m_cameraPos, m_cameraFront, m_cameraUp);
 }
 
-void EditorCamera::updateProj()
-{
-	m_AspectRatio = m_ViewportWidth / (float)m_ViewportHeight;
-	setProjMatrix(m_Fov, m_AspectRatio, m_NearClip, m_FarClip);
-}
 } // namespace ale
