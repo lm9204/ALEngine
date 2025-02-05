@@ -48,8 +48,8 @@ $(NAME)_release:
 ###############################################################################
 clean:
 	@rm -rf build
-	@rm -f Sandbox/Project/Assets/Scripts/Debug
-	@rm -f Sandbox/Project/Assets/Scripts/Release
+	@rm -rf Sandbox/Project/Assets/Scripts/Debug
+	@rm -rf Sandbox/Project/Assets/Scripts/Release
 	@echo "[CLEAN] Build files removed (MinGW)!"
 
 fclean: clean
