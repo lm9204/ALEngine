@@ -187,6 +187,9 @@ void Renderer::loadScene(Scene *scene)
 
 void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 {
+	// frustum culling
+	scene->frustumCulling(camera.getFrustum());
+
 	projMatrix = camera.getProjection();
 	viewMatirx = camera.getView();
 
