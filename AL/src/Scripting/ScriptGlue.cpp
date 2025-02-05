@@ -13,6 +13,8 @@
 #include "mono/metadata/object.h"
 #include "mono/metadata/reflection.h"
 
+#include "Physics/Rigidbody.h"
+
 namespace ale
 {
 namespace utils
@@ -29,6 +31,7 @@ std::string monoStringToString(MonoString *string)
 } // namespace utils
 
 static std::unordered_map<MonoType *, std::function<bool(Entity)>> s_EntityHasComponentFuncs;
+// static std::unordered_map<std::pair<UUID, MonoType *>, MonoObject *> s_EntityComponentInstanceMap;
 
 #define ADD_INTERNAL_CALL(Name) mono_add_internal_call("ALEngine.InternalCalls::" #Name, Name)
 
@@ -58,6 +61,38 @@ static bool Entity_hasComponent(UUID entityID, MonoReflectionType *componentType
 	return s_EntityHasComponentFuncs.at(managedType)(entity);
 }
 
+// static MonoObject *Entity_getComponent(UUID entityID, MonoReflectionType *componentType)
+// {
+// 	AL_CORE_TRACE("Entity_getComponent");
+
+// 	// 1. MonoReflectionType에서 MonoType 얻기
+// 	MonoType *monoType = mono_reflection_type_get_type(componentType);
+
+// 	auto key = std::make_pair(entityID, monoType);
+// 	auto it = s_EntityComponentInstanceMap.find(key);
+// 	if (it != s_EntityComponentInstanceMap.end())
+// 	{
+// 		// 이미 있다면 반환
+// 		return it->second;
+// 	}
+
+// 	// 2. 실제 엔티티가 이 컴포넌트를 가지고 있는지(즉 HasComponent) 체크
+// 	Scene *scene = ScriptingEngine::getSceneContext();
+// 	Entity entity = scene->getEntityByUUID(entityID);
+// 	if (!s_EntityHasComponentFuncs.at(monoType)(entity))
+// 	{
+// 		return nullptr;
+// 	}
+
+// 	// 3. 새 C# 객체를 생성 (ScriptingEngine 내부에 "어떤 C# 클래스와 대응되는지" 등록이 필요)
+// 	MonoObject *newComponentInstance = ScriptingEngine::createManagedComponentInstance(entity, monoType);
+
+// 	// 4. 캐싱
+// 	s_EntityComponentInstanceMap[key] = newComponentInstance;
+
+// 	return newComponentInstance;
+// }
+
 static uint64_t Entity_findEntityByName(MonoString *name)
 {
 	char *nameCStr = mono_string_to_utf8(name);
@@ -81,6 +116,7 @@ static MonoObject *getScriptInstance(UUID entityID)
 // Transform
 static void TransformComponent_getPosition(UUID entityID, glm::vec3 *outPosition)
 {
+	AL_CORE_TRACE("TransformComponent_getPosition");
 	Scene *scene = ScriptingEngine::getSceneContext();
 	Entity entity = scene->getEntityByUUID(entityID);
 
@@ -99,6 +135,16 @@ static void TransformComponent_setPosition(UUID entityID, glm::vec3 *position)
 static bool Input_isKeyDown(KeyCode keycode)
 {
 	return Input::isKeyPressed(keycode);
+}
+
+// Physics
+static void RigidbodyComponent_addForce(UUID entityID, glm::vec3 *force)
+{
+	Scene *scene = ScriptingEngine::getSceneContext();
+	Entity entity = scene->getEntityByUUID(entityID);
+
+	Rigidbody *body = (Rigidbody *)entity.getComponent<RigidbodyComponent>().body;
+	body->registerForce(*force);
 }
 
 // Component 별로 HasComponentFunction handle 등록.
@@ -140,11 +186,14 @@ void ScriptGlue::registerFunctions()
 	ADD_INTERNAL_CALL(nativeLog_Vector);
 
 	ADD_INTERNAL_CALL(Entity_hasComponent);
+	// ADD_INTERNAL_CALL(Entity_getComponent);
 	ADD_INTERNAL_CALL(Entity_findEntityByName);
 	ADD_INTERNAL_CALL(getScriptInstance);
 
 	ADD_INTERNAL_CALL(TransformComponent_getPosition);
 	ADD_INTERNAL_CALL(TransformComponent_setPosition);
+
+	ADD_INTERNAL_CALL(RigidbodyComponent_addForce);
 
 	ADD_INTERNAL_CALL(Input_isKeyDown);
 }
