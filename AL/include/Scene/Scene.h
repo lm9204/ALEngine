@@ -13,6 +13,7 @@ namespace ale
 {
 class Entity;
 class Model;
+class CullTree;
 
 class Scene
 {
@@ -72,6 +73,16 @@ class Scene
 		return m_Registry.view<Components...>();
 	}
 
+	template <typename... Components> auto getComponent(entt::entity entity)
+	{
+		return m_Registry.get<Components...>(entity);
+	}
+
+	// frustumCulling
+	void frustumCulling(const Frustum &frustum);
+	void removeEntityInCullTree(int32_t nodeId);
+	int32_t insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle);
+
   private:
 	template <typename T> void onComponentAdded(Entity entity, T &component);
 
@@ -104,6 +115,8 @@ class Scene
 	std::shared_ptr<Model> m_planeModel;
 
 	float m_ambientStrength{0.1f};
+
+	CullTree m_cullTree;
 
 	friend class Entity;
 	friend class SceneSerializer;

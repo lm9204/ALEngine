@@ -2,6 +2,7 @@
 #include "Scene/Component.h"
 #include "Scene/Entity.h"
 #include "Scene/ScriptableEntity.h"
+#include "Scene/CullTree.h"
 
 #include "Core/App.h"
 
@@ -235,6 +236,8 @@ void Scene::initScene()
 	m_boxModel = Model::createBoxModel(m_defaultMaterial);
 	m_sphereModel = Model::createSphereModel(m_defaultMaterial);
 	m_planeModel = Model::createPlaneModel(m_defaultMaterial);
+
+	m_cullTree.setScene(this);
 }
 
 void Scene::renderScene(EditorCamera &camera)
@@ -294,6 +297,27 @@ Entity Scene::getEntityByUUID(UUID uuid)
 	return {};
 }
 
+int32_t Scene::insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle)
+{
+	return m_cullTree.createNode(sphere, entityHandle);
+}
+
+void Scene::removeEntityInCullTree(int32_t nodeId)
+{
+	m_cullTree.destroyNode(nodeId);
+}
+
+void Scene::frustumCulling(const Frustum &frustum)
+{
+	m_cullTree.updateTree();
+	
+	int32_t root = m_cullTree.getRootNodeId();
+	if (root != NULL_NODE)
+	{
+		m_cullTree.frustumCulling(frustum, root);
+	}
+}
+
 // 컴파일 타임에 조건 확인
 template <typename T> void Scene::onComponentAdded(Entity entity, T &component)
 {
@@ -327,6 +351,9 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 	component.type = 0;
 	component.m_RenderingComponent =
 		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
+
+	// cullTree에 추가 sphere
+	component.nodeId = insertEntityInCullTree(sphere, entity);
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
