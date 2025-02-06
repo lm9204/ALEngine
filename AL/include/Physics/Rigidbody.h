@@ -120,6 +120,9 @@ class Rigidbody
 	void setAwake();
 	void setRBComponentValue(BodyDef &bdDef);
 	bool isAwake();
+	bool isMoved(float radius);
+	void accumulateMovement();
+
 
 	Rigidbody *next;
 	Rigidbody *prev;
@@ -132,6 +135,7 @@ class Rigidbody
 
 	Sweep m_sweep;
 	Transform m_xf;
+	glm::vec3 m_accumulatedPos;
 	glm::vec3 m_linearVelocity;
 	glm::vec3 m_angularVelocity;
 	glm::mat3 m_inverseInertiaTensorWorld;
