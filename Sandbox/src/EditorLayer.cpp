@@ -81,7 +81,7 @@ void EditorLayer::onUpdate(Timestep ts)
 void EditorLayer::onImGuiRender()
 {
 	// Docking space
-	// setDockingSpace();
+	setDockingSpace();
 
 	// Menu
 	setMenuBar();
@@ -100,7 +100,7 @@ void EditorLayer::onImGuiRender()
 	// UI Toolbar
 	uiToolBar();
 
-	// ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
+	ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
 }
 
 void EditorLayer::onEvent(Event &e)
