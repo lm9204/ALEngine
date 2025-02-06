@@ -30,7 +30,7 @@ namespace ALEngine
 		internal extern static void TransformComponent_setPosition(ulong entityID, ref Vector3 translation);
 		#endregion
 
-		#region Input
+		#region RigidbodyComponent
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static void RigidbodyComponent_addForce(ulong entityID, ref Vector3 force);
 		#endregion
