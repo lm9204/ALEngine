@@ -496,8 +496,6 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 	component.type = 0;
 	component.m_RenderingComponent =
 		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
-
-	auto &bc = entity.addComponent<BoxColliderComponent>();
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
