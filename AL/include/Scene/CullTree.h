@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Renderer/Common.h"
+#include "Scene/Entity.h"
 
 namespace ale
 {
@@ -50,6 +51,12 @@ struct FrustumPlane
 {
 	float distance;
 	glm::vec3 normal;
+
+	FrustumPlane() = default;
+
+	// CCW
+	FrustumPlane(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3)
+		: normal(glm::normalize(glm::cross(p2 - p1, p3 - p1))), distance(glm::dot(normal, p1)) {};
 };
 
 enum class EFrustum
@@ -61,16 +68,17 @@ enum class EFrustum
 
 struct Frustum
 {
+	// 0: near, 1: far, 2: left, 3: right, 4: up, 5: down
 	FrustumPlane plane[6];
 
-	EFrustum cullingSphere(const CullSphere &sphere) const 
+	EFrustum cullingSphere(const CullSphere &sphere) const
 	{
 		bool intersect = false;
 
 		for (int32_t i = 0; i < 6; ++i)
 		{
 			float dotResult = glm::dot(plane[i].normal, sphere.center);
-			float distance = plane[i].distance; 
+			float distance = plane[i].distance;
 			if (dotResult > distance + sphere.radius)
 			{
 				return EFrustum::OUTSIDE;
@@ -89,9 +97,8 @@ struct Frustum
 		{
 			return EFrustum::INSIDE;
 		}
-	};
+	}
 };
-
 
 struct CullTreeNode
 {
@@ -101,7 +108,7 @@ struct CullTreeNode
 	}
 
 	CullSphere sphere;
-	void *entity;
+	entt::entity entityHandle;
 
 	union {
 		int32_t parent;
@@ -119,21 +126,15 @@ class CullTree
 	CullTree();
 	~CullTree() = default;
 
-	// 주어진 aabb와 userData로 node에 값 초기화, node 삽입
-	int32_t createNode(const CullSphere &sphere, void *entity);
-
+	void updateTree();
 	void destroyNode(int32_t nodeId);
-
-	// proxyId에 해당하는 node 삭제 후, 적당한 위치로 다시 Insert
-	bool moveNode(int32_t nodeId, const glm::vec3 &displacement);
-
-	// 해당 노드부터 하위 노드들까지 render flag를 전부 true로 설정
+	void setScene(Scene *scene);
 	void setRenderEnable(int32_t nodeId);
-
-	// 해당 노드부터 하위 노드들까지 render flag를 전부 false로 설정
 	void setRenderDisable(int32_t nodeId);
-
 	void frustumCulling(const Frustum &frustum, int32_t nodeId);
+	int32_t createNode(const CullSphere &sphere, entt::entity entityHandle);
+
+	int32_t getRootNodeId();
 
 	// void printDynamicTree(int32_t nodeId)
 
@@ -141,20 +142,16 @@ class CullTree
 
   private:
 	// 가장 최적의 위치를 찾아 node 삽입, balance
-	void insertLeaf(int32_t leaf);
-	void removeLeaf(int32_t leaf);
 	void freeNode(int32_t nodeId);
-
-	// node 삭제 (but 해당 leaf 재사용할 때 사용하는 함수)
+	void insertLeaf(int32_t leaf);
 	void detachNode(int32_t nodeId);
-
-	// 트리가 쏠리지 않게 balance 맞춰줌
+	bool moveNode(int32_t nodeId, const CullSphere &newSphere);
+	float getInsertionCost(const CullSphere &leafSphere, int32_t child, float inheritedCost);
+	float getInsertionCostForLeaf(const CullSphere &leafSphere, int32_t child, float inheritedCost);
 	int32_t balance(int32_t index);
 	int32_t allocateNode();
 
-	float getInsertionCostForLeaf(const CullSphere &leafSphere, int32_t child, float inheritedCost);
-	float getInsertionCost(const CullSphere &leafSphere, int32_t child, float inheritedCost);
-
+	Scene *m_scene;
 	int32_t m_root;
 	int32_t m_freeNode;
 	int32_t m_nodeCount;

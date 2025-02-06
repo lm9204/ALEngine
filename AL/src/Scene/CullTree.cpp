@@ -1,5 +1,4 @@
 #include "Scene/CullTree.h"
-#include "Scene/Entity.h"
 
 namespace ale
 {
@@ -19,6 +18,21 @@ CullTree::CullTree()
 	m_nodes[m_nodeCapacity - 1].next = NULL_NODE;
 	m_nodes[m_nodeCapacity - 1].height = -1;
 	m_freeNode = 0;
+}
+
+void CullTree::updateTree()
+{
+	auto view = m_scene->getAllEntitiesWith<MeshRendererComponent, TransformComponent>();
+	for (auto entity : view)
+	{
+		TransformComponent &transformComponent = view.get<TransformComponent>(entity);
+		if (transformComponent.m_isMoved == true)
+		{
+			MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+			moveNode(meshRendererComponent.nodeId, sphere);
+			transformComponent.m_isMoved = false;
+		}
+	}
 }
 
 int32_t CullTree::allocateNode()
@@ -44,7 +58,7 @@ int32_t CullTree::allocateNode()
 	m_nodes[nodeId].child1 = NULL_NODE;
 	m_nodes[nodeId].child2 = NULL_NODE;
 	m_nodes[nodeId].height = 0;
-	m_nodes[nodeId].entity = nullptr;
+	m_nodes[nodeId].entityHandle = entt::null;
 	++m_nodeCount;
 	return nodeId;
 }
@@ -57,7 +71,7 @@ void CullTree::freeNode(int32_t nodeId)
 	--m_nodeCount;
 }
 
-int32_t CullTree::createNode(const CullSphere &sphere, void *entity)
+int32_t CullTree::createNode(const CullSphere &sphere, entt::entity entityHandle)
 {
 	// std::cout << "DynamicTree::createProxy\n";
 	int32_t nodeId = allocateNode();
@@ -65,7 +79,7 @@ int32_t CullTree::createNode(const CullSphere &sphere, void *entity)
 
 	m_nodes[nodeId].sphere.center = sphere.center;
 	m_nodes[nodeId].sphere.radius = sphere.radius;
-	m_nodes[nodeId].entity = entity;
+	m_nodes[nodeId].entityHandle = entityHandle;
 	m_nodes[nodeId].height = 0;
 
 	// insert leaf
@@ -76,18 +90,23 @@ int32_t CullTree::createNode(const CullSphere &sphere, void *entity)
 
 void CullTree::destroyNode(int32_t nodeId)
 {
-	// remove leaf
+	detachNode(nodeId);
 	freeNode(nodeId);
 }
 
-bool CullTree::moveNode(int32_t nodeId, const glm::vec3 &displacement)
+bool CullTree::moveNode(int32_t nodeId, const CullSphere &newSphere)
 {
-	removeLeaf(nodeId);
+	detachNode(nodeId);
 
-	m_nodes[nodeId].sphere.center += displacement;
+	m_nodes[nodeId].sphere = newSphere;
 
 	insertLeaf(nodeId);
 	return true;
+}
+
+void CullTree::setScene(Scene *scene)
+{
+	m_scene = scene;
 }
 
 void CullTree::setRenderEnable(int32_t nodeId)
@@ -96,8 +115,7 @@ void CullTree::setRenderEnable(int32_t nodeId)
 
 	if (node.isLeaf() == true)
 	{
-		Entity *entity = static_cast<Entity *>(node.entity);
-		MeshRendererComponent &component = entity->getComponent<MeshRendererComponent>();
+		MeshRendererComponent &component = m_scene->getComponent<MeshRendererComponent>(node.entityHandle);
 		component.renderEnabled = true;
 	}
 	else
@@ -113,8 +131,7 @@ void CullTree::setRenderDisable(int32_t nodeId)
 
 	if (node.isLeaf() == true)
 	{
-		Entity *entity = static_cast<Entity *>(node.entity);
-		MeshRendererComponent &component = entity->getComponent<MeshRendererComponent>();
+		MeshRendererComponent &component = m_scene->getComponent<MeshRendererComponent>(node.entityHandle);
 		component.renderEnabled = false;
 	}
 	else
@@ -123,6 +140,12 @@ void CullTree::setRenderDisable(int32_t nodeId)
 		setRenderDisable(node.child2);
 	}
 }
+
+int32_t CullTree::getRootNodeId()
+{
+	return m_root;
+}
+
 
 void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 {
@@ -213,7 +236,7 @@ void CullTree::insertLeaf(int32_t leaf)
 	int32_t newParent = allocateNode();
 
 	m_nodes[newParent].parent = oldParent;
-	m_nodes[newParent].entity = nullptr;
+	m_nodes[newParent].entityHandle = entt::null;
 	m_nodes[newParent].sphere.combine(leafSphere, m_nodes[sibling].sphere);
 	m_nodes[newParent].height = m_nodes[sibling].height + 1;
 
@@ -260,12 +283,6 @@ void CullTree::insertLeaf(int32_t leaf)
 	}
 	// std::cout << "print tree\n";
 	// printDynamicTree(root);
-}
-
-void CullTree::removeLeaf(int32_t leaf)
-{
-	detachNode(leaf);
-	freeNode(leaf);
 }
 
 void CullTree::detachNode(int32_t nodeId)
