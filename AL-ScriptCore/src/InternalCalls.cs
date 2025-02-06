@@ -32,6 +32,11 @@ namespace ALEngine
 
 		#region Input
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		internal extern static void RigidbodyComponent_addForce(ulong entityID, ref Vector3 force);
+		#endregion
+
+		#region Input
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static bool Input_isKeyDown(KeyCode keycode);
 		#endregion
 	}

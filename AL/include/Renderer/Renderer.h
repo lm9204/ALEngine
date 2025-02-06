@@ -31,6 +31,7 @@ class Renderer
 	void beginScene(Scene *scene, Camera &camera);
 	void drawFrame(Scene *scene);
 	void recreateSwapChain();
+	void recreateViewPort();
 
 	VkDevice getDevice()
 	{
@@ -39,12 +40,17 @@ class Renderer
 
 	VkRenderPass getRenderPass()
 	{
-		return deferredRenderPass;
+		return imGuiRenderPass;
 	}
 
 	VkDescriptorSetLayout getDescriptorSetLayout()
 	{
 		return geometryPassDescriptorSetLayout;
+	}
+
+	VkDescriptorSet getViewPortDescriptorSet()
+	{
+		return viewPortDescriptorSets[0];
 	}
 
   private:
@@ -69,8 +75,8 @@ class Renderer
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
-	std::unique_ptr<FrameBuffers> m_swapChainFrameBuffers;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::unique_ptr<FrameBuffers> m_viewPortFrameBuffers;
+	std::vector<VkFramebuffer> viewPortFramebuffers;
 
 	std::unique_ptr<FrameBuffers> m_ImGuiSwapChainFrameBuffers;
 	std::vector<VkFramebuffer> imGuiSwapChainFrameBuffers;
@@ -153,10 +159,22 @@ class Renderer
 	VkDescriptorSetLayout shadowCubeMapDescriptorSetLayout;
 
 	VkSampler shadowCubeMapSampler;
-	//
+
+	VkImageView viewPortImageView;
+	VkSampler viewPortSampler;
+
+	std::unique_ptr<DescriptorSetLayout> m_viewPortDescriptorSetLayout;
+	VkDescriptorSetLayout viewPortDescriptorSetLayout;
+
+	std::unique_ptr<ShaderResourceManager> m_viewPortShaderResourceManager;
+	std::vector<VkDescriptorSet> viewPortDescriptorSets;
+
+	glm::vec2 viewPortSize;
 
 	glm::mat4 projMatrix;
 	glm::mat4 viewMatirx;
+
+	bool firstFrame = true;
 
 	void init(GLFWwindow *window);
 	void recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex,

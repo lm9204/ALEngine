@@ -125,6 +125,25 @@ struct CameraComponent
 // PHYSICS
 struct RigidbodyComponent
 {
+	// FLAG
+	glm::vec3 m_FreezePos;
+	glm::vec3 m_FreezeRot;
+
+	void *body = nullptr;
+
+	// body type
+	enum class EBodyType
+	{
+		Static = 0,
+		Dynamic,
+		Kinematic
+	};
+	EBodyType m_Type = EBodyType::Dynamic;
+
+	float m_Mass = 1.0f;
+	float m_Damping = 0.001f;
+	float m_AngularDamping = 0.001f;
+	bool m_UseGravity = true;
 
 	RigidbodyComponent() = default;
 	RigidbodyComponent(const RigidbodyComponent &) = default;
@@ -132,6 +151,9 @@ struct RigidbodyComponent
 
 struct BoxColliderComponent
 {
+	glm::vec3 m_Center = {0.0f, 0.0f, 0.0f};
+	glm::vec3 m_Size = {1.0f, 1.0f, 1.0f};
+	bool m_IsTrigger = false;
 
 	BoxColliderComponent() = default;
 	BoxColliderComponent(const BoxColliderComponent &) = default;
@@ -139,18 +161,34 @@ struct BoxColliderComponent
 
 struct SphereColliderComponent
 {
+	glm::vec3 m_Center;
+	float m_Radius;
+	bool m_IsTrigger = false;
+
 	SphereColliderComponent() = default;
 	SphereColliderComponent(const SphereColliderComponent &) = default;
 };
 
 struct CapsuleColliderComponent
 {
+	glm::vec3 m_Center;
+	float m_Radius;
+	float m_Height;
+
+	bool m_IsTrigger = false;
+
 	CapsuleColliderComponent() = default;
 	CapsuleColliderComponent(const CapsuleColliderComponent &) = default;
 };
 
 struct CylinderColliderComponent
 {
+	glm::vec3 m_Center;
+	float m_Radius;
+	float m_Height;
+
+	bool m_IsTrigger = false;
+
 	CylinderColliderComponent() = default;
 	CylinderColliderComponent(const CylinderColliderComponent &) = default;
 };
@@ -188,8 +226,10 @@ template <typename... Component> struct ComponentGroup
 {
 };
 
-using AllComponents = ComponentGroup<TransformComponent, RelationshipComponent, MeshRendererComponent, TextureComponent,
-									 CameraComponent, ScriptComponent, LightComponent>;
+using AllComponents =
+	ComponentGroup<TransformComponent, RelationshipComponent, MeshRendererComponent, TextureComponent, CameraComponent,
+				   ScriptComponent, LightComponent, RigidbodyComponent, BoxColliderComponent, SphereColliderComponent,
+				   CapsuleColliderComponent, CylinderColliderComponent>;
 
 } // namespace ale
 

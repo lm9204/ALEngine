@@ -18,6 +18,7 @@ std::unique_ptr<Renderer> Renderer::createRenderer(GLFWwindow *window)
 void Renderer::init(GLFWwindow *window)
 {
 	this->window = window;
+	viewPortSize = {1024, 1024};
 
 #pragma region Vulkan Context
 	auto &context = VulkanContext::getContext();
@@ -50,7 +51,7 @@ void Renderer::init(GLFWwindow *window)
 #pragma endregion
 
 #pragma region RenderPass
-	m_deferredRenderPass = RenderPass::createDeferredRenderPass(swapChainImageFormat);
+	m_deferredRenderPass = RenderPass::createDeferredRenderPass();
 	deferredRenderPass = m_deferredRenderPass->getRenderPass();
 
 	m_ImGuiRenderPass = RenderPass::createImGuiRenderPass(swapChainImageFormat);
@@ -70,8 +71,10 @@ void Renderer::init(GLFWwindow *window)
 #pragma endregion
 
 #pragma region Framebuffer
-	m_swapChainFrameBuffers = FrameBuffers::createSwapChainFrameBuffers(m_swapChain.get(), deferredRenderPass);
-	swapChainFramebuffers = m_swapChainFrameBuffers->getFramebuffers();
+	m_viewPortFrameBuffers = FrameBuffers::createViewPortFrameBuffers(viewPortSize, deferredRenderPass);
+	viewPortFramebuffers = m_viewPortFrameBuffers->getFramebuffers();
+	viewPortImageView = m_viewPortFrameBuffers->getViewPortImageView();
+	viewPortSampler = VulkanUtil::createSampler();
 
 	m_ImGuiSwapChainFrameBuffers = FrameBuffers::createImGuiFrameBuffers(m_swapChain.get(), imGuiRenderPass);
 	imGuiSwapChainFrameBuffers = m_ImGuiSwapChainFrameBuffers->getFramebuffers();
@@ -143,12 +146,19 @@ void Renderer::init(GLFWwindow *window)
 	shadowCubeMapSampler = Texture::createShadowCubeMapSampler();
 
 	m_lightingPassShaderResourceManager = ShaderResourceManager::createLightingPassShaderResourceManager(
-		lightingPassDescriptorSetLayout, m_swapChainFrameBuffers->getPositionImageView(),
-		m_swapChainFrameBuffers->getNormalImageView(), m_swapChainFrameBuffers->getAlbedoImageView(),
-		m_swapChainFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
+		lightingPassDescriptorSetLayout, m_viewPortFrameBuffers->getPositionImageView(),
+		m_viewPortFrameBuffers->getNormalImageView(), m_viewPortFrameBuffers->getAlbedoImageView(),
+		m_viewPortFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
 		shadowCubeMapSampler);
+
 	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
 	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
+
+	m_viewPortDescriptorSetLayout = DescriptorSetLayout::createViewPortDescriptorSetLayout();
+	viewPortDescriptorSetLayout = m_viewPortDescriptorSetLayout->getDescriptorSetLayout();
+	m_viewPortShaderResourceManager = ShaderResourceManager::createViewPortShaderResourceManager(
+		viewPortDescriptorSetLayout, viewPortImageView, viewPortSampler);
+	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
 
 	m_commandBuffers = CommandBuffers::createCommandBuffers();
 	commandBuffers = m_commandBuffers->getCommandBuffers();
@@ -158,7 +168,7 @@ void Renderer::init(GLFWwindow *window)
 
 void Renderer::cleanup()
 {
-	m_swapChainFrameBuffers->cleanup();
+	m_viewPortFrameBuffers->cleanup();
 	m_swapChain->cleanup();
 
 	m_geometryPassPipeline->cleanup();
@@ -176,7 +186,90 @@ void Renderer::cleanup()
 	VulkanContext::getContext().cleanup();
 }
 
+/*
+	변경된 window 크기에 맞게 SwapChain, ImageView, FrameBuffer 재생성
+*/
+void Renderer::recreateSwapChain()
+{
+	// 현재 프레임버퍼 사이즈 체크
+	int width = 0, height = 0;
+	glfwGetFramebufferSize(window, &width, &height);
+
+	// 현재 프레임 버퍼 사이즈가 0이면 다음 이벤트 호출까지 대기
+	while (width == 0 || height == 0)
+	{
+		glfwGetFramebufferSize(window, &width, &height);
+		glfwWaitEvents(); // 다음 이벤트 발생 전까지 대기하여 CPU 사용률을 줄이는 함수
+	}
+
+	// 모든 GPU 작업 종료될 때까지 대기 (사용중인 리소스를 건들지 않기 위해)
+	vkDeviceWaitIdle(device);
+
+	// 스왑 체인 관련 리소스 정리
+	m_ImGuiSwapChainFrameBuffers->cleanup();
+	m_swapChain->recreateSwapChain();
+
+	swapChain = m_swapChain->getSwapChain();
+	swapChainImages = m_swapChain->getSwapChainImages();
+	swapChainImageFormat = m_swapChain->getSwapChainImageFormat();
+	swapChainExtent = m_swapChain->getSwapChainExtent();
+	swapChainImageViews = m_swapChain->getSwapChainImageViews();
+
+	m_ImGuiSwapChainFrameBuffers->initImGuiFrameBuffers(m_swapChain.get(), imGuiRenderPass);
+	imGuiSwapChainFrameBuffers = m_ImGuiSwapChainFrameBuffers->getFramebuffers();
+}
+
+void Renderer::recreateViewPort()
+{
+	while (viewPortSize.x == 0 || viewPortSize.y == 0)
+	{
+		std::cout << "??" << std::endl;
+		viewPortSize.x = ImGui::GetContentRegionAvail().x;
+		viewPortSize.y = ImGui::GetContentRegionAvail().y;
+		glfwWaitEvents();
+	}
+
+	vkDeviceWaitIdle(device);
+	// 스왑 체인 관련 리소스 정리
+	m_lightingPassShaderResourceManager->cleanup();
+	m_geometryPassPipeline->cleanup();
+
+	m_lightingPassPipeline->cleanup();
+	m_viewPortFrameBuffers->cleanup();
+	m_deferredRenderPass->cleanup();
+	m_viewPortShaderResourceManager->cleanup();
+
+	m_deferredRenderPass = RenderPass::createDeferredRenderPass();
+	deferredRenderPass = m_deferredRenderPass->getRenderPass();
+
+	m_viewPortFrameBuffers->initViewPortFrameBuffers(viewPortSize, deferredRenderPass);
+	viewPortFramebuffers = m_viewPortFrameBuffers->getFramebuffers();
+	viewPortImageView = m_viewPortFrameBuffers->getViewPortImageView();
+
+	m_geometryPassPipeline = Pipeline::createGeometryPassPipeline(deferredRenderPass, geometryPassDescriptorSetLayout);
+	geometryPassPipelineLayout = m_geometryPassPipeline->getPipelineLayout();
+	geometryPassGraphicsPipeline = m_geometryPassPipeline->getPipeline();
+
+	m_lightingPassPipeline = Pipeline::createLightingPassPipeline(deferredRenderPass, lightingPassDescriptorSetLayout);
+	lightingPassPipelineLayout = m_lightingPassPipeline->getPipelineLayout();
+	lightingPassGraphicsPipeline = m_lightingPassPipeline->getPipeline();
+
+	m_lightingPassShaderResourceManager = ShaderResourceManager::createLightingPassShaderResourceManager(
+		lightingPassDescriptorSetLayout, m_viewPortFrameBuffers->getPositionImageView(),
+		m_viewPortFrameBuffers->getNormalImageView(), m_viewPortFrameBuffers->getAlbedoImageView(),
+		m_viewPortFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
+		shadowCubeMapSampler);
+
+	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
+	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
+
+	m_viewPortShaderResourceManager = ShaderResourceManager::createViewPortShaderResourceManager(
+		viewPortDescriptorSetLayout, viewPortImageView, viewPortSampler);
+	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
+}
+
 void Renderer::loadScene(Scene *scene)
+
 {
 	// this->scene = scene;
 	// m_geometryPassShaderResourceManager =
@@ -198,7 +291,8 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 
 void Renderer::beginScene(Scene *scene, Camera &camera)
 {
-	projMatrix = camera.getProjection();
+	// projMatrix = camera.getProjection();
+	projMatrix = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
 	viewMatirx = camera.getView();
 
 	drawFrame(scene);
@@ -230,6 +324,26 @@ void Renderer::drawFrame(Scene *scene)
 	{
 		// 진짜 오류 gg
 		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
+	if (firstFrame)
+	{
+		ImGui::Begin("ViewPort");
+		ImGui::Image(reinterpret_cast<ImTextureID>(viewPortDescriptorSets[0]), ImVec2{viewPortSize.x, viewPortSize.y});
+		ImGui::End();
+		firstFrame = false;
+	}
+	else
+	{
+		ImGui::Begin("ViewPort");
+		ImVec2 guiViewPortSize = ImGui::GetContentRegionAvail();
+		if (guiViewPortSize.x != viewPortSize.x || guiViewPortSize.y != viewPortSize.y)
+		{
+			viewPortSize = glm::vec2(guiViewPortSize.x, guiViewPortSize.y);
+			recreateViewPort();
+		}
+		ImGui::Image(reinterpret_cast<ImTextureID>(viewPortDescriptorSets[0]), ImVec2{viewPortSize.x, viewPortSize.y});
+		ImGui::End();
 	}
 
 	// [Fence 초기화]
@@ -267,31 +381,25 @@ void Renderer::drawFrame(Scene *scene)
 	recordDeferredRenderPassCommandBuffer(scene, commandBuffers[currentFrame], imageIndex,
 										  shadowMapIndex); // 현재 작업할 image의 index와 commandBuffer를 전송
 
-	// [Pipeline Barrier]
-	// 서로 다른 렌더링 작업 간의 데이터 의존성을 관리하고, 작업 순서를 보장하기 위해 사용.
-	// VkImageMemoryBarrier barrier{};
-	// barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	// barrier.oldLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // RenderPass가 끝난 후의 레이아웃
-	// barrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR; // 다음 작업에서 필요로 하는 레이아웃
-	// barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	// barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-	// barrier.image = swapChainImages[imageIndex];
-	// barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-	// barrier.subresourceRange.baseMipLevel = 0;
-	// barrier.subresourceRange.levelCount = 1;
-	// barrier.subresourceRange.baseArrayLayer = 0;
-	// barrier.subresourceRange.layerCount = 1;
+	VkImageMemoryBarrier barrier{};
+	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+	barrier.oldLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+	barrier.newLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+	barrier.image = m_viewPortFrameBuffers->getViewPortImage();
+	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+	barrier.subresourceRange.baseMipLevel = 0;
 
-	// Pipeline Barrier에 src/dstStageMask 및 AccessMask 설정
-	// barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT; // RenderPass 종료 시 쓰기 완료
-	// barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;			  // ImGui 패스에서 읽기 준비
+	barrier.subresourceRange.levelCount = 1;
+	barrier.subresourceRange.baseArrayLayer = 0;
+	barrier.subresourceRange.layerCount = 1;
 
-	// vkCmdPipelineBarrier(commandBuffers[currentFrame],
-	// 					 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // RenderPass의 마지막 단계
-	// 					 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // ImGui 패스의 프래그먼트 셰이더 단계
-	// 					 0, 0, nullptr, 0, nullptr, 1, &barrier);
+	barrier.srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+	barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
 
-	// recordImGuiCommandBuffer(scene, commandBuffers[currentFrame], imageIndex);
+	vkCmdPipelineBarrier(commandBuffers[currentFrame], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+						 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+
+	recordImGuiCommandBuffer(scene, commandBuffers[currentFrame], imageIndex);
 
 	if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS)
 	{
@@ -361,70 +469,6 @@ void Renderer::drawFrame(Scene *scene)
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-/*
-	변경된 window 크기에 맞게 SwapChain, ImageView, FrameBuffer 재생성
-*/
-void Renderer::recreateSwapChain()
-{
-	// 현재 프레임버퍼 사이즈 체크
-	int width = 0, height = 0;
-	glfwGetFramebufferSize(window, &width, &height);
-
-	// 현재 프레임 버퍼 사이즈가 0이면 다음 이벤트 호출까지 대기
-	while (width == 0 || height == 0)
-	{
-		glfwGetFramebufferSize(window, &width, &height);
-		glfwWaitEvents(); // 다음 이벤트 발생 전까지 대기하여 CPU 사용률을 줄이는 함수
-	}
-
-	// 모든 GPU 작업 종료될 때까지 대기 (사용중인 리소스를 건들지 않기 위해)
-	vkDeviceWaitIdle(device);
-
-	// 스왑 체인 관련 리소스 정리
-	m_lightingPassShaderResourceManager->cleanup();
-	m_geometryPassPipeline->cleanup();
-	m_lightingPassPipeline->cleanup();
-	m_swapChainFrameBuffers->cleanup();
-	m_ImGuiSwapChainFrameBuffers->cleanup();
-	m_deferredRenderPass->cleanup();
-	m_ImGuiRenderPass->cleanup();
-	m_swapChain->recreateSwapChain();
-
-	swapChain = m_swapChain->getSwapChain();
-	swapChainImages = m_swapChain->getSwapChainImages();
-	swapChainImageFormat = m_swapChain->getSwapChainImageFormat();
-	swapChainExtent = m_swapChain->getSwapChainExtent();
-	swapChainImageViews = m_swapChain->getSwapChainImageViews();
-
-	m_deferredRenderPass = RenderPass::createDeferredRenderPass(swapChainImageFormat);
-	deferredRenderPass = m_deferredRenderPass->getRenderPass();
-
-	m_ImGuiRenderPass = RenderPass::createImGuiRenderPass(swapChainImageFormat);
-	imGuiRenderPass = m_ImGuiRenderPass->getRenderPass();
-
-	m_swapChainFrameBuffers->initSwapChainFrameBuffers(m_swapChain.get(), deferredRenderPass);
-	swapChainFramebuffers = m_swapChainFrameBuffers->getFramebuffers();
-
-	m_ImGuiSwapChainFrameBuffers->initImGuiFrameBuffers(m_swapChain.get(), imGuiRenderPass);
-	imGuiSwapChainFrameBuffers = m_ImGuiSwapChainFrameBuffers->getFramebuffers();
-
-	m_geometryPassPipeline = Pipeline::createGeometryPassPipeline(deferredRenderPass, geometryPassDescriptorSetLayout);
-	geometryPassPipelineLayout = m_geometryPassPipeline->getPipelineLayout();
-	geometryPassGraphicsPipeline = m_geometryPassPipeline->getPipeline();
-
-	m_lightingPassPipeline = Pipeline::createLightingPassPipeline(deferredRenderPass, lightingPassDescriptorSetLayout);
-	lightingPassPipelineLayout = m_lightingPassPipeline->getPipelineLayout();
-	lightingPassGraphicsPipeline = m_lightingPassPipeline->getPipeline();
-
-	m_lightingPassShaderResourceManager = ShaderResourceManager::createLightingPassShaderResourceManager(
-		lightingPassDescriptorSetLayout, m_swapChainFrameBuffers->getPositionImageView(),
-		m_swapChainFrameBuffers->getNormalImageView(), m_swapChainFrameBuffers->getAlbedoImageView(),
-		m_swapChainFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
-		shadowCubeMapSampler);
-	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
-	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
-}
-
 void Renderer::recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
 	// 렌더 패스 시작
@@ -444,11 +488,6 @@ void Renderer::recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuf
 	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
 	ImGuiLayer::renderDrawData(commandBuffer);
 	vkCmdEndRenderPass(commandBuffer);
-
-	if (vkEndCommandBuffer(commandBuffer) != VK_SUCCESS)
-	{
-		throw std::runtime_error("failed to record deferred renderpass command buffer!");
-	}
 }
 
 /*
@@ -467,9 +506,10 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	VkRenderPassBeginInfo renderPassInfo{};
 	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
 	renderPassInfo.renderPass = deferredRenderPass;
-	renderPassInfo.framebuffer = swapChainFramebuffers[imageIndex];
+	renderPassInfo.framebuffer = viewPortFramebuffers[currentFrame];
+
 	renderPassInfo.renderArea.offset = {0, 0};
-	renderPassInfo.renderArea.extent = swapChainExtent;
+	renderPassInfo.renderArea.extent = {static_cast<uint32_t>(viewPortSize.x), static_cast<uint32_t>(viewPortSize.y)};
 
 	// ClearValues 수정
 	std::array<VkClearValue, 6> clearValues{};
@@ -490,15 +530,15 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	VkViewport viewport{};
 	viewport.x = 0.0f;
 	viewport.y = 0.0f;
-	viewport.width = static_cast<float>(swapChainExtent.width);
-	viewport.height = static_cast<float>(swapChainExtent.height);
+	viewport.width = viewPortSize.x;
+	viewport.height = viewPortSize.y;
 	viewport.minDepth = 0.0f;
 	viewport.maxDepth = 1.0f;
 	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
 	VkRect2D scissor{};
 	scissor.offset = {0, 0};
-	scissor.extent = swapChainExtent;
+	scissor.extent = {static_cast<uint32_t>(viewPortSize.x), static_cast<uint32_t>(viewPortSize.y)};
 	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
 	DrawInfo drawInfo;
@@ -506,7 +546,8 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	drawInfo.pipelineLayout = geometryPassPipelineLayout;
 	drawInfo.commandBuffer = commandBuffer;
 	drawInfo.view = viewMatirx;
-	drawInfo.projection = projMatrix;
+	// drawInfo.projection = projMatrix;
+	drawInfo.projection = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
 	drawInfo.projection[1][1] *= -1;
 
 	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
@@ -590,8 +631,6 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	lightingPassUbo.ambientStrength = scene->getAmbientStrength();
 	lightingPassFragmentUniformBuffers[currentFrame]->updateUniformBuffer(&lightingPassUbo, sizeof(lightingPassUbo));
 	vkCmdDraw(commandBuffer, 6, 1, 0, 0);
-
-	ImGuiLayer::renderDrawData(commandBuffer);
 
 	vkCmdEndRenderPass(commandBuffer);
 

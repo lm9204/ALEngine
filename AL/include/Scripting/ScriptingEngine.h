@@ -15,6 +15,7 @@
 
 extern "C"
 {
+	typedef struct _MonoType MonoType;
 	typedef struct _MonoClass MonoClass;
 	typedef struct _MonoObject MonoObject;
 	typedef struct _MonoMethod MonoMethod;
@@ -186,6 +187,7 @@ class ScriptingEngine
 	static Scene *getSceneContext();
 	static MonoImage *getCoreAssemblyImage();
 	static MonoObject *getManagedInstance(UUID uuid);
+	// static MonoObject *createManagedComponentInstance(Entity entity, MonoType *monoType);
 
 	static std::shared_ptr<ScriptInstance> getEntityScriptInstance(UUID entityID);
 	static std::shared_ptr<ScriptClass> getEntityClass(const std::string &name);
@@ -287,6 +289,19 @@ inline EScriptFieldType scriptFieldTypeFromString(std::string_view fieldType)
 
 	return EScriptFieldType::NONE;
 }
-
 } // namespace utils
 } // namespace ale
+
+// namespace std
+// {
+// // UUID + MonoType* 조합을 위한 해시 함수 특수화
+// template <> struct hash<std::pair<ale::UUID, MonoType *>>
+// {
+// 	std::size_t operator()(const std::pair<ale::UUID, MonoType *> &pair) const noexcept
+// 	{
+// 		std::size_t h1 = std::hash<ale::UUID>{}(pair.first);
+// 		std::size_t h2 = std::hash<MonoType *>{}(pair.second);
+// 		return h1 ^ (h2 << 1); // 비트 연산을 사용하여 해시 값 결합
+// 	}
+// };
+// } // namespace std

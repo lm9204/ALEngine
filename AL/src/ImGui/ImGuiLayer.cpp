@@ -19,7 +19,7 @@ ImGuiLayer::ImGuiLayer() : Layer("ImGuiLayer")
 	init_info.Queue = context.getGraphicsQueue();			// renderer
 	init_info.PipelineCache = VK_NULL_HANDLE;
 	init_info.RenderPass = renderer.getRenderPass(); // vk null handle
-	init_info.Subpass = 1;
+	init_info.Subpass = 0;
 
 	// gui용 descriptor pool 필요
 	init_info.DescriptorPool = context.getDescriptorPool(); // renderer

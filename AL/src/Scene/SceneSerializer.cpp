@@ -276,10 +276,63 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::EndMap;
 	}
 	// RigidbodyComponent
+	if (entity.hasComponent<RigidbodyComponent>())
+	{
+		out << YAML::Key << "RigidbodyComponent";
+		out << YAML::BeginMap;
+		auto &rb = entity.getComponent<RigidbodyComponent>();
+		out << YAML::Key << "Mass" << YAML::Value << rb.m_Mass;
+		out << YAML::Key << "Drag" << YAML::Value << rb.m_Damping;
+		out << YAML::Key << "AngularDrag" << YAML::Value << rb.m_AngularDamping;
+		out << YAML::Key << "UseGravity" << YAML::Value << rb.m_UseGravity;
+		out << YAML::EndMap; // Rigidbody
+	}
 	// BoxColliderComponent
+	if (entity.hasComponent<BoxColliderComponent>())
+	{
+		out << YAML::Key << "BoxColliderComponent";
+		out << YAML::BeginMap;
+		auto &bc = entity.getComponent<BoxColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << bc.m_Center;
+		out << YAML::Key << "Size" << YAML::Value << bc.m_Size;
+		out << YAML::Key << "IsTrigger" << YAML::Value << bc.m_IsTrigger;
+		out << YAML::EndMap; // BoxCollider
+	}
 	// SphereColliderComponent
+	if (entity.hasComponent<SphereColliderComponent>())
+	{
+		out << YAML::Key << "SphereColliderComponent";
+		out << YAML::BeginMap;
+		auto &sc = entity.getComponent<SphereColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << sc.m_Center;
+		out << YAML::Key << "Radius" << YAML::Value << sc.m_Radius;
+		out << YAML::Key << "IsTrigger" << YAML::Value << sc.m_IsTrigger;
+		out << YAML::EndMap; // SphereCollider
+	}
 	// CapsuleColliderComponent
+	if (entity.hasComponent<CapsuleColliderComponent>())
+	{
+		out << YAML::Key << "CapsuleColliderComponent";
+		out << YAML::BeginMap;
+		auto &cc = entity.getComponent<CapsuleColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << cc.m_Center;
+		out << YAML::Key << "Radius" << YAML::Value << cc.m_Radius;
+		out << YAML::Key << "Height" << YAML::Value << cc.m_Height;
+		out << YAML::Key << "IsTrigger" << YAML::Value << cc.m_IsTrigger;
+		out << YAML::EndMap; // CapusuleCollider
+	}
 	// CylinderColliderComponent
+	if (entity.hasComponent<CylinderColliderComponent>())
+	{
+		out << YAML::Key << "CylinderColliderComponent";
+		out << YAML::BeginMap;
+		auto &cc = entity.getComponent<CylinderColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << cc.m_Center;
+		out << YAML::Key << "Radius" << YAML::Value << cc.m_Radius;
+		out << YAML::Key << "Height" << YAML::Value << cc.m_Height;
+		out << YAML::Key << "IsTrigger" << YAML::Value << cc.m_IsTrigger;
+		out << YAML::EndMap; // CylinderCollider
+	}
 
 	out << YAML::EndMap; // End Serialize Entity
 }
@@ -476,10 +529,53 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 			}
 
 			// RigidbodyComponent
+			auto rbComponent = entity["RigidbodyComponent"];
+			if (rbComponent)
+			{
+				auto &rb = deserializedEntity.addComponent<RigidbodyComponent>();
+				rb.m_Mass = rbComponent["Mass"].as<float>();
+				rb.m_Damping = rbComponent["Drag"].as<float>();
+				rb.m_AngularDamping = rbComponent["AngularDrag"].as<float>();
+				rb.m_UseGravity = rbComponent["UseGravity"].as<bool>();
+			}
 			// BoxColliderComponent
+			auto bcComponent = entity["BoxColliderComponent"];
+			if (bcComponent)
+			{
+				auto &bc = deserializedEntity.addComponent<BoxColliderComponent>();
+				bc.m_Center = bcComponent["Center"].as<glm::vec3>();
+				bc.m_Size = bcComponent["Size"].as<glm::vec3>();
+				bc.m_IsTrigger = bcComponent["IsTrigger"].as<bool>();
+			}
 			// SphereColliderComponent
+			auto scComponent = entity["SphereColliderComponent"];
+			if (scComponent)
+			{
+				auto &sc = deserializedEntity.addComponent<SphereColliderComponent>();
+				sc.m_Center = scComponent["Center"].as<glm::vec3>();
+				sc.m_Radius = scComponent["Radius"].as<float>();
+				sc.m_IsTrigger = scComponent["IsTrigger"].as<bool>();
+			}
 			// CapsuleColliderComponent
+			auto capcComponent = entity["CapsuleColliderComponent"];
+			if (capcComponent)
+			{
+				auto &cc = deserializedEntity.addComponent<CapsuleColliderComponent>();
+				cc.m_Center = capcComponent["Center"].as<glm::vec3>();
+				cc.m_Radius = capcComponent["Radius"].as<float>();
+				cc.m_Height = capcComponent["Height"].as<float>();
+				cc.m_IsTrigger = capcComponent["IsTrigger"].as<bool>();
+			}
 			// CylinderColliderComponent
+			auto cycComponent = entity["CylinderColliderComponent"];
+			if (cycComponent)
+			{
+				auto &cc = deserializedEntity.addComponent<CylinderColliderComponent>();
+				cc.m_Center = cycComponent["Center"].as<glm::vec3>();
+				cc.m_Radius = cycComponent["Radius"].as<float>();
+				cc.m_Height = cycComponent["Height"].as<float>();
+				cc.m_IsTrigger = cycComponent["IsTrigger"].as<bool>();
+			}
 		}
 	}
 	return true;

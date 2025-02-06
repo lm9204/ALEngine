@@ -127,6 +127,8 @@ struct ScriptingEngineData
 	std::unordered_map<UUID, std::shared_ptr<ScriptInstance>> entityInstances;
 	std::unordered_map<UUID, ScriptFieldMap> entityScriptFields;
 
+	// std::unordered_map<std::pair<UUID, MonoType *>, MonoObject *> s_ComponentInstances;
+
 	// filewatch?
 	bool assemblyReloadPending = false;
 
@@ -325,6 +327,67 @@ MonoObject *ScriptingEngine::getManagedInstance(UUID uuid)
 	// ASSERT
 	return s_Data->entityInstances.at(uuid)->getManagedObject();
 }
+
+// MonoObject *ScriptingEngine::createManagedComponentInstance(Entity entity, MonoType *monoType)
+// {
+// 	// auto key = std::make_pair(entity.getUUID(), monoType);
+// 	// if (s_Data->s_ComponentInstances.find(key) != s_Data->s_ComponentInstances.end())
+// 	// 	return s_Data->s_ComponentInstances[key];
+
+// 	AL_CORE_TRACE("createManagedComponentInstance");
+
+// 	// 1. MonoType -> MonoClass 변환
+// 	MonoClass *monoClass = mono_type_get_class(monoType);
+// 	if (!monoClass)
+// 	{
+// 		AL_CORE_ERROR("[ScriptingEngine] Failed to get MonoClass from MonoType!");
+// 		return nullptr;
+// 	}
+
+// 	// 2. C# 객체(인스턴스) 생성
+// 	MonoObject *instance = instantiateClass(monoClass);
+// 	if (!instance)
+// 	{
+// 		AL_CORE_ERROR("[ScriptingEngine] Failed to instantiate MonoClass!");
+// 		return nullptr;
+// 	}
+
+// 	// 3. 만약 컴포넌트 쪽에서 생성자로 Entity ID를 받도록 설계했다면, .ctor(...) 호출
+// 	//    - 예) C#에서 public MyComponent(ulong entityID) { ... }
+// 	//    - parameterCount = 1
+// 	MonoMethod *constructor = mono_class_get_method_from_name(monoClass, ".ctor", 1);
+// 	if (constructor)
+// 	{
+// 		UUID entityID = entity.getUUID();
+// 		void *param = &entityID;
+
+// 		// 예외 처리( exception )는 필요시 별도 처리
+// 		MonoObject *exception = nullptr;
+// 		mono_runtime_invoke(constructor, instance, &param, &exception);
+
+// 		if (exception)
+// 		{
+// 			// 예) 어떤 식으로든 로그 남기기
+// 			AL_CORE_ERROR("[ScriptingEngine] Exception while invoking component constructor!");
+// 			// 필요 시 반환
+// 		}
+// 	}
+// 	// else
+// 	// {
+// 	// 	// 혹은, 생성자가 없을 경우 "m_EntityID" 같은 필드가 있는지 찾아 세팅할 수도 있음
+// 	// 	MonoClassField *entityField = mono_class_get_field_from_name(monoClass, "m_EntityID");
+// 	// 	if (entityField)
+// 	// 	{
+// 	// 		UUID entityID = entity.getUUID();
+// 	// 		mono_field_set_value(instance, entityField, &entityID);
+// 	// 	}
+// 	// }
+
+// 	// 4. (선택) s_Data->m_EntityComponentInstances[{entity.getUUID(), monoType}] = instance;
+// 	//    캐싱/재사용하고 싶다면 이런 식으로 매핑 테이블에 저장 가능
+
+// 	return instance;
+// }
 
 std::shared_ptr<ScriptInstance> ScriptingEngine::getEntityScriptInstance(UUID entityID)
 {

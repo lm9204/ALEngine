@@ -10,6 +10,15 @@
 
 #include "Scripting/ScriptingEngine.h"
 
+#include "Physics/Fixture.h"
+#include "Physics/Rigidbody.h"
+#include "Physics/World.h"
+
+#include "Physics/Shape/BoxShape.h"
+#include "Physics/Shape/CapsuleShape.h"
+#include "Physics/Shape/CylinderShape.h"
+#include "Physics/Shape/SphereShape.h"
+
 namespace ale
 {
 Scene::~Scene()
@@ -83,7 +92,7 @@ Entity Scene::createEntity(const std::string &name)
 Entity Scene::createEntityWithUUID(UUID uuid, const std::string &name)
 {
 	Entity entity = {m_Registry.create(), this};
-	entity.addComponent<IDComponent>();
+	entity.addComponent<IDComponent>(uuid);
 	entity.addComponent<TransformComponent>();
 	entity.addComponent<RelationshipComponent>();
 	auto &tag = entity.addComponent<TagComponent>();
@@ -161,8 +170,23 @@ void Scene::onUpdateRuntime(Timestep ts)
 		}
 		// update Physics
 		{
+			m_World->startFrame();
 			// Run physics
+			m_World->runPhysics(ts);
 			// set transforms of entity by body
+			auto view = m_Registry.view<RigidbodyComponent>();
+			for (auto e : view)
+			{
+				Entity entity = {e, this};
+				auto &tf = entity.getComponent<TransformComponent>();
+				auto &rb = entity.getComponent<RigidbodyComponent>();
+
+				Rigidbody *body = (Rigidbody *)rb.body;
+
+				tf.m_Position = body->getTransform().position;
+				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
+				tf.m_WorldTransform = tf.getTransform();
+			}
 		}
 	}
 
@@ -251,9 +275,154 @@ void Scene::renderScene(EditorCamera &camera)
 void Scene::onPhysicsStart()
 {
 	// create world
+	m_World = new World();
+
 	// body
-	// fixture
-	// ...
+	auto view = m_Registry.view<RigidbodyComponent>();
+	for (auto e : view)
+	{
+		Entity entity = {e, this};
+		auto &tf = entity.getComponent<TransformComponent>();
+		auto &rb = entity.getComponent<RigidbodyComponent>();
+
+		BodyDef bdDef;
+		bdDef.m_type = EBodyType::DYNAMIC_BODY;
+		bdDef.m_position = tf.m_Position;
+		bdDef.m_orientation = glm::quat(glm::radians(tf.m_Rotation));
+		bdDef.m_linearDamping = rb.m_Damping;
+		bdDef.m_angularDamping = rb.m_AngularDamping;
+		bdDef.m_gravityScale = 15.0f;
+		bdDef.m_useGravity = rb.m_UseGravity;
+
+		// create body
+		Rigidbody *body = m_World->createBody(bdDef);
+		// set fixed rotation
+		// set body
+		rb.body = body;
+
+		if (entity.hasComponent<BoxColliderComponent>())
+		{
+			auto &bc = entity.getComponent<BoxColliderComponent>();
+
+			// create shape
+			BoxShape boxShape;
+			// set shape vertices
+			boxShape.setVertices(bc.m_Center, bc.m_Size);
+
+			// set mass data(mass, inertia mass)
+			float h = bc.m_Size.y;
+			float w = bc.m_Size.x;
+			float d = bc.m_Size.z;
+			float Ixx = (1.0f / 12.0f) * (h * h + d * d) * rb.m_Mass;
+			float Iyy = (1.0f / 12.0f) * (w * w + d * d) * rb.m_Mass;
+			float Izz = (1.0f / 12.0f) * (w * w + h * h) * rb.m_Mass;
+			glm::mat3 m(glm::vec3(Ixx, 0.0f, 0.0f), glm::vec3(0.0f, Iyy, 0.0f), glm::vec3(0.0f, 0.0f, Izz));
+
+			body->setMassData(rb.m_Mass, m);
+
+			FixtureDef fDef;
+			fDef.shape = boxShape.clone();
+			fDef.friction = 0.7f;
+			fDef.restitution = 0.4f;
+
+			// create fixture
+			body->createFixture(&fDef);
+		}
+
+		// SphereColliderComponent
+		if (entity.hasComponent<SphereColliderComponent>())
+		{
+			auto &sc = entity.getComponent<SphereColliderComponent>();
+
+			// create shape
+			SphereShape spShape;
+			// set shape vertices
+			spShape.setShapeFeatures(sc.m_Center, sc.m_Radius);
+
+			// set mass data(mass, inertia mass)
+			float r = spShape.m_radius;
+			float val = (2.0f / 5.0f) * rb.m_Mass * r * r;
+			glm::mat3 m(glm::vec3(val, 0.0f, 0.0f), glm::vec3(0.0f, val, 0.0f), glm::vec3(0.0f, 0.0f, val));
+
+			body->setMassData(rb.m_Mass, m);
+
+			FixtureDef fDef;
+			fDef.shape = spShape.clone();
+			fDef.friction = 0.4f;
+			fDef.restitution = 0.8f;
+
+			// create fixture
+			body->createFixture(&fDef);
+		}
+
+		// CapsuleColliderComponent
+		if (entity.hasComponent<CapsuleColliderComponent>())
+		{
+			auto &cc = entity.getComponent<CapsuleColliderComponent>();
+
+			// create shape
+			CapsuleShape csShape;
+			// set shape vertices
+			csShape.setShapeFeatures(cc.m_Center, cc.m_Radius, cc.m_Height);
+
+			// set mass data(mass, inertia mass)
+
+			float mh = rb.m_Mass * 0.25f;
+			float r = csShape.m_radius;
+			float h = csShape.m_height;
+			float d = (3.0f * r / 8.0f);
+			float val = (2.0f / 5.0f) * mh * r * r + (h / 2.0f * d * d);
+			glm::mat3 ih(glm::vec3(val, 0.0f, 0.0f), glm::vec3(0.0f, val, 0.0f), glm::vec3(0.0f, 0.0f, val));
+
+			float mc = rb.m_Mass * 0.75f;
+			float Ixx = (1.0f / 12.0f) * (3.0f * r * r + h * h) * mc;
+			float Iyy = Ixx;
+			float Izz = (1.0f / 2.0f) * (r * r) * mc;
+			glm::mat3 ic(glm::vec3(Ixx, 0.0f, 0.0f), glm::vec3(0.0f, Iyy, 0.0f), glm::vec3(0.0f, 0.0f, Izz));
+
+			float mass = mh * 2.0f + mc;
+			glm::mat3 m = ih * 2.0f + ic;
+
+			body->setMassData(mass, m);
+
+			FixtureDef fDef;
+			fDef.shape = csShape.clone();
+			fDef.friction = 0.4f;
+			fDef.restitution = 0.4f;
+
+			// create fixture
+			body->createFixture(&fDef);
+		}
+
+		// CylinderColliderComponent
+		if (entity.hasComponent<CylinderColliderComponent>())
+		{
+			auto &cc = entity.getComponent<CylinderColliderComponent>();
+
+			// create shape
+			CylinderShape cyShape;
+			// set shape vertices
+			cyShape.setShapeFeatures(cc.m_Center, cc.m_Radius, cc.m_Height);
+
+			// set mass data(mass, inertia mass)
+			float r = cyShape.m_radius;
+			float h = cyShape.m_height;
+			float Ixx = (1.0f / 12.0f) * (3.0f * r * r + h * h) * rb.m_Mass;
+			float Iyy = (1.0f / 2.0f) * (r * r) * rb.m_Mass;
+			float Izz = Ixx;
+			glm::mat3 m(glm::vec3(Ixx, 0.0f, 0.0f), glm::vec3(0.0f, Iyy, 0.0f), glm::vec3(0.0f, 0.0f, Izz));
+
+			body->setMassData(rb.m_Mass, m);
+
+			FixtureDef fDef;
+			fDef.shape = cyShape.clone();
+			fDef.friction = 0.4f;
+			fDef.restitution = 0.4f;
+
+			// create fixture
+			body->createFixture(&fDef);
+		}
+	}
 }
 
 void Scene::onPhysicsStop()
@@ -354,6 +523,7 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
+	auto &bc = entity.addComponent<BoxColliderComponent>();
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
@@ -379,6 +549,9 @@ template <> void Scene::onComponentAdded<RigidbodyComponent>(Entity entity, Rigi
 
 template <> void Scene::onComponentAdded<BoxColliderComponent>(Entity entity, BoxColliderComponent &component)
 {
+	auto &tc = entity.getComponent<TransformComponent>();
+
+	component.m_Size = tc.m_Scale;
 }
 
 template <> void Scene::onComponentAdded<SphereColliderComponent>(Entity entity, SphereColliderComponent &component)

@@ -1,6 +1,6 @@
 Scene: Untitled
 Entities:
-  - Entity: 271500451064461467
+  - Entity: 11822122333692858422
     TagComponent:
       Tag: Camera
     TransformComponent:
@@ -14,7 +14,7 @@ Entities:
         PerspectiveFar: 100
       Primary: true
       FixedAspectRatio: false
-  - Entity: 1620006740157882608
+  - Entity: 2187969428862952050
     TagComponent:
       Tag: Light
     TransformComponent:
@@ -30,7 +30,7 @@ Entities:
       Intensity: 5.69999981
       InnerCutoff: 0.976296008
       OuterCutoff: 0.953716934
-  - Entity: 12150223840110181684
+  - Entity: 10739202330461065483
     TagComponent:
       Tag: Plane
     TransformComponent:
@@ -45,7 +45,11 @@ Entities:
         - Name: Speed
           Type: Float
           Data: 43
-  - Entity: 13319686418590563602
+    BoxColliderComponent:
+      Center: [0, 0, 0]
+      Size: [1, 1, 1]
+      IsTrigger: false
+  - Entity: 16843205744615067385
     TagComponent:
       Tag: Box
     TransformComponent:
@@ -53,5 +57,8 @@ Entities:
       Rotation: [0, 0, 0]
       Scale: [3, 3, 3]
     MeshRendererComponent:
-      MeshType: 4
-      Path: .\Sandbox\Project\Assets\Models\Camera_01_2k.gltf\Camera_01_2k.gltf
+      MeshType: 0
+    BoxColliderComponent:
+      Center: [0, 1, 0]
+      Size: [3, 3, 3]
+      IsTrigger: false

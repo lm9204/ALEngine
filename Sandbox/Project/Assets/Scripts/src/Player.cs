@@ -10,7 +10,7 @@ namespace Sandbox
 {
     public class Player : Entity
     {
-        // private TransformComponent m_Transform;
+        private TransformComponent m_Transform;
 
         public float Speed;
         public float Time = 0.0f;
@@ -19,13 +19,13 @@ namespace Sandbox
         {
             Console.WriteLine($"Player.OnCreate - {ID}");
 
-            // m_Transform = getComponent<TransformComponent>();
+            m_Transform = getComponent<TransformComponent>();
         }
 
         void onUpdate(float ts)
         {
-            Time += ts;
-            Console.WriteLine($"Player.OnUpdate: {ts}");
+            // Time += ts;
+            // Console.WriteLine($"Player.OnUpdate: {ts}");
         }
 
     }
