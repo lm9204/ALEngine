@@ -29,7 +29,11 @@ void CullTree::updateTree()
 		if (transformComponent.m_isMoved == true)
 		{
 			MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-			moveNode(meshRendererComponent.nodeId, sphere);
+			CullSphere newSphere(
+				transformComponent.m_WorldTransform * sphere.center,
+				std::max(transformComponent.m_Scale.x,
+						 std::max(transformComponent.m_Scale.y, transformComponent.m_Scale.z) * sphere.radius));
+			moveNode(meshRendererComponent.nodeId, newSphere);
 			transformComponent.m_isMoved = false;
 		}
 	}
@@ -146,7 +150,6 @@ int32_t CullTree::getRootNodeId()
 	return m_root;
 }
 
-
 void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 {
 	CullTreeNode &node = m_nodes[nodeId];
@@ -155,7 +158,8 @@ void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 	if (result == EFrustum::INSIDE)
 	{
 		setRenderEnable(nodeId);
-	} else if (result == EFrustum::INTERSECT)
+	}
+	else if (result == EFrustum::INTERSECT)
 	{
 		if (node.isLeaf() == true)
 		{

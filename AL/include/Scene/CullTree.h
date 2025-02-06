@@ -13,6 +13,9 @@ struct CullSphere
 	glm::vec3 center;
 	float radius;
 
+	CullSphere(glm::vec3 &center, float radius)
+		: center(center), radius(radius) {};
+
 	float getVolume()
 	{
 		return radius * radius * radius;
