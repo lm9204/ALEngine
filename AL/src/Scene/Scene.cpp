@@ -186,6 +186,11 @@ void Scene::onUpdateRuntime(Timestep ts)
 				tf.m_Position = body->getTransform().position;
 				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
 				tf.m_WorldTransform = tf.getTransform();
+				// radius 수정 필요
+				if (body->isMoved(sphere.radius) == true)
+				{
+					tf.m_isMoved = true;
+				}
 			}
 		}
 	}
