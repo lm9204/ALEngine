@@ -52,6 +52,10 @@ class Renderer
 	{
 		return viewPortDescriptorSets[0];
 	}
+	std::unordered_map<std::string, std::shared_ptr<Model>> &getModelsMap()
+	{
+		return m_modelsMap;
+	}
 
   private:
 	Renderer() = default;
@@ -173,6 +177,8 @@ class Renderer
 
 	glm::mat4 projMatrix;
 	glm::mat4 viewMatirx;
+
+	std::unordered_map<std::string, std::shared_ptr<Model>> m_modelsMap;
 
 	bool firstFrame = true;
 
