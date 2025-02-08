@@ -79,7 +79,7 @@ uint getCubeFace(vec3 L) {
     return faceIndex;
 }
 
-
+const float FLT_MAX = 3.4028235e+38 - 1; 
 
 void main() {
     vec3 fragPosition = subpassLoad(positionAttachment).rgb;
@@ -102,6 +102,11 @@ void main() {
     float shadowFactor = 1.0;
 
     uint shadowMapIndex = 0;
+
+    if (fragPosition.x >= FLT_MAX) {
+        outColor = vec4(1.0, 0.0, 0.0, 1.0);
+        return;
+    }
 
     for (uint i = 0; i < numLights; ++i) {
         vec3 L;

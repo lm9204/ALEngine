@@ -22,6 +22,9 @@ class ShaderResourceManager
 	static std::unique_ptr<ShaderResourceManager> createViewPortShaderResourceManager(
 		VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView, VkSampler viewPortSampler);
 
+	static std::unique_ptr<ShaderResourceManager> createSphericalMapShaderResourceManager(
+		VkDescriptorSetLayout descriptorSetLayout, VkImageView sphericalMapImageView, VkSampler sphericalMapSampler);
+
 	~ShaderResourceManager() = default;
 
 	void cleanup();
@@ -85,6 +88,12 @@ class ShaderResourceManager
 										   VkSampler viewPortSampler);
 	void createViewPortDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
 									  VkSampler viewPortSampler);
+
+	void initSphericalMapShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout,
+											   VkImageView sphericalMapImageView, VkSampler sphericalMapSampler);
+	void createSphericalMapUniformBuffers();
+	void createSphericalMapDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView sphericalMapImageView,
+										  VkSampler sphericalMapSampler);
 };
 } // namespace ale
 

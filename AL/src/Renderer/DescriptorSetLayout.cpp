@@ -152,7 +152,7 @@ void DescriptorSetLayout::initLightingPassDescriptorSetLayout()
 
 	// Shadow Cube Map Sampler
 	VkDescriptorSetLayoutBinding shadowCubeMapBinding{};
-	shadowCubeMapBinding.binding = 6; // 새롭게 추가된 binding
+	shadowCubeMapBinding.binding = 6;
 	shadowCubeMapBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
 	shadowCubeMapBinding.descriptorCount = 4;
 	shadowCubeMapBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
@@ -276,6 +276,47 @@ void DescriptorSetLayout::initViewPortDescriptorSetLayout()
 	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
 	{
 		throw std::runtime_error("failed to create view port descriptor set layout!");
+	}
+}
+
+std::unique_ptr<DescriptorSetLayout> DescriptorSetLayout::createSphericalMapDescriptorSetLayout()
+{
+	std::unique_ptr<DescriptorSetLayout> descriptorSetLayout =
+		std::unique_ptr<DescriptorSetLayout>(new DescriptorSetLayout());
+	descriptorSetLayout->initSphericalMapDescriptorSetLayout();
+	return descriptorSetLayout;
+}
+
+void DescriptorSetLayout::initSphericalMapDescriptorSetLayout()
+{
+	auto &context = VulkanContext::getContext();
+	VkDevice device = context.getDevice();
+
+	VkDescriptorSetLayoutBinding sphericalMapUniformBufferBinding{};
+	sphericalMapUniformBufferBinding.binding = 0;
+	sphericalMapUniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	sphericalMapUniformBufferBinding.descriptorCount = 1;
+	sphericalMapUniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	sphericalMapUniformBufferBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutBinding sphericalMapTextureBinding{};
+	sphericalMapTextureBinding.binding = 1;
+	sphericalMapTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	sphericalMapTextureBinding.descriptorCount = 1;
+	sphericalMapTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	sphericalMapTextureBinding.pImmutableSamplers = nullptr;
+
+	std::array<VkDescriptorSetLayoutBinding, 2> bindings = {sphericalMapUniformBufferBinding,
+															sphericalMapTextureBinding};
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	layoutInfo.pBindings = bindings.data();
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create spherical map descriptor set layout!");
 	}
 }
 

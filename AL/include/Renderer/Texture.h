@@ -18,6 +18,7 @@ class Texture : public Buffer
 	static std::shared_ptr<Texture> createTextureFromMemory(const aiTexture *aiTexture);
 	static VkSampler createShadowMapSampler();
 	static VkSampler createShadowCubeMapSampler();
+	static VkSampler createSphericalMapSampler();
 
 	~Texture() = default;
 

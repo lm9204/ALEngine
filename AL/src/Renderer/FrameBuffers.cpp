@@ -47,6 +47,10 @@ void FrameBuffers::cleanup()
 	vkDestroyImage(device, viewPortImage, nullptr);
 	vkFreeMemory(device, viewPortImageMemory, nullptr);
 
+	vkDestroyImageView(device, sphericalMapImageView, nullptr);
+	vkDestroyImage(device, sphericalMapImage, nullptr);
+	vkFreeMemory(device, sphericalMapImageMemory, nullptr);
+
 	for (auto framebuffer : framebuffers)
 	{
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -58,7 +62,7 @@ void FrameBuffers::initViewPortFrameBuffers(glm::vec2 viewPortSize, VkRenderPass
 	auto &context = VulkanContext::getContext();
 	VkDevice device = context.getDevice();
 
-	VkExtent2D extent = {viewPortSize.x, viewPortSize.y};
+	VkExtent2D extent = {static_cast<uint32_t>(viewPortSize.x), static_cast<uint32_t>(viewPortSize.y)};
 
 	VulkanUtil::createImage(extent.width, extent.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R16G16B16A16_SFLOAT,
 							VK_IMAGE_TILING_OPTIMAL,
@@ -242,6 +246,44 @@ void FrameBuffers::initShadowCubeMapFrameBuffers(VkRenderPass renderPass)
 		{
 			throw std::runtime_error("Failed to create point light shadow map framebuffer!");
 		}
+	}
+}
+
+std::unique_ptr<FrameBuffers> FrameBuffers::createSphericalMapFrameBuffers(VkRenderPass renderPass)
+{
+	std::unique_ptr<FrameBuffers> frameBuffers = std::unique_ptr<FrameBuffers>(new FrameBuffers());
+	frameBuffers->initSphericalMapFrameBuffers(renderPass);
+	return frameBuffers;
+}
+
+void FrameBuffers::initSphericalMapFrameBuffers(VkRenderPass renderPass)
+{
+	auto &context = VulkanContext::getContext();
+	VkDevice device = context.getDevice();
+
+	const uint32_t sphericalMapSize = 2048;
+
+	VulkanUtil::createCubeMapImage(sphericalMapSize, sphericalMapSize, 1, VK_SAMPLE_COUNT_1_BIT,
+								   VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_TILING_OPTIMAL,
+								   VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+								   VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, sphericalMapImage, sphericalMapImageMemory);
+
+	sphericalMapImageView = VulkanUtil::createCubeMapImageView(sphericalMapImage, VK_FORMAT_R16G16B16A16_SFLOAT,
+															   VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+	VkFramebufferCreateInfo framebufferInfo{};
+	framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+	framebufferInfo.renderPass = renderPass;
+	framebufferInfo.attachmentCount = 1;
+	framebufferInfo.pAttachments = &sphericalMapImageView;
+	framebufferInfo.width = sphericalMapSize;
+	framebufferInfo.height = sphericalMapSize;
+	framebufferInfo.layers = 6;
+
+	framebuffers.resize(1);
+	if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[0]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create spherical map framebuffer!");
 	}
 }
 

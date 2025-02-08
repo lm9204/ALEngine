@@ -50,6 +50,29 @@ void Renderer::init(GLFWwindow *window)
 	inFlightFences = m_syncObjects->getInFlightFences();
 #pragma endregion
 
+	m_skyboxTexture = Texture::createTexture("./textures/skybox_tmp.hdr");
+
+	m_sphericalMapRenderPass = RenderPass::createSphericalMapRenderPass();
+	sphericalMapRenderPass = m_sphericalMapRenderPass->getRenderPass();
+
+	m_sphericalMapFrameBuffers = FrameBuffers::createSphericalMapFrameBuffers(sphericalMapRenderPass);
+	sphericalMapFramebuffers = m_sphericalMapFrameBuffers->getFramebuffers();
+	sphericalMapImageView = m_sphericalMapFrameBuffers->getSphericalMapImageView();
+	sphericalMapSampler = Texture::createSphericalMapSampler();
+
+	m_sphericalMapDescriptorSetLayout = DescriptorSetLayout::createSphericalMapDescriptorSetLayout();
+	sphericalMapDescriptorSetLayout = m_sphericalMapDescriptorSetLayout->getDescriptorSetLayout();
+
+	m_sphericalMapPipeline =
+		Pipeline::createSphericalMapPipeline(sphericalMapRenderPass, sphericalMapDescriptorSetLayout);
+	sphericalMapPipelineLayout = m_sphericalMapPipeline->getPipelineLayout();
+	sphericalMapGraphicsPipeline = m_sphericalMapPipeline->getPipeline();
+
+	m_sphericalMapShaderResourceManager = ShaderResourceManager::createSphericalMapShaderResourceManager(
+		sphericalMapDescriptorSetLayout, m_skyboxTexture->getImageView(), m_skyboxTexture->getSampler());
+	sphericalMapDescriptorSets = m_sphericalMapShaderResourceManager->getDescriptorSets();
+	sphericalMapUniformBuffers = m_sphericalMapShaderResourceManager->getUniformBuffers();
+
 #pragma region RenderPass
 	m_deferredRenderPass = RenderPass::createDeferredRenderPass();
 	deferredRenderPass = m_deferredRenderPass->getRenderPass();
@@ -362,6 +385,7 @@ void Renderer::drawFrame(Scene *scene)
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
+	recordSphericalMapCommandBuffer(commandBuffers[currentFrame]);
 	auto view = scene->getAllEntitiesWith<LightComponent>();
 
 	uint32_t shadowMapIndex = 0;
@@ -511,7 +535,8 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 
 	// ClearValues 수정
 	std::array<VkClearValue, 6> clearValues{};
-	clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+	// clearValues[0].color = {0.0f, 0.0f, 0.0f, 1.0f};
+	clearValues[0].color = {INFINITY, INFINITY, INFINITY, 1.0f};
 	clearValues[1].color = {0.0f, 0.0f, 0.0f, 1.0f};
 	clearValues[2].color = {0.0f, 0.0f, 0.0f, 1.0f};
 	clearValues[3].color = {0.0f, 0.0f, 0.0f, 1.0f};
@@ -855,6 +880,58 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 
 	vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
 						 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrierToShaderRead);
+}
+
+void Renderer::recordSphericalMapCommandBuffer(VkCommandBuffer commandBuffer)
+{
+	VkClearValue clearValue{};
+	clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = sphericalMapRenderPass;
+	renderPassInfo.framebuffer = sphericalMapFramebuffers[0];
+	renderPassInfo.renderArea.offset = {0, 0};
+	renderPassInfo.renderArea.extent = {2048, 2048};
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearValue;
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sphericalMapGraphicsPipeline);
+
+	auto projection = glm::perspective(glm::radians(90.0f), 1.0f, 0.1f, 10.0f);
+	projection[1][1] *= -1;
+	std::vector<glm::mat4> views = {
+		// **Right (+X) - layerIndex 0**
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+
+		// **Left (-X) - layerIndex 1**
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+
+		// **Top (+Y) - layerIndex 2**
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+
+		// **Bottom (-Y) - layerIndex 3**
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+
+		// **Front (+Z) - layerIndex 4**
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
+
+		// **Back (-Z) - layerIndex 5**
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, -1.0f), glm::vec3(0.0f, -1.0f, 0.0f))};
+
+	for (size_t i = 0; i < 6; i++)
+	{
+		vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, sphericalMapPipelineLayout, 0, 1,
+								&sphericalMapDescriptorSets[i], 0, nullptr);
+		SphericalMapUniformBufferObject ubo;
+		ubo.transform = projection * views[i];
+		ubo.layerIndex = i;
+		sphericalMapUniformBuffers[i]->updateUniformBuffer(&ubo, sizeof(ubo));
+		vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+	}
+	vkCmdEndRenderPass(commandBuffer);
 }
 
 } // namespace ale

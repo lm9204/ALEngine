@@ -12,7 +12,16 @@ void ShaderResourceManager::cleanup()
 		}
 	}
 
+	if (!m_layerIndexUniformBuffers.empty())
+	{
+		for (size_t i = 0; i < m_layerIndexUniformBuffers.size(); i++)
+		{
+			m_layerIndexUniformBuffers[i]->cleanup();
+		}
+	}
+
 	if (!m_vertexUniformBuffers.empty())
+
 	{
 		for (size_t i = 0; i < m_vertexUniformBuffers.size(); i++)
 		{
@@ -675,4 +684,89 @@ void ShaderResourceManager::createViewPortDescriptorSets(VkDescriptorSetLayout d
 
 	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
 }
+
+std::unique_ptr<ShaderResourceManager> ShaderResourceManager::createSphericalMapShaderResourceManager(
+	VkDescriptorSetLayout descriptorSetLayout, VkImageView sphericalMapImageView, VkSampler sphericalMapSampler)
+{
+	std::unique_ptr<ShaderResourceManager> shaderResourceManager =
+		std::unique_ptr<ShaderResourceManager>(new ShaderResourceManager());
+	shaderResourceManager->initSphericalMapShaderResourceManager(descriptorSetLayout, sphericalMapImageView,
+																 sphericalMapSampler);
+	return shaderResourceManager;
+}
+
+void ShaderResourceManager::initSphericalMapShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout,
+																  VkImageView sphericalMapImageView,
+																  VkSampler sphericalMapSampler)
+{
+	createSphericalMapUniformBuffers();
+	createSphericalMapDescriptorSets(descriptorSetLayout, sphericalMapImageView, sphericalMapSampler);
+}
+
+void ShaderResourceManager::createSphericalMapUniformBuffers()
+{
+	VkDeviceSize bufferSize = sizeof(SphericalMapUniformBufferObject);
+	m_uniformBuffers.resize(6);
+	for (size_t i = 0; i < 6; i++)
+	{
+		m_uniformBuffers[i] = UniformBuffer::createUniformBuffer(bufferSize);
+	}
+}
+
+void ShaderResourceManager::createSphericalMapDescriptorSets(VkDescriptorSetLayout descriptorSetLayout,
+															 VkImageView sphericalMapImageView,
+															 VkSampler sphericalMapSampler)
+{
+	auto &context = VulkanContext::getContext();
+	VkDevice device = context.getDevice();
+	VkDescriptorPool descriptorPool = context.getDescriptorPool();
+
+	// **🔹 Descriptor Set 6개 할당 (각 큐브맵 레이어별)**
+	std::vector<VkDescriptorSetLayout> layouts(6, descriptorSetLayout);
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = static_cast<uint32_t>(layouts.size());
+	allocInfo.pSetLayouts = layouts.data();
+
+	descriptorSets.resize(6);
+	if (vkAllocateDescriptorSets(device, &allocInfo, descriptorSets.data()) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate spherical map descriptor sets!");
+	}
+
+	// **🔹 Descriptor Set 업데이트**
+	for (size_t i = 0; i < 6; i++)
+	{
+		VkDescriptorBufferInfo bufferInfo{};
+		bufferInfo.buffer = m_uniformBuffers[i]->getBuffer(); // **각 레이어에 맞는 UBO 설정**
+		bufferInfo.offset = 0;
+		bufferInfo.range = sizeof(SphericalMapUniformBufferObject);
+
+		VkDescriptorImageInfo imageInfo{};
+		imageInfo.imageView = sphericalMapImageView;
+		imageInfo.sampler = sphericalMapSampler;
+		imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+		std::array<VkWriteDescriptorSet, 2> descriptorWrites{};
+
+		descriptorWrites[0].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[0].dstSet = descriptorSets[i];
+		descriptorWrites[0].dstBinding = 0;
+		descriptorWrites[0].descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+		descriptorWrites[0].descriptorCount = 1;
+		descriptorWrites[0].pBufferInfo = &bufferInfo;
+
+		descriptorWrites[1].sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+		descriptorWrites[1].dstSet = descriptorSets[i];
+		descriptorWrites[1].dstBinding = 1;
+		descriptorWrites[1].descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+		descriptorWrites[1].descriptorCount = 1;
+		descriptorWrites[1].pImageInfo = &imageInfo;
+
+		vkUpdateDescriptorSets(device, static_cast<uint32_t>(descriptorWrites.size()), descriptorWrites.data(), 0,
+							   nullptr);
+	}
+}
+
 } // namespace ale
