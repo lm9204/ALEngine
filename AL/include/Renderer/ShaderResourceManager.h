@@ -16,15 +16,30 @@ class ShaderResourceManager
 	static std::unique_ptr<ShaderResourceManager> createLightingPassShaderResourceManager(
 		VkDescriptorSetLayout descriptorSetLayout, VkImageView positionImageView, VkImageView normalImageView,
 		VkImageView albedoImageView, VkImageView pbrImageView, std::vector<VkImageView> &shadowMapImageViews,
-		VkSampler shadowMapSamplers, std::vector<VkImageView> &shadowCubeMapImageViews, VkSampler shadowCubeMapSampler);
+		VkSampler shadowMapSamplers, std::vector<VkImageView> &shadowCubeMapImageViews, VkSampler shadowCubeMapSampler,
+		VkImageView backgroundImageView, VkSampler backgroundSampler);
 	static std::unique_ptr<ShaderResourceManager> createShadowMapShaderResourceManager();
 	static std::unique_ptr<ShaderResourceManager> createShadowCubeMapShaderResourceManager();
 	static std::unique_ptr<ShaderResourceManager> createViewPortShaderResourceManager(
 		VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView, VkSampler viewPortSampler);
-
 	static std::unique_ptr<ShaderResourceManager> createSphericalMapShaderResourceManager(
 		VkDescriptorSetLayout descriptorSetLayout, VkImageView sphericalMapImageView, VkSampler sphericalMapSampler);
+	static std::unique_ptr<ShaderResourceManager> createBackgroundShaderResourceManager(
+		VkDescriptorSetLayout descriptorSetLayout, VkImageView skyboxImageView, VkSampler skyboxSampler);
 
+	void initLightingPassShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView positionImageView,
+											   VkImageView normalImageView, VkImageView albedoImageView,
+											   VkImageView pbrImageView, std::vector<VkImageView> &shadowMapImageViews,
+											   VkSampler shadowMapSamplers,
+											   std::vector<VkImageView> &shadowCubeMapImageViews,
+											   VkSampler shadowCubeMapSampler, VkImageView backgroundImageView,
+											   VkSampler backgroundSampler);
+
+	void initBackgroundShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView skyboxImageView,
+											 VkSampler skyboxSampler);
+
+	void initViewPortShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
+										   VkSampler viewPortSampler);
 	~ShaderResourceManager() = default;
 
 	void cleanup();
@@ -63,19 +78,15 @@ class ShaderResourceManager
 	void createGeometryPassUniformBuffers(Model *model);
 	void createGeometryPassDescriptorSets(Model *model);
 
-	void initLightingPassShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView positionImageView,
-											   VkImageView normalImageView, VkImageView albedoImageView,
-											   VkImageView pbrImageView, std::vector<VkImageView> &shadowMapImageViews,
-											   VkSampler shadowMapSamplers,
-											   std::vector<VkImageView> &shadowCubeMapImageViews,
-											   VkSampler shadowCubeMapSampler);
 	void createLightingPassUniformBuffers();
 	void createLightingPassDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView positionImageView,
 										  VkImageView normalImageView, VkImageView albedoImageView,
+
 										  VkImageView pbrImageView, std::vector<VkImageView> &shadowMapImageViews,
 										  VkSampler shadowMapSamplers,
 										  std::vector<VkImageView> &shadowCubeMapImageViews,
-										  VkSampler shadowCubeMapSampler);
+										  VkSampler shadowCubeMapSampler, VkImageView backgroundImageView,
+										  VkSampler backgroundSampler);
 
 	void initShadowMapShaderResourceManager();
 	void createShadowMapUniformBuffers();
@@ -84,8 +95,7 @@ class ShaderResourceManager
 	void initShadowCubeMapShaderResourceManager();
 	void createShadowCubeMapUniformBuffers();
 	void createShadowCubeMapDescriptorSets();
-	void initViewPortShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
-										   VkSampler viewPortSampler);
+
 	void createViewPortDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
 									  VkSampler viewPortSampler);
 
@@ -94,6 +104,10 @@ class ShaderResourceManager
 	void createSphericalMapUniformBuffers();
 	void createSphericalMapDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView sphericalMapImageView,
 										  VkSampler sphericalMapSampler);
+
+	void createBackgroundUniformBuffers();
+	void createBackgroundDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView skyboxImageView,
+										VkSampler skyboxSampler);
 };
 } // namespace ale
 

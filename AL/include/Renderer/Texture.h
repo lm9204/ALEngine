@@ -19,6 +19,7 @@ class Texture : public Buffer
 	static VkSampler createShadowMapSampler();
 	static VkSampler createShadowCubeMapSampler();
 	static VkSampler createSphericalMapSampler();
+	static VkSampler createBackgroundSampler();
 
 	~Texture() = default;
 

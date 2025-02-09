@@ -50,7 +50,7 @@ void Renderer::init(GLFWwindow *window)
 	inFlightFences = m_syncObjects->getInFlightFences();
 #pragma endregion
 
-	m_skyboxTexture = Texture::createTexture("./textures/skybox_tmp.hdr");
+	m_sphericalMapTexture = Texture::createTexture("./textures/skybox_tmp.hdr");
 
 	m_sphericalMapRenderPass = RenderPass::createSphericalMapRenderPass();
 	sphericalMapRenderPass = m_sphericalMapRenderPass->getRenderPass();
@@ -69,12 +69,35 @@ void Renderer::init(GLFWwindow *window)
 	sphericalMapGraphicsPipeline = m_sphericalMapPipeline->getPipeline();
 
 	m_sphericalMapShaderResourceManager = ShaderResourceManager::createSphericalMapShaderResourceManager(
-		sphericalMapDescriptorSetLayout, m_skyboxTexture->getImageView(), m_skyboxTexture->getSampler());
+		sphericalMapDescriptorSetLayout, m_sphericalMapTexture->getImageView(), m_sphericalMapTexture->getSampler());
 	sphericalMapDescriptorSets = m_sphericalMapShaderResourceManager->getDescriptorSets();
 	sphericalMapUniformBuffers = m_sphericalMapShaderResourceManager->getUniformBuffers();
 
+	recordSphericalMapCommandBuffer();
+
+	m_backgroundRenderPass = RenderPass::createBackgroundRenderPass();
+	backgroundRenderPass = m_backgroundRenderPass->getRenderPass();
+
+	m_backgroundDescriptorSetLayout = DescriptorSetLayout::createBackgroundDescriptorSetLayout();
+	backgroundDescriptorSetLayout = m_backgroundDescriptorSetLayout->getDescriptorSetLayout();
+
+	m_backgroundPipeline = Pipeline::createBackgroundPipeline(backgroundRenderPass, backgroundDescriptorSetLayout);
+	backgroundPipelineLayout = m_backgroundPipeline->getPipelineLayout();
+	backgroundGraphicsPipeline = m_backgroundPipeline->getPipeline();
+
+	m_backgroundFrameBuffers = FrameBuffers::createBackgroundFrameBuffers(viewPortSize, backgroundRenderPass);
+	backgroundFramebuffers = m_backgroundFrameBuffers->getFramebuffers();
+	backgroundImageView = m_backgroundFrameBuffers->getBackgroundImageView();
+	backgroundSampler = Texture::createBackgroundSampler();
+
+	m_backgroundShaderResourceManager = ShaderResourceManager::createBackgroundShaderResourceManager(
+		backgroundDescriptorSetLayout, sphericalMapImageView, sphericalMapSampler);
+	backgroundDescriptorSets = m_backgroundShaderResourceManager->getDescriptorSets();
+	backgroundUniformBuffers = m_backgroundShaderResourceManager->getUniformBuffers();
+
 #pragma region RenderPass
 	m_deferredRenderPass = RenderPass::createDeferredRenderPass();
+
 	deferredRenderPass = m_deferredRenderPass->getRenderPass();
 
 	m_ImGuiRenderPass = RenderPass::createImGuiRenderPass(swapChainImageFormat);
@@ -172,7 +195,7 @@ void Renderer::init(GLFWwindow *window)
 		lightingPassDescriptorSetLayout, m_viewPortFrameBuffers->getPositionImageView(),
 		m_viewPortFrameBuffers->getNormalImageView(), m_viewPortFrameBuffers->getAlbedoImageView(),
 		m_viewPortFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
-		shadowCubeMapSampler);
+		shadowCubeMapSampler, backgroundImageView, backgroundSampler);
 
 	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
 	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
@@ -246,7 +269,6 @@ void Renderer::recreateViewPort()
 {
 	while (viewPortSize.x == 0 || viewPortSize.y == 0)
 	{
-		std::cout << "??" << std::endl;
 		viewPortSize.x = ImGui::GetContentRegionAvail().x;
 		viewPortSize.y = ImGui::GetContentRegionAvail().y;
 		glfwWaitEvents();
@@ -256,38 +278,59 @@ void Renderer::recreateViewPort()
 	// 스왑 체인 관련 리소스 정리
 	m_lightingPassShaderResourceManager->cleanup();
 	m_geometryPassPipeline->cleanup();
-
 	m_lightingPassPipeline->cleanup();
-	m_viewPortFrameBuffers->cleanup();
 	m_deferredRenderPass->cleanup();
+
+	m_viewPortFrameBuffers->cleanup();
 	m_viewPortShaderResourceManager->cleanup();
 
-	m_deferredRenderPass = RenderPass::createDeferredRenderPass();
+	m_backgroundShaderResourceManager->cleanup();
+	m_backgroundFrameBuffers->cleanup();
+	m_backgroundPipeline->cleanup();
+	m_backgroundRenderPass->cleanup();
+
+	m_backgroundRenderPass->initBackgroundRenderPass();
+	backgroundRenderPass = m_backgroundRenderPass->getRenderPass();
+
+	m_backgroundPipeline->initBackgroundPipeline(backgroundRenderPass, backgroundDescriptorSetLayout);
+	backgroundPipelineLayout = m_backgroundPipeline->getPipelineLayout();
+	backgroundGraphicsPipeline = m_backgroundPipeline->getPipeline();
+
+	m_backgroundFrameBuffers->initBackgroundFrameBuffers(viewPortSize, backgroundRenderPass);
+	backgroundFramebuffers = m_backgroundFrameBuffers->getFramebuffers();
+	backgroundImageView = m_backgroundFrameBuffers->getBackgroundImageView();
+
+	m_backgroundShaderResourceManager->initBackgroundShaderResourceManager(backgroundDescriptorSetLayout,
+																		   sphericalMapImageView, sphericalMapSampler);
+	backgroundDescriptorSets = m_backgroundShaderResourceManager->getDescriptorSets();
+	backgroundUniformBuffers = m_backgroundShaderResourceManager->getUniformBuffers();
+
+	m_deferredRenderPass->initDeferredRenderPass();
 	deferredRenderPass = m_deferredRenderPass->getRenderPass();
 
 	m_viewPortFrameBuffers->initViewPortFrameBuffers(viewPortSize, deferredRenderPass);
 	viewPortFramebuffers = m_viewPortFrameBuffers->getFramebuffers();
 	viewPortImageView = m_viewPortFrameBuffers->getViewPortImageView();
 
-	m_geometryPassPipeline = Pipeline::createGeometryPassPipeline(deferredRenderPass, geometryPassDescriptorSetLayout);
+	m_geometryPassPipeline->initGeometryPassPipeline(deferredRenderPass, geometryPassDescriptorSetLayout);
 	geometryPassPipelineLayout = m_geometryPassPipeline->getPipelineLayout();
 	geometryPassGraphicsPipeline = m_geometryPassPipeline->getPipeline();
 
-	m_lightingPassPipeline = Pipeline::createLightingPassPipeline(deferredRenderPass, lightingPassDescriptorSetLayout);
+	m_lightingPassPipeline->initLightingPassPipeline(deferredRenderPass, lightingPassDescriptorSetLayout);
 	lightingPassPipelineLayout = m_lightingPassPipeline->getPipelineLayout();
 	lightingPassGraphicsPipeline = m_lightingPassPipeline->getPipeline();
 
-	m_lightingPassShaderResourceManager = ShaderResourceManager::createLightingPassShaderResourceManager(
+	m_lightingPassShaderResourceManager->initLightingPassShaderResourceManager(
 		lightingPassDescriptorSetLayout, m_viewPortFrameBuffers->getPositionImageView(),
 		m_viewPortFrameBuffers->getNormalImageView(), m_viewPortFrameBuffers->getAlbedoImageView(),
 		m_viewPortFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
-		shadowCubeMapSampler);
+		shadowCubeMapSampler, backgroundImageView, backgroundSampler);
 
 	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
 	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
 
-	m_viewPortShaderResourceManager = ShaderResourceManager::createViewPortShaderResourceManager(
-		viewPortDescriptorSetLayout, viewPortImageView, viewPortSampler);
+	m_viewPortShaderResourceManager->initViewPortShaderResourceManager(viewPortDescriptorSetLayout, viewPortImageView,
+																	   viewPortSampler);
 	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
 }
 
@@ -385,7 +428,6 @@ void Renderer::drawFrame(Scene *scene)
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
-	recordSphericalMapCommandBuffer(commandBuffers[currentFrame]);
 	auto view = scene->getAllEntitiesWith<LightComponent>();
 
 	uint32_t shadowMapIndex = 0;
@@ -400,6 +442,7 @@ void Renderer::drawFrame(Scene *scene)
 		}
 	}
 
+	recordBackgroundCommandBuffer(commandBuffers[currentFrame]);
 	recordDeferredRenderPassCommandBuffer(scene, commandBuffers[currentFrame], imageIndex,
 										  shadowMapIndex); // 현재 작업할 image의 index와 commandBuffer를 전송
 
@@ -882,8 +925,9 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 						 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrierToShaderRead);
 }
 
-void Renderer::recordSphericalMapCommandBuffer(VkCommandBuffer commandBuffer)
+void Renderer::recordSphericalMapCommandBuffer()
 {
+	VkCommandBuffer commandBuffer = VulkanUtil::beginSingleTimeCommands(device, commandPool);
 	VkClearValue clearValue{};
 	clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
 
@@ -910,10 +954,10 @@ void Renderer::recordSphericalMapCommandBuffer(VkCommandBuffer commandBuffer)
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(-1.0f, 0.0f, 0.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
 
 		// **Top (+Y) - layerIndex 2**
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
 
 		// **Bottom (-Y) - layerIndex 3**
-		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, -1.0f, 0.0f), glm::vec3(0.0f, 0.0f, -1.0f)),
+		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 1.0f, 0.0f), glm::vec3(0.0f, 0.0f, 1.0f)),
 
 		// **Front (+Z) - layerIndex 4**
 		glm::lookAt(glm::vec3(0.0f), glm::vec3(0.0f, 0.0f, 1.0f), glm::vec3(0.0f, -1.0f, 0.0f)),
@@ -931,6 +975,57 @@ void Renderer::recordSphericalMapCommandBuffer(VkCommandBuffer commandBuffer)
 		sphericalMapUniformBuffers[i]->updateUniformBuffer(&ubo, sizeof(ubo));
 		vkCmdDraw(commandBuffer, 36, 1, 0, 0);
 	}
+	vkCmdEndRenderPass(commandBuffer);
+	VulkanUtil::endSingleTimeCommands(device, graphicsQueue, commandPool, commandBuffer);
+}
+
+void Renderer::recordBackgroundCommandBuffer(VkCommandBuffer commandBuffer)
+{
+	VkClearValue clearValue{};
+	clearValue.color = {0.0f, 0.0f, 0.0f, 1.0f};
+
+	VkRenderPassBeginInfo renderPassInfo{};
+	renderPassInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
+	renderPassInfo.renderPass = backgroundRenderPass;
+	renderPassInfo.framebuffer = backgroundFramebuffers[currentFrame];
+	renderPassInfo.renderArea.offset = {0, 0};
+	renderPassInfo.renderArea.extent = {static_cast<uint32_t>(viewPortSize.x), static_cast<uint32_t>(viewPortSize.y)};
+	renderPassInfo.clearValueCount = 1;
+	renderPassInfo.pClearValues = &clearValue;
+
+	vkCmdBeginRenderPass(commandBuffer, &renderPassInfo, VK_SUBPASS_CONTENTS_INLINE);
+
+	vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundGraphicsPipeline);
+
+	VkViewport viewport{};
+	viewport.x = 0.0f;
+	viewport.y = 0.0f;
+	viewport.width = viewPortSize.x;
+	viewport.height = viewPortSize.y;
+	viewport.minDepth = 0.0f;
+	viewport.maxDepth = 1.0f;
+	vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
+
+	VkRect2D scissor{};
+	scissor.offset = {0, 0};
+	scissor.extent = {static_cast<uint32_t>(viewPortSize.x), static_cast<uint32_t>(viewPortSize.y)};
+	vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
+
+	glm::mat4 projection = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
+	projection[1][1] *= -1;
+
+	glm::mat4 view = viewMatirx;
+
+	vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, backgroundPipelineLayout, 0, 1,
+							&backgroundDescriptorSets[currentFrame], 0, nullptr);
+
+	BackgroundUniformBufferObject ubo{};
+	ubo.proj = projection;
+	ubo.view = view;
+	backgroundUniformBuffers[currentFrame]->updateUniformBuffer(&ubo, sizeof(ubo));
+
+	vkCmdDraw(commandBuffer, 36, 1, 0, 0);
+
 	vkCmdEndRenderPass(commandBuffer);
 }
 

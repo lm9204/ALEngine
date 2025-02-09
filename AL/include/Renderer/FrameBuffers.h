@@ -16,6 +16,7 @@ class FrameBuffers
 	static std::unique_ptr<FrameBuffers> createShadowMapFrameBuffers(VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createShadowCubeMapFrameBuffers(VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createSphericalMapFrameBuffers(VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createBackgroundFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass);
 
 	~FrameBuffers() = default;
 
@@ -26,6 +27,7 @@ class FrameBuffers
 	void initShadowMapFrameBuffers(VkRenderPass renderPass);
 	void initShadowCubeMapFrameBuffers(VkRenderPass renderPass);
 	void initSphericalMapFrameBuffers(VkRenderPass renderPass);
+	void initBackgroundFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass);
 
 	VkFramebuffer &getSphericalMapFramebuffer()
 	{
@@ -75,6 +77,14 @@ class FrameBuffers
 	{
 		return viewPortImage;
 	}
+	VkImageView &getBackgroundImageView()
+	{
+		return backgroundImageView;
+	}
+	VkImage &getBackgroundImage()
+	{
+		return backgroundImage;
+	}
 
   private:
 	VkImage depthImage;
@@ -104,6 +114,10 @@ class FrameBuffers
 	VkImage sphericalMapImage;
 	VkDeviceMemory sphericalMapImageMemory;
 	VkImageView sphericalMapImageView;
+
+	VkImage backgroundImage;
+	VkDeviceMemory backgroundImageMemory;
+	VkImageView backgroundImageView;
 
 	std::vector<VkFramebuffer> framebuffers;
 };

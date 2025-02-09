@@ -51,6 +51,10 @@ void FrameBuffers::cleanup()
 	vkDestroyImage(device, sphericalMapImage, nullptr);
 	vkFreeMemory(device, sphericalMapImageMemory, nullptr);
 
+	vkDestroyImageView(device, backgroundImageView, nullptr);
+	vkDestroyImage(device, backgroundImage, nullptr);
+	vkFreeMemory(device, backgroundImageMemory, nullptr);
+
 	for (auto framebuffer : framebuffers)
 	{
 		vkDestroyFramebuffer(device, framebuffer, nullptr);
@@ -284,6 +288,47 @@ void FrameBuffers::initSphericalMapFrameBuffers(VkRenderPass renderPass)
 	if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[0]) != VK_SUCCESS)
 	{
 		throw std::runtime_error("Failed to create spherical map framebuffer!");
+	}
+}
+
+std::unique_ptr<FrameBuffers> FrameBuffers::createBackgroundFrameBuffers(glm::vec2 viewPortSize,
+																		 VkRenderPass renderPass)
+{
+	std::unique_ptr<FrameBuffers> frameBuffers = std::unique_ptr<FrameBuffers>(new FrameBuffers());
+	frameBuffers->initBackgroundFrameBuffers(viewPortSize, renderPass);
+	return frameBuffers;
+}
+
+void FrameBuffers::initBackgroundFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass)
+{
+	auto &context = VulkanContext::getContext();
+	VkDevice device = context.getDevice();
+
+	VkExtent2D extent = {static_cast<uint32_t>(viewPortSize.x), static_cast<uint32_t>(viewPortSize.y)};
+
+	VulkanUtil::createImage(extent.width, extent.height, 1, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R16G16B16A16_SFLOAT,
+							VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, backgroundImage, backgroundImageMemory);
+
+	backgroundImageView =
+		VulkanUtil::createImageView(backgroundImage, VK_FORMAT_R16G16B16A16_SFLOAT, VK_IMAGE_ASPECT_COLOR_BIT, 1);
+
+	framebuffers.resize(MAX_FRAMES_IN_FLIGHT);
+	for (size_t i = 0; i < MAX_FRAMES_IN_FLIGHT; i++)
+	{
+		VkFramebufferCreateInfo framebufferInfo{};
+		framebufferInfo.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
+		framebufferInfo.renderPass = renderPass;
+		framebufferInfo.attachmentCount = 1;
+		framebufferInfo.pAttachments = &backgroundImageView;
+		framebufferInfo.width = extent.width;
+		framebufferInfo.height = extent.height;
+		framebufferInfo.layers = 1;
+
+		if (vkCreateFramebuffer(device, &framebufferInfo, nullptr, &framebuffers[i]) != VK_SUCCESS)
+		{
+			throw std::runtime_error("Failed to create background framebuffer!");
+		}
 	}
 }
 

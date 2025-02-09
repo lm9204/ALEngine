@@ -21,6 +21,15 @@ class Pipeline
 																 VkDescriptorSetLayout descriptorSetLayout);
 	static std::unique_ptr<Pipeline> createSphericalMapPipeline(VkRenderPass renderPass,
 																VkDescriptorSetLayout descriptorSetLayout);
+	static std::unique_ptr<Pipeline> createBackgroundPipeline(VkRenderPass renderPass,
+															  VkDescriptorSetLayout descriptorSetLayout);
+
+	void initGeometryPassPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+	void initLightingPassPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+	void initShadowMapPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+	void initShadowCubeMapPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+	void initSphericalMapPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
+	void initBackgroundPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
 
 	~Pipeline() = default;
 
@@ -39,11 +48,6 @@ class Pipeline
 	VkPipelineLayout pipelineLayout;
 	VkPipeline pipeline;
 
-	void initGeometryPassPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
-	void initLightingPassPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
-	void initShadowMapPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
-	void initShadowCubeMapPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
-	void initSphericalMapPipeline(VkRenderPass renderPass, VkDescriptorSetLayout descriptorSetLayout);
 	VkShaderModule createShaderModule(const std::vector<char> &code);
 };
 } // namespace ale

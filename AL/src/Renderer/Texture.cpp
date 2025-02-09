@@ -353,6 +353,40 @@ VkSampler Texture::createSphericalMapSampler()
 	return sphericalMapSampler;
 }
 
+VkSampler Texture::createBackgroundSampler()
+{
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+	auto physicalDevice = context.getPhysicalDevice();
+
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;							// 확대 시 선형 필터링
+	samplerInfo.minFilter = VK_FILTER_LINEAR;							// 축소 시 선형 필터링
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// U축 클램핑
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// V축 클램핑
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// W축 클램핑
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;		// 경계 색상
+	samplerInfo.anisotropyEnable = VK_TRUE;								// 이방성 필터링 활성화
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // 디바이스에서 지원하는 최대 이방성 값
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;				// Mipmap 보간 모드
+	samplerInfo.minLod = 0.0f;											// 최소 LOD
+	samplerInfo.maxLod = VK_LOD_CLAMP_NONE;								// 최대 LOD
+	samplerInfo.mipLodBias = 0.0f;										// Mipmap Bias 비활성화
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;						// 정규화된 텍스처 좌표 사용
+
+	VkSampler backgroundSampler;
+	if (vkCreateSampler(device, &samplerInfo, nullptr, &backgroundSampler) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create background sampler!");
+	}
+
+	return backgroundSampler;
+}
+
 std::shared_ptr<Texture> Texture::createTextureFromMemory(const aiTexture *aiTexture)
 {
 	std::shared_ptr<Texture> texture = std::shared_ptr<Texture>(new Texture());

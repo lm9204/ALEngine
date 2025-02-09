@@ -222,6 +222,12 @@ struct SphericalMapUniformBufferObject
 	alignas(4) uint32_t layerIndex;
 };
 
+struct BackgroundUniformBufferObject
+{
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::mat4 view;
+};
+
 } // namespace ale
 
 #endif

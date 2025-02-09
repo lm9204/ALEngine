@@ -158,9 +158,17 @@ void DescriptorSetLayout::initLightingPassDescriptorSetLayout()
 	shadowCubeMapBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
 	shadowCubeMapBinding.pImmutableSamplers = nullptr;
 
-	std::array<VkDescriptorSetLayoutBinding, 7> bindings = {
+	// Background Sampler
+	VkDescriptorSetLayoutBinding backgroundBinding{};
+	backgroundBinding.binding = 7;
+	backgroundBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	backgroundBinding.descriptorCount = 1;
+	backgroundBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	backgroundBinding.pImmutableSamplers = nullptr;
+
+	std::array<VkDescriptorSetLayoutBinding, 8> bindings = {
 		positionAttachmentBinding, normalAttachmentBinding, albedoAttachmentBinding, pbrAttachmentBinding,
-		lightingUBOBinding,		   shadowMapBinding,		shadowCubeMapBinding};
+		lightingUBOBinding,		   shadowMapBinding,		shadowCubeMapBinding,	 backgroundBinding};
 
 	VkDescriptorSetLayoutCreateInfo layoutInfo{};
 	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
@@ -320,4 +328,44 @@ void DescriptorSetLayout::initSphericalMapDescriptorSetLayout()
 	}
 }
 
+std::unique_ptr<DescriptorSetLayout> DescriptorSetLayout::createBackgroundDescriptorSetLayout()
+{
+	std::unique_ptr<DescriptorSetLayout> descriptorSetLayout =
+		std::unique_ptr<DescriptorSetLayout>(new DescriptorSetLayout());
+	descriptorSetLayout->initBackgroundDescriptorSetLayout();
+	return descriptorSetLayout;
+}
+
+void DescriptorSetLayout::initBackgroundDescriptorSetLayout()
+{
+	auto &context = VulkanContext::getContext();
+
+	VkDevice device = context.getDevice();
+
+	VkDescriptorSetLayoutBinding skyboxUniformBufferBinding{};
+	skyboxUniformBufferBinding.binding = 0;
+	skyboxUniformBufferBinding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+	skyboxUniformBufferBinding.descriptorCount = 1;
+	skyboxUniformBufferBinding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+	skyboxUniformBufferBinding.pImmutableSamplers = nullptr;
+
+	VkDescriptorSetLayoutBinding skyboxTextureBinding{};
+	skyboxTextureBinding.binding = 1;
+	skyboxTextureBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	skyboxTextureBinding.descriptorCount = 1;
+	skyboxTextureBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	skyboxTextureBinding.pImmutableSamplers = nullptr;
+
+	std::array<VkDescriptorSetLayoutBinding, 2> bindings = {skyboxUniformBufferBinding, skyboxTextureBinding};
+
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = static_cast<uint32_t>(bindings.size());
+	layoutInfo.pBindings = bindings.data();
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create skybox descriptor set layout!");
+	}
+}
 } // namespace ale

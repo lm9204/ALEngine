@@ -30,6 +30,7 @@ layout(binding = 4) uniform LightingInfo {
 
 layout(binding = 5) uniform sampler2DShadow shadowMap[4];
 layout(binding = 6) uniform samplerCube shadowCubeMap[4];
+layout(binding = 7) uniform sampler2D background;
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
@@ -104,7 +105,7 @@ void main() {
     uint shadowMapIndex = 0;
 
     if (fragPosition.x >= FLT_MAX) {
-        outColor = vec4(1.0, 0.0, 0.0, 1.0);
+        outColor = texture(background, fragTexCoord);
         return;
     }
 
