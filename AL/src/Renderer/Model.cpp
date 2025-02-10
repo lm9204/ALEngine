@@ -1,33 +1,62 @@
 #include "Renderer/Model.h"
+#include "Core/App.h"
 #include "Renderer/ShaderResourceManager.h"
 
 namespace ale
 {
 std::shared_ptr<Model> Model::createModel(std::string path, std::shared_ptr<Material> &defaultMaterial)
 {
+	auto &renderer = App::get().getRenderer();
+	auto &modelsMap = renderer.getModelsMap();
+	if (modelsMap.find(path) != modelsMap.end())
+	{
+		return modelsMap[path];
+	}
 	std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 	model->initModel(path, defaultMaterial);
+	modelsMap[path] = model;
 	return model;
 }
 
 std::shared_ptr<Model> Model::createBoxModel(std::shared_ptr<Material> &defaultMaterial)
 {
+	auto &renderer = App::get().getRenderer();
+	auto &modelsMap = renderer.getModelsMap();
+	if (modelsMap.find("box") != modelsMap.end())
+	{
+		return modelsMap["box"];
+	}
 	std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 	model->initBoxModel(defaultMaterial);
+	modelsMap["box"] = model;
 	return model;
 }
 
 std::shared_ptr<Model> Model::createSphereModel(std::shared_ptr<Material> &defaultMaterial)
 {
+	auto &renderer = App::get().getRenderer();
+	auto &modelsMap = renderer.getModelsMap();
+	if (modelsMap.find("sphere") != modelsMap.end())
+	{
+		return modelsMap["sphere"];
+	}
 	std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 	model->initSphereModel(defaultMaterial);
+	modelsMap["sphere"] = model;
 	return model;
 }
 
 std::shared_ptr<Model> Model::createPlaneModel(std::shared_ptr<Material> &defaultMaterial)
 {
+	auto &renderer = App::get().getRenderer();
+	auto &modelsMap = renderer.getModelsMap();
+	if (modelsMap.find("plane") != modelsMap.end())
+	{
+		return modelsMap["plane"];
+	}
 	std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
 	model->initPlaneModel(defaultMaterial);
+	modelsMap["plane"] = model;
 	return model;
 }
 
