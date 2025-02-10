@@ -2,12 +2,12 @@
 This is an GAME ENGINE made by 42 Very-Real-Engine Team.
 
 ### Table of Contents
-1. [Introduction](#introduction)
-2. [Core Features](#core-features)
-3. [Project Structure](#project-structure)
-4. [Setup and Requirements](#setup-and-requirements)
-5. [Running the Project](#running-the-project)
-6. [Documentation](#documentation)
+1. [Introduction](#1-introduction)
+2. [Core Features](#2-core-features)
+3. [Project Structure](#3-project-structure)
+4. [Setup and Requirements](#4-setup-and-requirements)
+5. [Running the Project](#5-running-the-project)
+6. [Documentation](#6-documentation)
 
 ---
 
