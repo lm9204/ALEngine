@@ -10,7 +10,6 @@ const int32_t MAX_STACK_ENTRY_SIZE = 32;
 struct StackEntry
 {
 	char *data;
-	bool usedMalloc;
 	int32_t size;
 };
 
@@ -26,8 +25,6 @@ class StackAllocator
   private:
 	char m_data[STACK_SIZE];
 	int32_t m_index;
-
-	int32_t m_allocation;
 
 	StackEntry m_entries[MAX_STACK_ENTRY_SIZE];
 	int32_t m_entryCount;
