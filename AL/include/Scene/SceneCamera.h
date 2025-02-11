@@ -12,6 +12,8 @@ class SceneCamera : public Camera
   public:
 	SceneCamera() = default;
 	virtual ~SceneCamera() = default;
+
+	void updateSceneCamera(glm::vec3 &pos, glm::vec3 &rot);
 };
 } // namespace ale
 
