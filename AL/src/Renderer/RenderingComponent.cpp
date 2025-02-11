@@ -1,4 +1,5 @@
 #include "Renderer/RenderingComponent.h"
+#include "Scene/CullTree.h"
 
 namespace ale
 {
@@ -52,6 +53,11 @@ void RenderingComponent::drawShadowCubeMap(ShadowCubeMapDrawInfo &drawInfo, uint
 {
 	drawInfo.shaderResourceManager = m_shadowCubeMapResourceManager[index].get();
 	m_model->drawShadowCubeMap(drawInfo);
+}
+
+CullSphere RenderingComponent::getCullSphere()
+{
+	return m_model->initCullSphere();
 }
 
 } // namespace ale

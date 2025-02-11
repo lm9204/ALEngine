@@ -598,17 +598,17 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 	drawComponent<CameraComponent>("Camera", entity, [](auto &component) {
 		auto &camera = component.m_Camera;
 
-		float perspectiveVerticalFov = glm::degrees(camera.getPerspectiveVerticalFOV());
+		float perspectiveVerticalFov = glm::degrees(camera.getFov());
 		if (ImGui::DragFloat("Vertical FOV", &perspectiveVerticalFov))
-			camera.setPerspectiveVerticalFOV(glm::radians(perspectiveVerticalFov));
+			camera.setFov(glm::radians(perspectiveVerticalFov));
 
-		float perspectiveNear = camera.getPerspectiveNearClip();
+		float perspectiveNear = camera.getNear();
 		if (ImGui::DragFloat("Near", &perspectiveNear))
-			camera.setPerspectiveNearClip(perspectiveNear);
+			camera.setNear(perspectiveNear);
 
-		float perspectiveFar = camera.getPerspectiveFarClip();
+		float perspectiveFar = camera.getFar();
 		if (ImGui::DragFloat("Far", &perspectiveFar))
-			camera.setPerspectiveFarClip(perspectiveFar);
+			camera.setFar(perspectiveFar);
 	});
 
 	drawComponent<MeshRendererComponent>("MeshRenderer", entity, [entity, scene = m_Context](auto &component) mutable {

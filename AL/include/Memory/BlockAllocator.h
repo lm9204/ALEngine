@@ -33,12 +33,12 @@ class BlockAllocator
   private:
 	Chunk *m_chunks;	  // 전체 청크 메모리
 	int32_t m_chunkCount; // 사용 중인 청크 수
-	int32_t m_chunkSpace; // 남은 청크 공간
+	int32_t m_chunkSpace; // 전체 청크 공간
 
 	Block *m_availableBlocks[BLOCK_SIZE_COUNT];
 
-	static int32_t blockSizes[BLOCK_SIZE_COUNT];
-	static uint8_t blockSizeLookup[MAX_BLOCK_SIZE + 1];
-	static bool blockSizeLookupInitialized;
+	static int32_t s_blockSizes[BLOCK_SIZE_COUNT];
+	static uint8_t s_blockSizeLookup[MAX_BLOCK_SIZE + 1];
+	static bool s_blockSizeLookupInitialized;
 };
 } // namespace ale

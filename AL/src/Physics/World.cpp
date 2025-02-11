@@ -64,13 +64,12 @@ void World::runPhysics(float duration)
 
 	// std::cout << "transform setting\n";
 
-	// body = m_rigidbodies;
-
-	// while (body != nullptr)
-	// {
-	// 	m_app.setTransformById(body->getTransformId(), body->getTransform());
-	// 	body = body->next;
-	// }
+	body = m_rigidbodies;
+	while (body != nullptr)
+	{
+		body->accumulateMovement();
+		body = body->next;
+	}
 }
 
 void World::solve(float duration)

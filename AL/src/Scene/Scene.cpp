@@ -1,5 +1,6 @@
 #include "Scene/Scene.h"
 #include "Scene/Component.h"
+#include "Scene/CullTree.h"
 #include "Scene/Entity.h"
 #include "Scene/ScriptableEntity.h"
 
@@ -179,12 +180,17 @@ void Scene::onUpdateRuntime(Timestep ts)
 				Entity entity = {e, this};
 				auto &tf = entity.getComponent<TransformComponent>();
 				auto &rb = entity.getComponent<RigidbodyComponent>();
+				auto &mr = entity.getComponent<MeshRendererComponent>();
 
 				Rigidbody *body = (Rigidbody *)rb.body;
 
 				tf.m_Position = body->getTransform().position;
 				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
 				tf.m_WorldTransform = tf.getTransform();
+				if (body->isMoved(mr.cullSphere.radius * tf.getMaxScale()) == true)
+				{
+					tf.m_isMoved = true;
+				}
 			}
 		}
 	}
@@ -259,6 +265,8 @@ void Scene::initScene()
 	m_boxModel = Model::createBoxModel(m_defaultMaterial);
 	m_sphereModel = Model::createSphereModel(m_defaultMaterial);
 	m_planeModel = Model::createPlaneModel(m_defaultMaterial);
+
+	m_cullTree.setScene(this);
 }
 
 void Scene::renderScene(EditorCamera &camera)
@@ -463,6 +471,37 @@ Entity Scene::getEntityByUUID(UUID uuid)
 	return {};
 }
 
+int32_t Scene::insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle)
+{
+	return m_cullTree.createNode(sphere, static_cast<uint32_t>(entityHandle));
+}
+
+void Scene::printCullTree()
+{
+	m_cullTree.printCullTree(m_cullTree.getRootNodeId());
+}
+
+void Scene::removeEntityInCullTree(int32_t nodeId)
+{
+	m_cullTree.destroyNode(nodeId);
+}
+
+void Scene::frustumCulling(const Frustum &frustum)
+{
+	m_cullTree.updateTree();
+
+	int32_t root = m_cullTree.getRootNodeId();
+	if (root != NULL_NODE)
+	{
+		m_cullTree.frustumCulling(frustum, root);
+	}
+}
+
+void Scene::initFrustumDrawFlag()
+{
+	m_cullTree.setRenderDisable(m_cullTree.getRootNodeId());
+}
+
 // 컴파일 타임에 조건 확인
 template <typename T> void Scene::onComponentAdded(Entity entity, T &component)
 {
@@ -496,7 +535,15 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 	component.type = 0;
 	component.m_RenderingComponent =
 		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
+	component.cullSphere = component.m_RenderingComponent->getCullSphere();
 
+	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
+
+	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
+					  component.cullSphere.radius * transformComponent.getMaxScale()); 
+
+	// cullTree에 추가 sphere
+	component.nodeId = insertEntityInCullTree(sphere, entity);
 	auto &bc = entity.addComponent<BoxColliderComponent>();
 }
 

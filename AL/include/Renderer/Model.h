@@ -7,9 +7,11 @@
 #include "Renderer/Material.h"
 #include "Renderer/Mesh.h"
 #include "Renderer/OBJLoader.h"
+
 #include <assimp/Importer.hpp>
 #include <assimp/postprocess.h>
 #include <assimp/scene.h>
+
 
 namespace ale
 {
@@ -49,6 +51,8 @@ struct ShadowCubeMapDrawInfo
 	uint32_t currentFrame;
 };
 
+struct CullSphere;
+
 class Model
 {
   public:
@@ -56,12 +60,16 @@ class Model
 	static std::shared_ptr<Model> createBoxModel(std::shared_ptr<Material> &defaultMaterial);
 	static std::shared_ptr<Model> createSphereModel(std::shared_ptr<Material> &defaultMaterial);
 	static std::shared_ptr<Model> createPlaneModel(std::shared_ptr<Material> &defaultMaterial);
+	
+
 	~Model() = default;
 	void cleanup();
 
 	void draw(DrawInfo &drawInfo);
 	void drawShadow(ShadowMapDrawInfo &drawInfo);
 	void drawShadowCubeMap(ShadowCubeMapDrawInfo &drawInfo);
+	CullSphere initCullSphere();
+
 	size_t getMeshCount()
 	{
 		return m_meshes.size();

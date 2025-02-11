@@ -1,6 +1,7 @@
 #include "Renderer/Model.h"
 #include "Core/App.h"
 #include "Renderer/ShaderResourceManager.h"
+#include "Scene/CullTree.h"
 
 namespace ale
 {
@@ -575,4 +576,18 @@ std::shared_ptr<Texture> Model::loadMaterialTexture(const aiScene *scene, aiMate
 		return Texture::createMaterialTexture(getMaterialPath(path, texturePath.C_Str()));
 	}
 }
+
+CullSphere Model::initCullSphere()
+{
+	glm::vec3 maxPos(-FLT_MAX);
+	glm::vec3 minPos(FLT_MIN);
+	for (auto &mesh : m_meshes)
+	{
+		maxPos = glm::max(maxPos, mesh->getMaxPos());
+		minPos = glm::min(minPos, mesh->getMinPos());
+	}
+
+	return CullSphere((maxPos + minPos) * 0.5f, glm::length(maxPos - minPos) * 0.5f);
+}
+
 } // namespace ale

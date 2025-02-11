@@ -7,6 +7,9 @@
 
 namespace ale
 {
+
+struct CullSphere;
+
 class RenderingComponent
 {
   public:
@@ -17,6 +20,8 @@ class RenderingComponent
 	void drawShadow(ShadowMapDrawInfo &drawInfo, uint32_t index);
 	void drawShadowCubeMap(ShadowCubeMapDrawInfo &drawInfo, uint32_t index);
 	void updateMaterial(std::vector<std::shared_ptr<Material>> materials);
+
+	CullSphere getCullSphere();
 
 	std::vector<std::shared_ptr<Material>> &getMaterials()
 	{

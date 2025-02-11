@@ -176,9 +176,9 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		auto &camera = cc.m_Camera;
 		out << YAML::Key << "Camera";
 		out << YAML::BeginMap;
-		out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.getPerspectiveVerticalFOV();
-		out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.getPerspectiveNearClip();
-		out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.getPerspectiveFarClip();
+		out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.getFov();
+		out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.getNear();
+		out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.getFar();
 		out << YAML::EndMap;
 
 		out << YAML::Key << "Primary" << YAML::Value << cc.m_Primary;
@@ -421,9 +421,9 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				auto &cc = deserializedEntity.addComponent<CameraComponent>();
 				auto &cameraProps = cameraComponent["Camera"];
 
-				cc.m_Camera.setPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
-				cc.m_Camera.setPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-				cc.m_Camera.setPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
+				cc.m_Camera.setFov(cameraProps["PerspectiveFOV"].as<float>());
+				cc.m_Camera.setNear(cameraProps["PerspectiveNear"].as<float>());
+				cc.m_Camera.setFar(cameraProps["PerspectiveFar"].as<float>());
 
 				cc.m_Primary = cameraComponent["Primary"].as<bool>();
 				cc.m_FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();

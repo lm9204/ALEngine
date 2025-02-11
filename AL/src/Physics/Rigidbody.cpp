@@ -33,6 +33,7 @@ Rigidbody::Rigidbody(const BodyDef *bd, World *world)
 
 	m_xf.position = bd->m_position;
 	m_xf.orientation = bd->m_orientation;
+	m_accumulatedPos = glm::vec3(0.0f);
 
 	m_linearVelocity = bd->m_linearVelocity;
 	m_angularVelocity = bd->m_angularVelocity;
@@ -191,6 +192,25 @@ void Rigidbody::clearAccumulators()
 	m_torqueAccum.x = 0;
 	m_torqueAccum.y = 0;
 	m_torqueAccum.z = 0;
+}
+
+bool Rigidbody::isMoved(float radius)
+{
+	float length2 = glm::length2(m_accumulatedPos);
+	if (length2 > radius * radius)
+	{
+		m_accumulatedPos = glm::vec3(0.0f);
+		return true;
+	}
+	else
+	{
+		return false;
+	}
+}
+
+void Rigidbody::accumulateMovement()
+{
+	m_accumulatedPos += m_xf.position - m_sweep.p;
 }
 
 glm::vec3 Rigidbody::getPointInWorldSpace(const glm::vec3 &point) const

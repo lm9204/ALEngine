@@ -1,10 +1,8 @@
 #include "EditorLayer.h"
-#include "Scene/SceneSerializer.h"
-#include "Utils/PlatformUtils.h"
-
 #include "Renderer/RenderingComponent.h"
-
+#include "Scene/SceneSerializer.h"
 #include "Scripting/ScriptingEngine.h"
+#include "Utils/PlatformUtils.h"
 
 #include "Project/Project.h"
 
@@ -408,6 +406,11 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 		m_ActiveScene = m_EditorScene;
 		m_EditorScenePath = path;
 	}
+
+	// create CullTree
+	auto view = newScene->getAllEntitiesWith<MeshRendererComponent, TransformComponent>();
+
+	// newScene->printCullTree();
 
 	// loadSceneToRenderer(m_ActiveScene);
 }

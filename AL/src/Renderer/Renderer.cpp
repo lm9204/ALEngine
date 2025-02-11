@@ -280,11 +280,21 @@ void Renderer::loadScene(Scene *scene)
 
 void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 {
-	// projMatrix = camera.getProjection();
-	// projMatrix = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
+	// frustum culling
+	// AL_CORE_INFO("frustum culling start");
+	// scene->frustumCulling(camera.getFrustum());
+	// AL_CORE_INFO("frustum culling finish");
+
+	projMatrix = camera.getProjection();
 	viewMatirx = camera.getView();
 
 	drawFrame(scene);
+
+	// AL_CORE_INFO("before init Frustum");
+	// scene->printCullTree();
+	// scene->initFrustumDrawFlag();
+	// AL_CORE_INFO("after init Frustum");
+	// scene->printCullTree();
 }
 
 void Renderer::beginScene(Scene *scene, Camera &camera)
@@ -548,12 +558,20 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	drawInfo.projection = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
 	drawInfo.projection[1][1] *= -1;
 
+	// int32_t drawNum = 0;
 	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->draw(drawInfo);
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		// if (meshRendererComponent.renderEnabled == true)
+		// {
+			// drawNum++;
+			meshRendererComponent.m_RenderingComponent->draw(drawInfo);
+		// }
 	}
+
+	// AL_CORE_INFO("draw Num = {}", drawNum);
 
 	vkCmdNextSubpass(commandBuffer, VK_SUBPASS_CONTENTS_INLINE);
 
