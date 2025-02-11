@@ -28,6 +28,10 @@ namespace ALEngine
 		internal extern static void TransformComponent_getPosition(ulong entityID, out Vector3 translation);
 		[MethodImplAttribute(MethodImplOptions.InternalCall)]
 		internal extern static void TransformComponent_setPosition(ulong entityID, ref Vector3 translation);
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		internal extern static void TransformComponent_getRotation(ulong entityID, out Vector3 rotation);
+		[MethodImplAttribute(MethodImplOptions.InternalCall)]
+		internal extern static void TransformComponent_setRotation(ulong entityID, ref Vector3 rotation);
 		#endregion
 
 		#region RigidbodyComponent

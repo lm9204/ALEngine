@@ -102,9 +102,9 @@ void EditorCamera::updateView()
 					glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraPitch), glm::vec3(1.0f, 0.0f, 0.0f)) *
 					glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
 	// m_View = glm::lookAt(m_CameraPos, m_CameraPos + m_CameraFront, m_CameraUp);
-	setViewMatrix(m_cameraPos, m_cameraFront, m_cameraUp);
+	// setViewMatrix(m_cameraPos, m_cameraFront, m_cameraUp);
+	updateViewMatrix();
 }
-
 
 const Frustum &EditorCamera::getFrustum()
 {
@@ -132,7 +132,6 @@ const Frustum &EditorCamera::getFrustum()
 	// AL_CORE_INFO("cameraFront: {}, {}, {}", m_cameraFront.x, m_cameraFront.y, m_cameraFront.z);
 	// AL_CORE_INFO("cameraUp: {}, {}, {}", m_cameraUp.x, m_cameraUp.y, m_cameraUp.z);
 
-
 	farYscale.y = m_far * tan(m_fov / 2.0f);
 	farXscale.x = m_aspect * farYscale.y;
 
@@ -156,7 +155,6 @@ const Frustum &EditorCamera::getFrustum()
 	nearPoint[3] = toWorldMatrix * glm::vec4((nearPoint[0] - nearYscale + nearXscale), 1.0f);
 	nearPoint[4] = toWorldMatrix * glm::vec4((nearPoint[0] + nearYscale + nearXscale), 1.0f);
 
-
 	// AL_CORE_INFO("\n\n\nnear!!");
 	// for (int i = 1; i < 5; i++)
 	// {
@@ -175,8 +173,8 @@ const Frustum &EditorCamera::getFrustum()
 	// for (int i = 0; i < 6; i++)
 	// {
 	// 	AL_CORE_INFO("plane[{}]", i);
-	// 	AL_CORE_INFO("normal : {}, {}, {}", m_frustum.plane[i].normal.x, m_frustum.plane[i].normal.y, m_frustum.plane[i].normal.z);
-	// 	AL_CORE_INFO("distance: {}", m_frustum.plane[i].distance);
+	// 	AL_CORE_INFO("normal : {}, {}, {}", m_frustum.plane[i].normal.x, m_frustum.plane[i].normal.y,
+	// m_frustum.plane[i].normal.z); 	AL_CORE_INFO("distance: {}", m_frustum.plane[i].distance);
 	// }
 
 	return m_frustum;

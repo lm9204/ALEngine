@@ -20,6 +20,10 @@ Entities:
       Drag: 0.00100000005
       AngularDrag: 0.00100000005
       UseGravity: false
+    BoxColliderComponent:
+      Center: [0, 0, 0]
+      Size: [1, 1, 1]
+      IsTrigger: false
     SphereColliderComponent:
       Center: [0, 0, 0]
       Radius: 1
@@ -28,7 +32,7 @@ Entities:
     TagComponent:
       Tag: Camera
     TransformComponent:
-      Position: [0, 0, 0]
+      Position: [0, 0, 20]
       Rotation: [0, 0, 0]
       Scale: [1, 1, 1]
     CameraComponent:
@@ -38,6 +42,15 @@ Entities:
         PerspectiveFar: 100
       Primary: true
       FixedAspectRatio: false
+    ScriptComponent:
+      ClassName: Sandbox.Camera
+      ScriptFields:
+        - Name: RotSpeed
+          Type: Float
+          Data: 2
+        - Name: Speed
+          Type: Float
+          Data: 10
   - Entity: 2187969428862952050
     TagComponent:
       Tag: Light

@@ -35,8 +35,6 @@ class EditorCamera : public Camera
 	bool m_CameraControl{false};
 	const float m_Speed{0.005f};
 	const float m_RotSpeed{0.8f};
-	float m_CameraPitch{0.0f};
-	float m_CameraYaw{0.0f};
 };
 
 } // namespace ale
