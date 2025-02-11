@@ -42,6 +42,7 @@ Rigidbody::Rigidbody(const BodyDef *bd, World *world)
 	m_angularDamping = bd->m_angularDamping;
 	m_gravityScale = bd->m_gravityScale;
 
+	m_useGravity = bd->m_useGravity;
 	m_canSleep = bd->m_canSleep;
 	m_isAwake = bd->m_isAwake;
 	m_sleepTime = 0.0f;

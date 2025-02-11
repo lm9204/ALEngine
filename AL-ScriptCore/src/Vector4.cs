@@ -30,19 +30,21 @@ namespace ALEngine
 			W = w;
 		}
 
-		public Vector2 XY
+		public Vector4 XYZW
 		{
-			get => new Vector2(X, Y);
+			get => new Vector4(X, Y, Z, W);
 			set
 			{
 				X = value.X;
 				Y = value.Y;
+				Z = value.Z;
+				W = value.W;
 			}
 		}
 
-		public Vector3 XYZ
+		public Vector4 XYZ
 		{
-			get => new Vector3(X, Y, Z);
+			get => new Vector4(X, Y, Z, 0);
 			set
 			{
 				X = value.X;
