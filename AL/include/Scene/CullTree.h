@@ -1,7 +1,7 @@
 #pragma once
 
 #include "Renderer/Common.h"
-#include "Scene/Entity.h"
+#include "Core/Log.h"
 
 namespace ale
 {
@@ -13,7 +13,12 @@ struct CullSphere
 	glm::vec3 center;
 	float radius;
 
+	CullSphere() = default;
+
 	CullSphere(glm::vec3 &center, float radius)
+		: center(center), radius(radius) {};
+
+	CullSphere(glm::vec4 &center, float radius)
 		: center(center), radius(radius) {};
 
 	float getVolume()
@@ -59,7 +64,13 @@ struct FrustumPlane
 
 	// CCW
 	FrustumPlane(const glm::vec3 &p1, const glm::vec3 &p2, const glm::vec3 &p3)
-		: normal(glm::normalize(glm::cross(p2 - p1, p3 - p1))), distance(glm::dot(normal, p1)) {};
+	{
+		normal = glm::normalize(glm::cross(p2 - p1, p3 - p1));
+		distance = glm::dot(normal, p1);
+		// AL_CORE_INFO("p1: {}, {}, {}", p1.x, p1.y, p1.z);
+		// AL_CORE_INFO("normal: {}, {}, {}", normal.x, normal.y, normal.z);
+		// AL_CORE_INFO("distance: {}", distance);
+	}
 };
 
 enum class EFrustum
@@ -82,11 +93,20 @@ struct Frustum
 		{
 			float dotResult = glm::dot(plane[i].normal, sphere.center);
 			float distance = plane[i].distance;
-			if (dotResult > distance + sphere.radius)
+			// AL_CORE_INFO("sphere center: {}, {}, {}", sphere.center.x, sphere.center.y, sphere.center.z);
+			// AL_CORE_INFO("sphere radius: {}", sphere.radius);
+			// AL_CORE_INFO("plane[{}]", i);
+			// AL_CORE_INFO("plane normal: {}, {}, {}", plane[i].normal.x, plane[i].normal.y, plane[i].normal.z);
+			// AL_CORE_INFO("plane distance: {}", plane[i].distance);
+			// AL_CORE_INFO("dotResult: {}", dotResult);
+			// AL_CORE_INFO("distance: {}", distance);
+			// AL_CORE_INFO("distance + radius: {}", sphere.radius + distance);
+			if (dotResult - sphere.radius > distance)
 			{
+				// AL_CORE_INFO("OUT!!!!!!!!!!!");
 				return EFrustum::OUTSIDE;
 			}
-			else if (dotResult > distance - sphere.radius)
+			else if (dotResult + sphere.radius > distance)
 			{
 				intersect = true;
 			}
@@ -111,7 +131,7 @@ struct CullTreeNode
 	}
 
 	CullSphere sphere;
-	entt::entity entityHandle;
+	uint32_t entityHandle;
 
 	union {
 		int32_t parent;
@@ -121,6 +141,8 @@ struct CullTreeNode
 	int32_t child2;
 	int32_t height;
 };
+
+class Scene;
 
 class CullTree
 {
@@ -135,11 +157,11 @@ class CullTree
 	void setRenderEnable(int32_t nodeId);
 	void setRenderDisable(int32_t nodeId);
 	void frustumCulling(const Frustum &frustum, int32_t nodeId);
-	int32_t createNode(const CullSphere &sphere, entt::entity entityHandle);
+	int32_t createNode(const CullSphere &sphere, uint32_t entityHandle);
 
 	int32_t getRootNodeId();
 
-	// void printDynamicTree(int32_t nodeId)
+	void printCullTree(int32_t nodeId);
 
 	// const AABB &getFatAABB(int32_t proxyId) const;
 

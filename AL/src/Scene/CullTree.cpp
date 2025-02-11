@@ -1,4 +1,6 @@
 #include "Scene/CullTree.h"
+#include "Core/Log.h"
+#include "Scene/Entity.h"
 
 namespace ale
 {
@@ -29,10 +31,9 @@ void CullTree::updateTree()
 		if (transformComponent.m_isMoved == true)
 		{
 			MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-			CullSphere newSphere(
-				transformComponent.m_WorldTransform * sphere.center,
-				std::max(transformComponent.m_Scale.x,
-						 std::max(transformComponent.m_Scale.y, transformComponent.m_Scale.z) * sphere.radius));
+			CullSphere newSphere(transformComponent.m_WorldTransform *
+									 glm::vec4(meshRendererComponent.cullSphere.center, 1.0f),
+								 transformComponent.getMaxScale() * meshRendererComponent.cullSphere.radius);
 			moveNode(meshRendererComponent.nodeId, newSphere);
 			transformComponent.m_isMoved = false;
 		}
@@ -62,7 +63,7 @@ int32_t CullTree::allocateNode()
 	m_nodes[nodeId].child1 = NULL_NODE;
 	m_nodes[nodeId].child2 = NULL_NODE;
 	m_nodes[nodeId].height = 0;
-	m_nodes[nodeId].entityHandle = entt::null;
+	m_nodes[nodeId].entityHandle = 0;
 	++m_nodeCount;
 	return nodeId;
 }
@@ -75,11 +76,12 @@ void CullTree::freeNode(int32_t nodeId)
 	--m_nodeCount;
 }
 
-int32_t CullTree::createNode(const CullSphere &sphere, entt::entity entityHandle)
+int32_t CullTree::createNode(const CullSphere &sphere, uint32_t entityHandle)
 {
-	// std::cout << "DynamicTree::createProxy\n";
+	// AL_CORE_INFO("createNode!!");
+
 	int32_t nodeId = allocateNode();
-	// std::cout << "nodeId: " << nodeId << '\n';
+	// AL_CORE_INFO("nodeId = {}", nodeId);
 
 	m_nodes[nodeId].sphere.center = sphere.center;
 	m_nodes[nodeId].sphere.radius = sphere.radius;
@@ -119,7 +121,9 @@ void CullTree::setRenderEnable(int32_t nodeId)
 
 	if (node.isLeaf() == true)
 	{
-		MeshRendererComponent &component = m_scene->getComponent<MeshRendererComponent>(node.entityHandle);
+		MeshRendererComponent &component =
+			m_scene->getComponent<MeshRendererComponent>(static_cast<entt::entity>(node.entityHandle));
+
 		component.renderEnabled = true;
 	}
 	else
@@ -135,7 +139,8 @@ void CullTree::setRenderDisable(int32_t nodeId)
 
 	if (node.isLeaf() == true)
 	{
-		MeshRendererComponent &component = m_scene->getComponent<MeshRendererComponent>(node.entityHandle);
+		MeshRendererComponent &component =
+			m_scene->getComponent<MeshRendererComponent>(static_cast<entt::entity>(node.entityHandle));
 		component.renderEnabled = false;
 	}
 	else
@@ -157,10 +162,12 @@ void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 	EFrustum result = frustum.cullingSphere(node.sphere);
 	if (result == EFrustum::INSIDE)
 	{
+		// AL_CORE_INFO("node {} INSIDE!!", nodeId);
 		setRenderEnable(nodeId);
 	}
 	else if (result == EFrustum::INTERSECT)
 	{
+		// AL_CORE_INFO("node {} INTERSECT!!", nodeId);
 		if (node.isLeaf() == true)
 		{
 			setRenderEnable(nodeId);
@@ -170,6 +177,10 @@ void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 			frustumCulling(frustum, node.child1);
 			frustumCulling(frustum, node.child2);
 		}
+	}
+	else
+	{
+		// AL_CORE_INFO("node {} OUTSIDE!!",nodeId);
 	}
 }
 
@@ -240,7 +251,7 @@ void CullTree::insertLeaf(int32_t leaf)
 	int32_t newParent = allocateNode();
 
 	m_nodes[newParent].parent = oldParent;
-	m_nodes[newParent].entityHandle = entt::null;
+	m_nodes[newParent].entityHandle = 0;
 	m_nodes[newParent].sphere.combine(leafSphere, m_nodes[sibling].sphere);
 	m_nodes[newParent].height = m_nodes[sibling].height + 1;
 
@@ -363,16 +374,20 @@ float CullTree::getInsertionCost(const CullSphere &leafSphere, int32_t child, fl
 	return (newVolume - oldVolume) + inheritedCost;
 }
 
-// void CullTree::printDynamicTree(int32_t nodeId)
-// {
-// 	if (nodeId == NULL_NODE)
-// 	{
-// 		return;
-// 	}
-// 	std::cout << nodeId << "\n";
-// 	printDynamicTree(m_nodes[nodeId].child1);
-// 	printDynamicTree(m_nodes[nodeId].child2);
-// }
+void CullTree::printCullTree(int32_t nodeId)
+{
+	if (nodeId == NULL_NODE)
+	{
+		return;
+	}
+
+	AL_CORE_INFO("nodeId: {}", nodeId);
+	AL_CORE_INFO("Sphere center: {}, {}, {}", m_nodes[nodeId].sphere.center.x, m_nodes[nodeId].sphere.center.y,
+				 m_nodes[nodeId].sphere.center.z);
+	AL_CORE_INFO("Sphere radius: {}", m_nodes[nodeId].sphere.radius);
+	printCullTree(m_nodes[nodeId].child1);
+	printCullTree(m_nodes[nodeId].child2);
+}
 
 int32_t CullTree::balance(int32_t iA)
 {
