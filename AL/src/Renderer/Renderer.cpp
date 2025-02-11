@@ -285,6 +285,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 	// scene->frustumCulling(camera.getFrustum());
 	// AL_CORE_INFO("frustum culling finish");
 
+	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
 	projMatrix = camera.getProjection();
 	viewMatirx = camera.getView();
 
@@ -300,7 +301,10 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 void Renderer::beginScene(Scene *scene, Camera &camera)
 {
 	// projMatrix = camera.getProjection();
-	projMatrix = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
+	// projMatrix = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
+	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
+	projMatrix = camera.getProjection();
+
 	viewMatirx = camera.getView();
 
 	drawFrame(scene);
@@ -554,8 +558,8 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	drawInfo.pipelineLayout = geometryPassPipelineLayout;
 	drawInfo.commandBuffer = commandBuffer;
 	drawInfo.view = viewMatirx;
-	// drawInfo.projection = projMatrix;
-	drawInfo.projection = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
+	drawInfo.projection = projMatrix;
+	// drawInfo.projection = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
 	drawInfo.projection[1][1] *= -1;
 
 	// int32_t drawNum = 0;
@@ -566,8 +570,8 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
 		// if (meshRendererComponent.renderEnabled == true)
 		// {
-			// drawNum++;
-			meshRendererComponent.m_RenderingComponent->draw(drawInfo);
+		// drawNum++;
+		meshRendererComponent.m_RenderingComponent->draw(drawInfo);
 		// }
 	}
 
