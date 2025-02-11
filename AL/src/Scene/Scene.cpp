@@ -205,6 +205,8 @@ void Scene::onUpdateRuntime(Timestep ts)
 
 			if (camera.m_Primary)
 			{
+				auto &tc = view.get<TransformComponent>(entity);
+				camera.m_Camera.updateSceneCamera(tc.m_Position, tc.m_Rotation);
 				mainCamera = &camera.m_Camera;
 				break;
 			}
@@ -540,7 +542,7 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
 
 	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
-					  component.cullSphere.radius * transformComponent.getMaxScale()); 
+					  component.cullSphere.radius * transformComponent.getMaxScale());
 
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
