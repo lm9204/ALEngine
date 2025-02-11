@@ -1,8 +1,8 @@
 #include "EditorLayer.h"
-#include "Scene/SceneSerializer.h"
-#include "Utils/PlatformUtils.h"
 #include "Renderer/RenderingComponent.h"
+#include "Scene/SceneSerializer.h"
 #include "Scripting/ScriptingEngine.h"
+#include "Utils/PlatformUtils.h"
 
 #include "Project/Project.h"
 
@@ -409,12 +409,8 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 
 	// create CullTree
 	auto view = newScene->getAllEntitiesWith<MeshRendererComponent, TransformComponent>();
-	for (auto entity : view)
-	{
-		MeshRendererComponent &meshRenderer = view.get<MeshRendererComponent>(entity);
-		// where sphere????
-		meshRenderer.nodeId = newScene->insertEntityInCullTree(sphere, entity);
-	}
+
+	// newScene->printCullTree();
 
 	// loadSceneToRenderer(m_ActiveScene);
 }
