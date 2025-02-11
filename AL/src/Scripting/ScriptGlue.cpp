@@ -132,6 +132,24 @@ static void TransformComponent_setPosition(UUID entityID, glm::vec3 *position)
 	tc.m_WorldTransform = tc.getTransform();
 }
 
+static void TransformComponent_getRotation(UUID entityID, glm::vec3 *outRotation)
+{
+	Scene *scene = ScriptingEngine::getSceneContext();
+	Entity entity = scene->getEntityByUUID(entityID);
+
+	*outRotation = entity.getComponent<TransformComponent>().m_Rotation;
+}
+
+static void TransformComponent_setRotation(UUID entityID, glm::vec3 *outRotation)
+{
+	Scene *scene = ScriptingEngine::getSceneContext();
+	Entity entity = scene->getEntityByUUID(entityID);
+
+	auto &tc = entity.getComponent<TransformComponent>();
+	tc.m_Rotation = *outRotation;
+	tc.m_WorldTransform = tc.getTransform();
+}
+
 // Input
 static bool Input_isKeyDown(KeyCode keycode)
 {
@@ -193,6 +211,8 @@ void ScriptGlue::registerFunctions()
 
 	ADD_INTERNAL_CALL(TransformComponent_getPosition);
 	ADD_INTERNAL_CALL(TransformComponent_setPosition);
+	ADD_INTERNAL_CALL(TransformComponent_getRotation);
+	ADD_INTERNAL_CALL(TransformComponent_setRotation);
 
 	ADD_INTERNAL_CALL(RigidbodyComponent_addForce);
 
