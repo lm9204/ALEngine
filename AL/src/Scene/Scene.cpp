@@ -1,8 +1,8 @@
 #include "Scene/Scene.h"
 #include "Scene/Component.h"
+#include "Scene/CullTree.h"
 #include "Scene/Entity.h"
 #include "Scene/ScriptableEntity.h"
-#include "Scene/CullTree.h"
 
 #include "Core/App.h"
 
@@ -180,14 +180,14 @@ void Scene::onUpdateRuntime(Timestep ts)
 				Entity entity = {e, this};
 				auto &tf = entity.getComponent<TransformComponent>();
 				auto &rb = entity.getComponent<RigidbodyComponent>();
+				auto &mr = entity.getComponent<MeshRendererComponent>();
 
 				Rigidbody *body = (Rigidbody *)rb.body;
 
 				tf.m_Position = body->getTransform().position;
 				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
 				tf.m_WorldTransform = tf.getTransform();
-				// radius 수정 필요
-				if (body->isMoved(sphere.radius) == true)
+				if (body->isMoved(mr.cullSphere.radius * tf.getMaxScale()) == true)
 				{
 					tf.m_isMoved = true;
 				}
@@ -473,7 +473,12 @@ Entity Scene::getEntityByUUID(UUID uuid)
 
 int32_t Scene::insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle)
 {
-	return m_cullTree.createNode(sphere, entityHandle);
+	return m_cullTree.createNode(sphere, static_cast<uint32_t>(entityHandle));
+}
+
+void Scene::printCullTree()
+{
+	m_cullTree.printCullTree(m_cullTree.getRootNodeId());
 }
 
 void Scene::removeEntityInCullTree(int32_t nodeId)
@@ -484,12 +489,17 @@ void Scene::removeEntityInCullTree(int32_t nodeId)
 void Scene::frustumCulling(const Frustum &frustum)
 {
 	m_cullTree.updateTree();
-	
+
 	int32_t root = m_cullTree.getRootNodeId();
 	if (root != NULL_NODE)
 	{
 		m_cullTree.frustumCulling(frustum, root);
 	}
+}
+
+void Scene::initFrustumDrawFlag()
+{
+	m_cullTree.setRenderDisable(m_cullTree.getRootNodeId());
 }
 
 // 컴파일 타임에 조건 확인
@@ -525,6 +535,12 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 	component.type = 0;
 	component.m_RenderingComponent =
 		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
+	component.cullSphere = component.m_RenderingComponent->getCullSphere();
+
+	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
+
+	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
+					  component.cullSphere.radius * transformComponent.getMaxScale()); 
 
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
