@@ -1,5 +1,29 @@
 Scene: Untitled
 Entities:
+  - Entity: 3619305722777497448
+    TagComponent:
+      Tag: Player
+    TransformComponent:
+      Position: [9.89999962, 0.899999976, 10]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    MeshRendererComponent:
+      MeshType: 1
+    ScriptComponent:
+      ClassName: Sandbox.Player
+      ScriptFields:
+        - Name: Speed
+          Type: Float
+          Data: 100000
+    RigidbodyComponent:
+      Mass: 1
+      Drag: 0.00100000005
+      AngularDrag: 0.00100000005
+      UseGravity: false
+    SphereColliderComponent:
+      Center: [0, 0, 0]
+      Radius: 1
+      IsTrigger: false
   - Entity: 11822122333692858422
     TagComponent:
       Tag: Camera
@@ -39,12 +63,6 @@ Entities:
       Scale: [50, 50, 1]
     MeshRendererComponent:
       MeshType: 2
-    ScriptComponent:
-      ClassName: Sandbox.Player
-      ScriptFields:
-        - Name: Speed
-          Type: Float
-          Data: 43
     BoxColliderComponent:
       Center: [0, 0, 0]
       Size: [1, 1, 1]
@@ -62,3 +80,19 @@ Entities:
       Center: [0, 1, 0]
       Size: [3, 3, 3]
       IsTrigger: false
+  - Entity: 606118099047227836
+    TagComponent:
+      Tag: Light
+    TransformComponent:
+      Position: [13.8000002, 0.5, 15.1000004]
+      Rotation: [0, 0, 0]
+      Scale: [1, 1, 1]
+    LightComponent:
+      Type: 0
+      ShadowMap: 1
+      Position: [13.8000002, 0.5, 15.1000004]
+      Direction: [0, -1, 0]
+      Color: [1, 1, 1]
+      Intensity: 1
+      InnerCutoff: 0.976296008
+      OuterCutoff: 0.953716934

@@ -27,13 +27,24 @@ namespace ALEngine
 			Z = z;
 		}
 
-		public Vector2 XY
+		public Vector3 XY
 		{
-			get => new Vector2(X, Y);
+			get => new Vector3(X, Y, 0);
 			set
 			{
 				X = value.X;
 				Y = value.Y;
+			}
+		}
+
+		public Vector3 XYZ
+		{
+			get => new Vector3(X, Y, Z);
+			set
+			{
+				X = value.X;
+				Y = value.Y;
+				Z = value.Z;
 			}
 		}
 

@@ -55,7 +55,7 @@ static bool Entity_hasComponent(UUID entityID, MonoReflectionType *componentType
 {
 	// ASSERT
 	Scene *scene = ScriptingEngine::getSceneContext();
-	Entity entity = scene->createEntityWithUUID(entityID);
+	Entity entity = scene->getEntityByUUID(entityID);
 
 	MonoType *managedType = mono_reflection_type_get_type(componentType);
 	return s_EntityHasComponentFuncs.at(managedType)(entity);
@@ -116,7 +116,6 @@ static MonoObject *getScriptInstance(UUID entityID)
 // Transform
 static void TransformComponent_getPosition(UUID entityID, glm::vec3 *outPosition)
 {
-	AL_CORE_TRACE("TransformComponent_getPosition");
 	Scene *scene = ScriptingEngine::getSceneContext();
 	Entity entity = scene->getEntityByUUID(entityID);
 
@@ -128,7 +127,9 @@ static void TransformComponent_setPosition(UUID entityID, glm::vec3 *position)
 	Scene *scene = ScriptingEngine::getSceneContext();
 	Entity entity = scene->getEntityByUUID(entityID);
 
-	entity.getComponent<TransformComponent>().m_Position = *position;
+	auto &tc = entity.getComponent<TransformComponent>();
+	tc.m_Position = *position;
+	tc.m_WorldTransform = tc.getTransform();
 }
 
 // Input
