@@ -3,19 +3,19 @@
 
 #include "Core/Base.h"
 #include "Core/Timestep.h"
+#include "Scene/CullTree.h"
 #include <glm/glm.hpp>
 
 namespace ale
 {
 
-struct Frustum;
-
 class Camera
 {
   public:
-	Camera() = default;
+	Camera();
 	Camera(float fov, float aspect, float near, float far);
 	virtual ~Camera() = default;
+	virtual const Frustum &getFrustum();
 
 	void setFov(float fov);
 	void setNear(float _near);
@@ -28,7 +28,6 @@ class Camera
 	float getFov() const;
 	float getNear() const;
 	float getFar() const;
-	const Frustum &getFrustum();
 	glm::vec3 &getPosition();
 	const glm::mat4 &getProjection() const;
 	const glm::mat4 &getView() const;
