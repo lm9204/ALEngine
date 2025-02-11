@@ -17,6 +17,7 @@ class Camera
 	virtual ~Camera() = default;
 	virtual const Frustum &getFrustum();
 
+	void setAspectRatio(float ratio);
 	void setFov(float fov);
 	void setNear(float _near);
 	void setFar(float _far);
@@ -24,6 +25,7 @@ class Camera
 	void setViewMatrix(glm::vec3 &pos, glm::vec3 &dir, glm::vec3 &up);
 	void setViewportSize(uint32_t width, uint32_t height);
 	void setPosition(glm::vec3 &pos);
+	void setRotation(glm::vec3 &rot);
 
 	float getFov() const;
 	float getNear() const;
@@ -33,6 +35,7 @@ class Camera
 	const glm::mat4 &getView() const;
 
 	void updateProjMatrix();
+	void updateViewMatrix();
 
   protected:
 	glm::mat4 m_projection = glm::mat4(1.0f);
@@ -41,6 +44,9 @@ class Camera
 	glm::vec3 m_cameraPos{0.0f, 0.0f, 10.0f};
 	glm::vec3 m_cameraFront{0.0f, 0.0f, -1.0f};
 	glm::vec3 m_cameraUp{0.0f, 1.0f, 0.0f};
+
+	float m_CameraPitch{0.0f};
+	float m_CameraYaw{0.0f};
 
 	Frustum m_frustum;
 	float m_fov = glm::radians(45.0f);

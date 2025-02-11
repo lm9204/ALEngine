@@ -41,9 +41,41 @@ void Camera::updateProjMatrix()
 	m_projection = glm::perspective(m_fov, m_aspect, m_near, m_far);
 }
 
+void Camera::updateViewMatrix()
+{
+	m_view = glm::lookAt(m_cameraPos, m_cameraPos + m_cameraFront, m_cameraUp);
+}
+
 void Camera::setPosition(glm::vec3 &pos)
 {
 	m_cameraPos = pos;
+}
+
+void Camera::setRotation(glm::vec3 &rot)
+{
+	auto &rotation = glm::degrees(rot);
+	m_CameraYaw = rotation.x;
+	m_CameraPitch = rotation.y;
+
+	if (m_CameraYaw < 0.0f)
+		m_CameraYaw += 360.0f;
+	if (m_CameraYaw > 360.0f)
+		m_CameraYaw -= 360.0f;
+
+	if (m_CameraPitch > 89.0f)
+		m_CameraPitch = 89.0f;
+	if (m_CameraPitch < -89.0f)
+		m_CameraPitch = -89.0f;
+
+	m_cameraFront = glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraYaw), glm::vec3(0.0f, 1.0f, 0.0f)) *
+					glm::rotate(glm::mat4(1.0f), glm::radians(m_CameraPitch), glm::vec3(1.0f, 0.0f, 0.0f)) *
+					glm::vec4(0.0f, 0.0f, -1.0f, 0.0f);
+}
+
+void Camera::setAspectRatio(float ratio)
+{
+	m_aspect = ratio;
+	updateProjMatrix();
 }
 
 void Camera::setFov(float fov)
