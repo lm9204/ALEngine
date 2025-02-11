@@ -58,6 +58,11 @@ struct TransformComponent
 
 		return glm::translate(glm::mat4(1.0f), m_Position) * rotation * glm::scale(glm::mat4(1.0f), m_Scale);
 	}
+
+	float getMaxScale()
+	{
+		return std::max(m_Scale.x, std::max(m_Scale.y, m_Scale.z));
+	}
 };
 
 struct RelationshipComponent
@@ -80,6 +85,7 @@ struct MeshRendererComponent
 	uint32_t type;
 	std::string path;
 	int32_t nodeId;
+	CullSphere cullSphere;
 	bool renderEnabled;
 
 	MeshRendererComponent() = default;
