@@ -25,6 +25,19 @@ namespace ALEngine
                 InternalCalls.TransformComponent_setPosition(Entity.ID, ref value);
             }
         }
+
+        public Vector3 Rotation
+        {
+            get
+            {
+                InternalCalls.TransformComponent_getRotation(Entity.ID, out Vector3 rotation);
+                return rotation;
+            }
+            set
+            {
+                InternalCalls.TransformComponent_setRotation(Entity.ID, ref value);
+            }
+        }
     }
 
     public class RigidbodyComponent : Component
