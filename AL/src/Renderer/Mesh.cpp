@@ -129,10 +129,12 @@ void Mesh::draw(VkCommandBuffer commandBuffer)
 void Mesh::initMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
 	calculateTangents(vertices, indices);
+	calculateAABB(vertices);
 
 	m_vertexBuffer = VertexBuffer::createVertexBuffer(vertices);
 	m_indexBuffer = IndexBuffer::createIndexBuffer(indices);
 }
+
 void Mesh::calculateTangents(std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices)
 {
 	for (size_t i = 0; i < indices.size(); i += 3)
@@ -170,6 +172,28 @@ void Mesh::calculateTangents(std::vector<Vertex> &vertices, const std::vector<ui
 	{
 		vertex.tangent = glm::normalize(vertex.tangent);
 	}
+}
+
+void Mesh::calculateAABB(std::vector<Vertex> &vertices)
+{
+	m_minPos = glm::vec3(FLT_MAX);
+	m_maxPos = glm::vec3(-FLT_MAX);
+
+	for (Vertex &vertex : vertices)
+	{
+		m_minPos = glm::min(m_minPos, vertex.pos);
+		m_maxPos = glm::max(m_maxPos, vertex.pos);
+	}
+}
+
+glm::vec3 Mesh::getMaxPos()
+{
+	return m_maxPos;
+}
+
+glm::vec3 Mesh::getMinPos()
+{
+	return m_minPos;
 }
 
 } // namespace ale
