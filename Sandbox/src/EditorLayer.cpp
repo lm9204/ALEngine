@@ -55,7 +55,7 @@ void EditorLayer::onDetach()
 void EditorLayer::onUpdate(Timestep ts)
 {
 	// Resize - needs to be fixed!!
-	m_ActiveScene->onViewportResize(WINDOW_WIDTH, WINDOW_HEIGHT);
+	// m_ActiveScene->onViewportResize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	// editorcamera viewport resize
 
 	// Scene의 State에 따라 update 구분
