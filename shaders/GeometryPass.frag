@@ -50,7 +50,7 @@ void main() {
     outAlbedo = albedo;
 
     // PBR Pass (Roughness, Metallic, AO)
-    float roughness = ubo.roughnessFlag ? texture(roughnessTex, fragTexCoord).r : ubo.roughnessValue;
+    float roughness = ubo.roughnessFlag ? texture(roughnessTex, fragTexCoord).g : ubo.roughnessValue;
     float metallic = ubo.metallicFlag ? texture(metallicTex, fragTexCoord).r : ubo.metallicValue;
     float ao = ubo.aoFlag ? texture(aoTex, fragTexCoord).r : ubo.aoValue;
 
