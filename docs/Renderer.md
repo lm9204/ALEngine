@@ -1,8 +1,8 @@
 # Rendering Engine
 
-Vulkan api을 활용하여 총 4개의 RenderPass로 구성된 렌더링 시스템 구축. 
-**Background Pass, Shadow Map Pass, Main RenderPass (Deferred Shading), GUI Pass**의 순서로 렌더링 진행 
-Main RenderPass 내에서는 **2개의 Subpass**가 존재
+Vulkan api을 활용하여 총 4개의 RenderPass로 구성된 렌더링 시스템 구축.  
+**Background Pass, Shadow Map Pass, Main RenderPass (Deferred Shading), GUI Pass**의 순서로 렌더링 진행   
+Main RenderPass 내에서는 **2개의 Subpass**가 존재  
 
 ## Rendering Data Flow
 1. **Background Pass**: HDR 이미지를 Cubemap으로 변환하고 Background를 렌더링
