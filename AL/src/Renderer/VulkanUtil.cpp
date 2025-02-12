@@ -331,4 +331,83 @@ ImTextureID VulkanUtil::createIconTexture(VkDevice device, VkDescriptorPool desc
 	return reinterpret_cast<ImTextureID>(descriptorSet);
 }
 
+void VulkanUtil::createCubeMapImage(uint32_t width, uint32_t height, uint32_t mipLevels,
+									VkSampleCountFlagBits numSamples, VkFormat format, VkImageTiling tiling,
+									VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage &image,
+									VkDeviceMemory &imageMemory)
+{
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+
+	// 큐브맵 이미지 객체를 만드는데 사용되는 구조체
+	VkImageCreateInfo imageInfo{};
+	imageInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+	imageInfo.imageType = VK_IMAGE_TYPE_2D;
+	imageInfo.extent.width = width;
+	imageInfo.extent.height = height;
+	imageInfo.extent.depth = 1;
+	imageInfo.mipLevels = mipLevels;
+	imageInfo.arrayLayers = 6;
+	imageInfo.format = format;
+	imageInfo.tiling = tiling;
+	imageInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+	imageInfo.usage = usage;
+	imageInfo.samples = numSamples;
+	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+	imageInfo.flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+
+	// 이미지 객체 생성
+	if (vkCreateImage(device, &imageInfo, nullptr, &image) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create cube image!");
+	}
+
+	// 이미지에 필요한 메모리 요구 사항 조회
+	VkMemoryRequirements memRequirements;
+	vkGetImageMemoryRequirements(device, image, &memRequirements);
+
+	// 메모리 할당을 위한 구조체
+	VkMemoryAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
+	allocInfo.allocationSize = memRequirements.size;										// 메모리 크기
+	allocInfo.memoryTypeIndex = findMemoryType(memRequirements.memoryTypeBits, properties); // 메모리 유형 설정
+
+	// 이미지를 위한 메모리 할당
+	if (vkAllocateMemory(device, &allocInfo, nullptr, &imageMemory) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to allocate cube image memory!");
+	}
+
+	// 이미지에 메모리 바인딩
+	vkBindImageMemory(device, image, imageMemory, 0);
+}
+
+VkImageView VulkanUtil::createCubeMapImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags,
+											   uint32_t mipLevels)
+{
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+
+	// 큐브 맵 이미지 뷰 정보 생성
+	VkImageViewCreateInfo viewInfo{};
+	viewInfo.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
+	viewInfo.image = image;								// 이미지 핸들
+	viewInfo.viewType = VK_IMAGE_VIEW_TYPE_CUBE;		// 큐브 맵 타입
+	viewInfo.format = format;							// 이미지 포맷
+	viewInfo.subresourceRange.aspectMask = aspectFlags; // 이미지 형식 결정 (color / depth / stencil 등)
+	viewInfo.subresourceRange.baseMipLevel = 0;			// 렌더링할 mipmap 단계 설정
+	viewInfo.subresourceRange.levelCount = mipLevels;	// 사용 가능한 모든 MipLevel
+	viewInfo.subresourceRange.baseArrayLayer = 0;		// 첫 번째 레이어부터 시작
+	viewInfo.subresourceRange.layerCount = 6;			// 큐브 맵은 6개의 레이어를 사용
+
+	// 큐브 맵 이미지 뷰 생성
+	VkImageView imageView;
+	if (vkCreateImageView(device, &viewInfo, nullptr, &imageView) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create cube image view!");
+	}
+
+	return imageView;
+}
+
 } // namespace ale

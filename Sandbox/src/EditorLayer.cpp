@@ -1,6 +1,10 @@
 #include "EditorLayer.h"
+#include "Renderer/RenderingComponent.h"
 #include "Scene/SceneSerializer.h"
+#include "Scripting/ScriptingEngine.h"
 #include "Utils/PlatformUtils.h"
+
+#include "Project/Project.h"
 
 namespace ale
 {
@@ -26,49 +30,21 @@ void EditorLayer::onAttach()
 	stepTextureID =
 		VulkanUtil::createIconTexture(device, descriptorPool, m_StepIcon->getImageView(), m_StepIcon->getSampler());
 
-	// scene 생성
+	auto cmdLineArgs = App::get().getSpecification().m_CommandLineArgs;
+
+	if (cmdLineArgs.count != 2)
 	{
-		// 아마 이런 흐름으로 작성
-		{
-			// Open Project File - 인자로 받아온 파일 경로
-			// Script Engine Init
-			// Open Scene File -> Parse Scene (Entity - Component)
-		}
-		// Temp - 지금 renderer 형식에 맞게
-		m_EditorScene = Scene::createScene();
-		m_ActiveScene = m_EditorScene;
-		m_SceneHierarchyPanel.setContext(m_ActiveScene);
-
-		// Entity 생성 - 적절한 Component를 Add 해야 함.
-		auto box = m_ActiveScene->createEntity("Plane");
-		box.addComponent<ModelComponent>();
-		box.getComponent<ModelComponent>().m_Model = Model::createPlaneModel();
-
-		box.addComponent<TextureComponent>();
-		box.getComponent<TextureComponent>().m_Texture = Texture::createTexture("textures/karina.jpg");
-		box.getComponent<TransformComponent>().m_Position = glm::vec3(0.0f, 0.0f, -3.0f);
-		box.getComponent<TransformComponent>().m_Rotation = glm::vec3(0.0f, 0.0f, glm::radians(180.0f));
-		box.getComponent<TransformComponent>().m_Scale = glm::vec3(5.0f * 0.74f, 5.0f, 1.0f);
-
-		auto light = m_ActiveScene->createEntity("Light");
-		light.addComponent<ModelComponent>();
-		light.getComponent<ModelComponent>().m_Model = Model::createSphereModel();
-
-		light.addComponent<TextureComponent>();
-		light.getComponent<TextureComponent>().m_Texture = Texture::createTexture("textures/texture.png");
-		light.getComponent<TransformComponent>().m_Position = m_ActiveScene->getLightPos();
-		light.getComponent<TransformComponent>().m_Scale = glm::vec3(0.1f, 0.1f, 0.1f);
-
-		auto camera = m_ActiveScene->createEntity("Camera");
-		camera.addComponent<CameraComponent>();
-		camera.getComponent<CameraComponent>().m_Camera.setViewportSize(WINDOW_WIDTH, WINDOW_HEIGHT);
-
-		loadSceneToRenderer(m_ActiveScene);
-
-		m_ContentBrowserPanel = std::unique_ptr<ContentBrowserPanel>(new ContentBrowserPanel());
+		AL_CORE_ERROR("Invalid parameter format\n");
+		App::get().close();
 	}
 
-	// camera setting
+	m_EditorScene = Scene::createScene();
+	m_ActiveScene = m_EditorScene;
+
+	auto projectFilePath = cmdLineArgs[1];
+	openProject(projectFilePath);
+
+	// editor camera setting
 }
 
 void EditorLayer::onDetach()
@@ -78,8 +54,8 @@ void EditorLayer::onDetach()
 
 void EditorLayer::onUpdate(Timestep ts)
 {
-	// Resize
-	// m_Scene->onViewportResize();
+	// Resize - needs to be fixed!!
+	// m_ActiveScene->onViewportResize(WINDOW_WIDTH, WINDOW_HEIGHT);
 	// editorcamera viewport resize
 
 	// Scene의 State에 따라 update 구분
@@ -103,10 +79,13 @@ void EditorLayer::onUpdate(Timestep ts)
 void EditorLayer::onImGuiRender()
 {
 	// Docking space
-	// setDockingSpace();
+	setDockingSpace();
 
 	// Menu
 	setMenuBar();
+
+	m_SceneHierarchyPanel.onImGuiRender();
+	m_ContentBrowserPanel->onImGuiRender();
 
 	// Stats - hovered entity, rendered entities
 
@@ -117,21 +96,17 @@ void EditorLayer::onImGuiRender()
 	// Gizmos
 
 	// UI Toolbar
-
-	m_SceneHierarchyPanel.onImGuiRender();
-	m_ContentBrowserPanel->onImGuiRender();
-
 	uiToolBar();
 
-	SceneSerializer serializer(m_EditorScene);
-	serializer.serialize("Sandbox/Project/Assets/Scenes/3DExample.ale");
-
-	// ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
+	ImGui::End(); // DockSpace -> ImGui::Begin, End 쌍 맞추기
 }
 
 void EditorLayer::onEvent(Event &e)
 {
-	m_EditorCamera.onEvent(e);
+	if (m_SceneState == ESceneState::EDIT)
+	{
+		m_EditorCamera.onEvent(e);
+	}
 
 	EventDispatcher dispatcher(e);
 	dispatcher.dispatch<WindowResizeEvent>(AL_BIND_EVENT_FN(EditorLayer::onResized));
@@ -162,7 +137,7 @@ bool EditorLayer::onKeyPressed(KeyPressedEvent &e)
 		break;
 	case Key::O:
 		if (control)
-			; // open project
+			openProject(); // open project
 		break;
 	case Key::S:
 		if (control)
@@ -172,6 +147,9 @@ bool EditorLayer::onKeyPressed(KeyPressedEvent &e)
 			else
 				saveScene();
 		}
+		break;
+	case Key::Escape:
+		App::get().close();
 		break;
 	default:
 		break;
@@ -241,7 +219,7 @@ void EditorLayer::setMenuBar()
 		if (ImGui::BeginMenu("File"))
 		{
 			if (ImGui::MenuItem("Open Project...", "Ctrl+O"))
-				;
+				openProject();
 
 			ImGui::Separator();
 
@@ -359,15 +337,26 @@ void EditorLayer::uiToolBar()
 
 void EditorLayer::newProject()
 {
+	// Project::create();
 }
 
-void EditorLayer::openProject(const std::filesystem::path &path)
+bool EditorLayer::openProject(const std::filesystem::path &path)
 {
+	if (Project::load(path))
+	{
+		ScriptingEngine::init();
+
+		auto startScenePath = Project::getAssetFileSystemPath(Project::getActive()->getConfig().m_StartScene);
+		openScene(startScenePath);
+		m_ContentBrowserPanel = std::unique_ptr<ContentBrowserPanel>(new ContentBrowserPanel());
+		return true;
+	}
+	return false;
 }
 
 bool EditorLayer::openProject()
 {
-	std::string filepath = FileDialogs::openFile("AfterLife Project (*.hproj)\0*.hproj\0");
+	std::string filepath = FileDialogs::openFile("AfterLife Project (*.alproj)\0*.alproj\0");
 	if (filepath.empty())
 		return false;
 
@@ -377,6 +366,7 @@ bool EditorLayer::openProject()
 
 void EditorLayer::saveProject()
 {
+	// Project::saveActive();
 }
 
 void EditorLayer::newScene()
@@ -400,7 +390,7 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 	if (m_SceneState != ESceneState::EDIT)
 		onSceneStop();
 
-	if (path.extension().string() != ".hazel")
+	if (path.extension().string() != ".ale")
 	{
 		AL_WARN("Could not load {0} - not a scene file", path.filename().string());
 		return;
@@ -416,6 +406,13 @@ void EditorLayer::openScene(const std::filesystem::path &path)
 		m_ActiveScene = m_EditorScene;
 		m_EditorScenePath = path;
 	}
+
+	// create CullTree
+	auto view = newScene->getAllEntitiesWith<MeshRendererComponent, TransformComponent>();
+
+	// newScene->printCullTree();
+
+	// loadSceneToRenderer(m_ActiveScene);
 }
 
 void EditorLayer::saveScene()
@@ -430,6 +427,8 @@ void EditorLayer::saveScene()
 
 void EditorLayer::saveSceneAs()
 {
+	AL_CORE_TRACE("EditorLayer::saveSceneAs");
+
 	std::string filepath = FileDialogs::saveFile("AfterLife Scene (*.ale)\0*.ale\0");
 	if (!filepath.empty())
 	{
@@ -450,9 +449,10 @@ void EditorLayer::onScenePlay()
 
 	m_ActiveScene = Scene::copyScene(m_EditorScene);
 
-	loadSceneToRenderer(m_ActiveScene);
+	// loadSceneToRenderer(m_ActiveScene);
 
 	// active scene runtime start
+	m_ActiveScene->onRuntimeStart();
 
 	m_SceneHierarchyPanel.setContext(m_ActiveScene);
 }
@@ -466,11 +466,12 @@ void EditorLayer::onScenePause()
 void EditorLayer::onSceneStop()
 {
 	// active scene runtime stop
+	m_ActiveScene->onRuntimeStop();
 
 	m_SceneState = ESceneState::EDIT;
 
 	m_ActiveScene = m_EditorScene;
-	loadSceneToRenderer(m_ActiveScene);
+	// loadSceneToRenderer(m_ActiveScene);
 
 	m_SceneHierarchyPanel.setContext(m_ActiveScene);
 }

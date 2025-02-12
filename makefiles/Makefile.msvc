@@ -1,0 +1,77 @@
+###############################################################################
+#  Makefile.msvc
+###############################################################################
+#  Windows CMD/Visual Studio 환경에서 사용할 규칙
+###############################################################################
+
+NAME := Sandbox
+
+all: $(NAME)_release
+
+debug: $(NAME)_debug
+release: $(NAME)_release
+
+###############################################################################
+# 빌드 타겟 - Debug
+###############################################################################
+$(NAME)_debug:
+	@echo [MSVC] Building Debug...
+#	@make shader
+	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Debug .
+	@cmake --build build --config Debug
+#	@if exist ".\build\bin\Debug\$(NAME).exe" ( \
+#		cmd /c move ".\build\bin\Debug\$(NAME).exe" ".\$(NAME)_debug.exe" \
+#	) else ( \
+#		echo [ERROR] .\build\bin\Debug\$(NAME).exe not found! & exit 1 \
+#	)
+
+	@echo [SUCCESS] $@ compiled successfully with debug mode!
+
+###############################################################################
+# 빌드 타겟 - Release
+###############################################################################
+$(NAME)_release:
+	@echo [MSVC] Building Release...
+#	@make shader
+	@cmake -Bbuild -DCMAKE_BUILD_TYPE=Release .
+	@cmake --build build --config Release
+#	@if exist ".\build\bin\Release\$(NAME).exe" ( \
+#		cmd /c move ".\build\bin\Release\$(NAME).exe" ".\$(NAME)_release.exe" \
+#	) else ( \
+#		echo [ERROR] .\build\bin\Release\$(NAME).exe not found! & exit 1 \
+#	)
+
+	@echo [SUCCESS] $@ compiled successfully with release mode!
+
+###############################################################################
+# Clean / fclean / re
+###############################################################################
+clean:
+	@if exist build rmdir /s /q build
+	@if exist ".\Sandbox\Project\Assets\Scripts\*" rmdir /s /q ".\Sandbox\Project\Assets\Scripts\Debug"
+	@if exist ".\Sandbox\Project\Assets\Scripts\*" rmdir /s /q ".\Sandbox\Project\Assets\Scripts\Release"
+	@echo [CLEAN] Build files removed (MSVC)!
+
+fclean: clean
+	@if exist "$(NAME)_debug.exe" del "$(NAME)_debug.exe"
+	@if exist "$(NAME)_release.exe" del "$(NAME)_release.exe"
+	@echo [FCLEAN] Executables removed (MSVC)!
+
+re: fclean all
+
+###############################################################################
+# Shaders (예: CMD 문법)
+###############################################################################
+shader:
+	@if not exist ".\spvs" mkdir ".\spvs"
+	@for %%f in (.\shaders\*.vert) do glslc %%f -o .\spvs\%%~nf.vert.spv
+	@for %%f in (.\shaders\*.frag) do glslc %%f -o .\spvs\%%~nf.frag.spv
+	@echo [SUCCESS] Shaders compiled (MSVC)!
+
+###############################################################################
+# Run
+###############################################################################
+run: $(NAME)_debug
+	@".\$(NAME)_debug.exe"
+
+.PHONY: all debug release clean fclean re shader run

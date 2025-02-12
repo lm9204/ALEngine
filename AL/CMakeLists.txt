@@ -7,7 +7,6 @@ set(WINDOW_NAME "ALEngine")
 set(WINDOW_WIDTH 1600)
 set(WINDOW_HEIGHT 900)
 
-
 # 의존성 설정
 include(${CMAKE_SOURCE_DIR}/AL/Dependency.cmake)
 
@@ -30,7 +29,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Vulkan::Vulkan)
 target_include_directories(${PROJECT_NAME} PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/include)
 target_include_directories(${PROJECT_NAME} PUBLIC ${DEP_INCLUDE_DIR})
 
-# 시스템 라이브러리 추가
+# 시스템 라이브러리 추가 - 최소 환경 조건으로 명시하기(Visual Studio - Window SDK 설치)
 set(SYSTEM_LIBS WS2_32.lib WinMM.lib Version.lib Bcrypt.lib)
 target_link_libraries(${PROJECT_NAME} PRIVATE ${SYSTEM_LIBS})
 
