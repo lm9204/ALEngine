@@ -1,9 +1,17 @@
 #pragma once
 
 #include "Scene/Scene.h"
+#include <unordered_map>
 
 namespace ale
 {
+struct RelationshipData
+{
+	uint64_t entityUUID;
+	uint64_t parentUUID;
+	std::vector<uint64_t> childrenUUIDs;
+};
+
 class SceneSerializer
 {
   public:
@@ -17,6 +25,7 @@ class SceneSerializer
 
   private:
 	std::shared_ptr<Scene> m_Scene;
+	std::unordered_map<uint64_t, RelationshipData> relationshipMap;
 };
 
 } // namespace ale

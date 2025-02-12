@@ -52,6 +52,8 @@ class EditorLayer : public Layer
 	void onScenePause();
 	void onSceneStop();
 
+	void duplicateEntity();
+
 	void loadSceneToRenderer(std::shared_ptr<Scene> &scene);
 
   private:

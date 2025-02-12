@@ -140,7 +140,7 @@ SceneSerializer::SceneSerializer(const std::shared_ptr<Scene> &scene) : m_Scene(
 {
 }
 
-static void serializeEntity(YAML::Emitter &out, Entity entity)
+static void serializeEntity(YAML::Emitter &out, Entity entity, Scene *scene)
 {
 	out << YAML::BeginMap;
 	out << YAML::Key << "Entity" << YAML::Value << entity.getUUID();
@@ -165,6 +165,38 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Rotation" << YAML::Value << tf.m_Rotation;
 		out << YAML::Key << "Scale" << YAML::Value << tf.m_Scale;
 		out << YAML::EndMap; // Transform
+	}
+
+	// RelationshipComponent
+	if (entity.hasComponent<RelationshipComponent>())
+	{
+		out << YAML::Key << "RelationshipComponent";
+		out << YAML::BeginMap;
+
+		auto &rc = entity.getComponent<RelationshipComponent>();
+
+		// 1) Parent
+		// 부모가 없는 경우 entt::null일 텐데, 이를 0(또는 어떤 특별한 값)으로 처리
+		if (rc.parent == entt::null)
+		{
+			out << YAML::Key << "Parent" << YAML::Value << 0;
+		}
+		else
+		{
+			Entity parentEntity{rc.parent, scene};
+			out << YAML::Key << "Parent" << YAML::Value << parentEntity.getUUID();
+		}
+
+		// 2) Children
+		out << YAML::Key << "Children" << YAML::Value << YAML::BeginSeq;
+		for (auto child : rc.children)
+		{
+			Entity childEntity{child, scene};
+			out << childEntity.getUUID(); // 자식 UUID
+		}
+		out << YAML::EndSeq;
+
+		out << YAML::EndMap; // RelationshipComponent
 	}
 	// CameraComponent
 	if (entity.hasComponent<CameraComponent>())
@@ -349,7 +381,7 @@ void SceneSerializer::serialize(const std::string &filepath)
 		{
 			return;
 		}
-		serializeEntity(out, entity);
+		serializeEntity(out, entity, m_Scene.get());
 	});
 
 	out << YAML::EndSeq;
@@ -414,6 +446,28 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				tf.m_WorldTransform = tf.getTransform();
 			}
 
+			// RelationshipComponent
+			auto relationshipComponent = entity["RelationshipComponent"];
+			if (relationshipComponent)
+			{
+				uint64_t parentUUID = relationshipComponent["Parent"].as<uint64_t>();
+				auto childrenNode = relationshipComponent["Children"];
+				std::vector<uint64_t> childList;
+				if (childrenNode)
+				{
+					for (auto childUUIDNode : childrenNode)
+					{
+						childList.push_back(childUUIDNode.as<uint64_t>());
+					}
+				}
+				// 임시 보관
+				RelationshipData temp{};
+				temp.entityUUID = uuid;
+				temp.parentUUID = parentUUID;
+				temp.childrenUUIDs = childList;
+				relationshipMap[uuid] = temp;
+			}
+
 			// CameraComponent
 			auto cameraComponent = entity["CameraComponent"];
 			if (cameraComponent)
@@ -441,13 +495,13 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				switch (mc.type)
 				{
 				case 0:
-					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
+					model = m_Scene->getBoxModel();
 					break;
 				case 1:
-					model = Model::createSphereModel(m_Scene->getDefaultMaterial());
+					model = m_Scene->getSphereModel();
 					break;
 				case 2:
-					model = Model::createPlaneModel(m_Scene->getDefaultMaterial());
+					model = m_Scene->getPlaneModel();
 					break;
 				case 4:
 					mc.path = meshComponent["Path"].as<std::string>();
@@ -456,7 +510,7 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 					break;
 				// 그 외의 이상한 값은 box로 임의로 처리
 				default:
-					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
+					model = m_Scene->getBoxModel();
 					break;
 				}
 				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
@@ -575,6 +629,33 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				cc.m_Radius = cycComponent["Radius"].as<float>();
 				cc.m_Height = cycComponent["Height"].as<float>();
 				cc.m_IsTrigger = cycComponent["IsTrigger"].as<bool>();
+			}
+		}
+		// // 2차 pass: relationshipTempMap을 이용해 실제 엔티티 연결
+		for (auto &[uuid, tempData] : relationshipMap)
+		{
+			Entity e = m_Scene->getEntityByUUID(uuid);
+			auto &rc = e.getComponent<RelationshipComponent>();
+
+			// 부모 연결
+			if (tempData.parentUUID != 0) // 0이면 부모 없음
+			{
+				Entity parentEntity = m_Scene->getEntityByUUID(tempData.parentUUID);
+				rc.parent = parentEntity;
+			}
+			else
+			{
+				rc.parent = entt::null;
+			}
+
+			// 자식 연결
+			for (auto childUUID : tempData.childrenUUIDs)
+			{
+				Entity childEntity = m_Scene->getEntityByUUID(childUUID);
+				if (childEntity)
+				{
+					rc.children.push_back((entt::entity)childEntity);
+				}
 			}
 		}
 	}

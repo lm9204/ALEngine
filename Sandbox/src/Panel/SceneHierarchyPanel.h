@@ -16,6 +16,13 @@ class SceneHierarchyPanel
 	void setContext(const std::shared_ptr<Scene> &context);
 	void onImGuiRender();
 
+	Entity getSelectedEntity() const
+	{
+		return m_SelectionContext;
+	}
+
+	void setSelectedEntity(Entity entity);
+
   private:
 	template <typename T> void displayAddComponentEntry(const std::string &entryName);
 

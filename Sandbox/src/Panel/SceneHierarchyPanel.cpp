@@ -55,6 +55,7 @@ void SceneHierarchyPanel::onImGuiRender()
 		for (auto e : view)
 		{
 			Entity entity(e, m_Context.get());
+
 			auto p = entity.getComponent<RelationshipComponent>().parent;
 
 			// Root node만 보이게
@@ -63,6 +64,7 @@ void SceneHierarchyPanel::onImGuiRender()
 				drawEntityNode(entity);
 			}
 		}
+		m_Context->destroyEntities();
 
 		// 왼쪽 클릭 && Hovered(마우스를 window에 올려뒀을 때)
 		if (ImGui::IsMouseDown(0) && ImGui::IsWindowHovered())
@@ -131,11 +133,11 @@ void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 	// }
 
 	// 2. 새 부모로 교체
-	childRelation.parent = newParent;
+	childRelation.parent = (entt::entity)newParent;
 
 	// 3. 새 부모의 children 목록에 추가
 	auto &parentRelation = newParent.getComponent<RelationshipComponent>();
-	parentRelation.children.push_back(child);
+	parentRelation.children.push_back((entt::entity)child);
 
 	// 4. 자식의 위치를 부모 기준 local좌표로 변환
 	auto &tc = child.getComponent<TransformComponent>();
@@ -192,9 +194,13 @@ void SceneHierarchyPanel::updateTransformRecursive(Entity entity, const glm::mat
 	}
 }
 
+void SceneHierarchyPanel::setSelectedEntity(Entity entity)
+{
+	m_SelectionContext = entity;
+}
+
 void SceneHierarchyPanel::drawEntityNode(Entity entity)
 {
-	// std::cout << "SceneHierarchyPanel::drawEntityNode\n";
 	auto &tag = entity.getComponent<TagComponent>().m_Tag;
 
 	ImGuiTreeNodeFlags flags =
@@ -250,7 +256,8 @@ void SceneHierarchyPanel::drawEntityNode(Entity entity)
 
 	if (entityDeleted)
 	{
-		m_Context->destroyEntity(entity);
+		// m_Context->destroyEntity(entity);
+		m_Context->insertDestroyEntity(entity);
 		if (m_SelectionContext == entity)
 			m_SelectionContext = {};
 	}
@@ -535,8 +542,10 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		char buffer[256];
 		memset(buffer, 0, sizeof(buffer));
 		strncpy_s(buffer, sizeof(buffer), tag.c_str(), sizeof(buffer));
+
+		std::string label = "##Tag" + std::to_string(entity.getUUID());
 		// ## 뒤의 text는 ImGui 내부의 ID로 사용.
-		if (ImGui::InputText("##Tag", buffer, sizeof(buffer)))
+		if (ImGui::InputText(label.c_str(), buffer, sizeof(buffer)))
 		{
 			tag = std::string(buffer);
 		}

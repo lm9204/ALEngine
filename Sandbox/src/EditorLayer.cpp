@@ -148,6 +148,12 @@ bool EditorLayer::onKeyPressed(KeyPressedEvent &e)
 				saveScene();
 		}
 		break;
+	case Key::D:
+		if (control)
+			duplicateEntity();
+		break;
+	case Key::Delete:
+		break;
 	case Key::Escape:
 		App::get().close();
 		break;
@@ -474,6 +480,19 @@ void EditorLayer::onSceneStop()
 	// loadSceneToRenderer(m_ActiveScene);
 
 	m_SceneHierarchyPanel.setContext(m_ActiveScene);
+}
+
+void EditorLayer::duplicateEntity()
+{
+	if (m_SceneState != ESceneState::EDIT)
+		return;
+
+	Entity selectedEntity = m_SceneHierarchyPanel.getSelectedEntity();
+	if (selectedEntity)
+	{
+		Entity newEntity = m_EditorScene->duplicateEntity(selectedEntity);
+		m_SceneHierarchyPanel.setSelectedEntity(newEntity);
+	}
 }
 
 void EditorLayer::loadSceneToRenderer(std::shared_ptr<Scene> &scene)
