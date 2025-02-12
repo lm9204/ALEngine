@@ -15,6 +15,8 @@ class FrameBuffers
 	static std::unique_ptr<FrameBuffers> createImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createShadowMapFrameBuffers(VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createShadowCubeMapFrameBuffers(VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createSphericalMapFrameBuffers(VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createBackgroundFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass);
 
 	~FrameBuffers() = default;
 
@@ -24,11 +26,25 @@ class FrameBuffers
 	void initImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
 	void initShadowMapFrameBuffers(VkRenderPass renderPass);
 	void initShadowCubeMapFrameBuffers(VkRenderPass renderPass);
+	void initSphericalMapFrameBuffers(VkRenderPass renderPass);
+	void initBackgroundFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass);
+
+	VkFramebuffer &getSphericalMapFramebuffer()
+	{
+		return framebuffers[0];
+	}
+
+	VkImageView &getSphericalMapImageView()
+	{
+		return sphericalMapImageView;
+	}
 
 	std::vector<VkFramebuffer> &getFramebuffers()
+
 	{
 		return framebuffers;
 	}
+
 	VkImage &getDepthImage()
 	{
 		return depthImage;
@@ -61,6 +77,14 @@ class FrameBuffers
 	{
 		return viewPortImage;
 	}
+	VkImageView &getBackgroundImageView()
+	{
+		return backgroundImageView;
+	}
+	VkImage &getBackgroundImage()
+	{
+		return backgroundImage;
+	}
 
   private:
 	VkImage depthImage;
@@ -86,6 +110,14 @@ class FrameBuffers
 	VkImage viewPortImage;
 	VkDeviceMemory viewPortImageMemory;
 	VkImageView viewPortImageView;
+
+	VkImage sphericalMapImage;
+	VkDeviceMemory sphericalMapImageMemory;
+	VkImageView sphericalMapImageView;
+
+	VkImage backgroundImage;
+	VkDeviceMemory backgroundImageMemory;
+	VkImageView backgroundImageView;
 
 	std::vector<VkFramebuffer> framebuffers;
 };

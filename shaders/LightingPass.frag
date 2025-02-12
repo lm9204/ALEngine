@@ -30,9 +30,71 @@ layout(binding = 4) uniform LightingInfo {
 
 layout(binding = 5) uniform sampler2DShadow shadowMap[4];
 layout(binding = 6) uniform samplerCube shadowCubeMap[4];
+layout(binding = 7) uniform sampler2D background;
+// layout(binding = 8) uniform samplerCube skybox;
+
 
 layout(location = 0) in vec2 fragTexCoord;
 layout(location = 0) out vec4 outColor;
+
+float PCFShadow(sampler2DShadow shadowMap, vec3 shadowCoord, float currentDepth) {
+    float shadow = 0.0;
+    vec2 texelSize = 1.0 / textureSize(shadowMap, 0); // Shadow map texel size
+
+    for (int x = -1; x <= 1; ++x) {
+        for (int y = -1; y <= 1; ++y) {
+            vec2 offset = vec2(x, y) * texelSize;
+            shadow += texture(shadowMap, vec3(shadowCoord.xy + offset, shadowCoord.z));
+        }
+    }
+
+    return shadow / 9.0; // 3x3 필터 적용
+}
+
+vec3 rotatedVectors[8];
+
+
+vec3 getRotationAxis(vec3 direction) {
+    vec3 worldUp = vec3(0.0, 1.0, 0.0);
+    
+    // 만약 direction이 Y축과 거의 평행하면 X축을 사용
+    if (abs(dot(direction, worldUp)) > 0.99) {
+        return normalize(vec3(1.0, 0.0, 0.0)); // X축을 회전축으로 설정
+    }
+
+    // 아니라면 direction과 worldUp의 외적을 사용해 수직한 벡터를 구함
+    return normalize(cross(direction, worldUp));
+}
+
+vec3 rotateVector(vec3 v, vec3 axis, float angle) {
+    float cosTheta = cos(angle);
+    float sinTheta = sin(angle);
+    
+    return v * cosTheta + cross(axis, v) * sinTheta + axis * dot(axis, v) * (1.0 - cosTheta);
+}
+
+
+void generateRotatedVectors(vec3 direction) {
+    vec3 rotationAxis = getRotationAxis(direction); // 회전축 계산
+    float angleStep = radians(0.02);
+    for (int i = 0; i < 8; i++) {
+        float angle = angleStep * float(i);
+        rotatedVectors[i] = rotateVector(direction, rotationAxis, angle);
+    }
+}
+
+float PCFShadowCube(samplerCube shadowMap, vec3 fragToLight, float currentDepth) {
+    float shadow = 0.0;
+    generateRotatedVectors(fragToLight); // 8개 회전된 방향 벡터 생성
+
+    for (int i = 0; i < 8; i++) {
+        float closestDepth = texture(shadowMap, rotatedVectors[i]).r;
+        shadow += (currentDepth - 0.005 > closestDepth) ? 0.0 : 1.0;
+    }
+
+    return shadow / 8.0; // 평균화된 shadow factor 반환
+}
+
 
 // Fresnel-Schlick Approximation
 vec3 fresnelSchlick(float cosTheta, vec3 F0) {
@@ -79,7 +141,7 @@ uint getCubeFace(vec3 L) {
     return faceIndex;
 }
 
-
+const float FLT_MAX = 3.4028235e+38 - 1; 
 
 void main() {
     vec3 fragPosition = subpassLoad(positionAttachment).rgb;
@@ -103,6 +165,11 @@ void main() {
 
     uint shadowMapIndex = 0;
 
+    if (fragPosition.x >= FLT_MAX) {
+        outColor = texture(background, fragTexCoord);
+        return;
+    }
+
     for (uint i = 0; i < numLights; ++i) {
         vec3 L;
         float attenuation = 1.0;
@@ -121,14 +188,12 @@ void main() {
                 uint faceIndex = getCubeFace(-L);
                 mat4 lightView = view[shadowMapIndex][faceIndex];
                 mat4 lightProj = proj[shadowMapIndex];
-
                 mat4 lightViewProj = lightProj * lightView;
-
                 vec4 lightSpacePosition = lightViewProj * vec4(fragPosition, 1.0);
                 float currentDepth = lightSpacePosition.z / lightSpacePosition.w;
-
                 float bias = 0.005;
-                shadowFactor = currentDepth - bias > closestDepth ? 0.0 : 1.0;  
+                // shadowFactor = currentDepth - bias > closestDepth ? 0.0 : 1.0;  
+                shadowFactor = PCFShadowCube(shadowCubeMap[shadowMapIndex], -L, currentDepth);
                 attenuation *= shadowFactor;
                 shadowMapIndex++;
             }
@@ -155,10 +220,10 @@ void main() {
                 float closestDepth = texture(shadowMap[shadowMapIndex], shadowCoord);
                 float currentDepth = shadowCoord.z;
                 float bias = 0.005;
-                shadowFactor = currentDepth - bias > closestDepth ? 0.0 : 1.0;
+                // shadowFactor = currentDepth - bias > closestDepth ? 0.0 : 1.0;
 
+                shadowFactor = PCFShadow(shadowMap[shadowMapIndex], shadowCoord, shadowCoord.z);
                 attenuation *= shadowFactor;
-
                 shadowMapIndex++;
             }
         }
@@ -175,8 +240,9 @@ void main() {
                 float closestDepth = texture(shadowMap[shadowMapIndex], shadowCoord);
                 float currentDepth = shadowCoord.z;
                 float bias = 0.005;
-                shadowFactor = currentDepth - bias > closestDepth ? 0.0 : 1.0;
+                // shadowFactor = currentDepth - bias > closestDepth ? 0.0 : 1.0;
 
+                shadowFactor = PCFShadow(shadowMap[shadowMapIndex], shadowCoord, shadowCoord.z);
                 attenuation *= shadowFactor;
                 shadowMapIndex++;
             }

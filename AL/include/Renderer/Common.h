@@ -82,7 +82,7 @@ struct Vertex
 	{
 		// 파이프라인에 정점 데이터가 전달되는 방법을 알려주는 구조체
 		VkVertexInputBindingDescription bindingDescription{};
-		bindingDescription.binding = 0; // 버텍스 바인딩 포인트 (현재 0번에 vertex 정보 바인딩)
+		bindingDescription.binding = 0;				// 버텍스 바인딩 포인트 (현재 0번에 vertex 정보 바인딩)
 		bindingDescription.stride = sizeof(Vertex); // 버텍스 1개 단위의 정보 크기
 		bindingDescription.inputRate =
 			VK_VERTEX_INPUT_RATE_VERTEX; // 정점 데이터 처리 방법
@@ -214,6 +214,18 @@ struct ShadowCubeMapUniformBufferObject
 struct ShadowCubeMapLayerIndex
 {
 	alignas(4) uint32_t layerIndex;
+};
+
+struct SphericalMapUniformBufferObject
+{
+	alignas(16) glm::mat4 transform;
+	alignas(4) uint32_t layerIndex;
+};
+
+struct BackgroundUniformBufferObject
+{
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::mat4 view;
 };
 
 } // namespace ale

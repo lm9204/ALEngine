@@ -81,8 +81,8 @@ void Texture::createTextureSampler()
 	// 샘플러 생성시 필요한 구조체
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR; // 확대시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
-	samplerInfo.minFilter = VK_FILTER_LINEAR; // 축소시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
+	samplerInfo.magFilter = VK_FILTER_LINEAR;				   // 확대시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
+	samplerInfo.minFilter = VK_FILTER_LINEAR;				   // 축소시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 U축(너비)에서 범위를 벗어난 경우 래핑
 															   // 모드 설정 (현재 반복 설정)
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 V축(높이)에서 범위를 벗어난 경우 래핑
@@ -98,7 +98,7 @@ void Texture::createTextureSampler()
 		VK_FALSE; // VK_TRUE로 설정시 텍스처 좌표가 0 ~ 1의 정규화된 좌표가 아닌 실제 텍셀의 좌표 범위로 바뀜
 	samplerInfo.compareEnable =
 		VK_FALSE; // 비교 연산 사용할지 결정 (보통 쉐도우 맵같은 경우 깊이 비교 샘플링에서 사용됨)
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS; // 비교 연산에 사용할 연산 지정
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;			// 비교 연산에 사용할 연산 지정
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; // mipmap 사용시 mipmap 간 보간 방식 결정 (현재 선형 보간)
 	samplerInfo.minLod = 0.0f; // 최소 level을 0으로 설정 (가장 높은 해상도의 mipmap 을 사용가능하게 허용)
 	samplerInfo.maxLod = static_cast<float>(
@@ -291,13 +291,13 @@ VkSampler Texture::createShadowCubeMapSampler()
 	// 큐브맵 샘플러 생성 정보
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR;						  // 확대 시 선형 필터링
-	samplerInfo.minFilter = VK_FILTER_LINEAR;						  // 축소 시 선형 필터링
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE; // U축 클램핑
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE; // V축 클램핑
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE; // W축 클램핑
-	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;	  // 경계 색상
-	samplerInfo.anisotropyEnable = VK_TRUE;							  // 이방성 필터링 활성화
+	samplerInfo.magFilter = VK_FILTER_LINEAR;							// 확대 시 선형 필터링
+	samplerInfo.minFilter = VK_FILTER_LINEAR;							// 축소 시 선형 필터링
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// U축 클램핑
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// V축 클램핑
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// W축 클램핑
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;		// 경계 색상
+	samplerInfo.anisotropyEnable = VK_TRUE;								// 이방성 필터링 활성화
 	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // 디바이스에서 지원하는 최대 이방성 값
 	samplerInfo.compareEnable = VK_TRUE;								// 깊이 비교 샘플링 활성화
 	samplerInfo.compareOp = VK_COMPARE_OP_LESS;							// 깊이 비교 연산
@@ -314,6 +314,77 @@ VkSampler Texture::createShadowCubeMapSampler()
 	}
 
 	return cubeMapSampler;
+}
+
+VkSampler Texture::createSphericalMapSampler()
+{
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+	auto physicalDevice = context.getPhysicalDevice();
+
+	// **GPU 속성 정보 가져오기 (최대 이방성 필터링 지원 값)**
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+	// **Spherical Map 샘플러 생성 정보**
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;							// 확대 시 선형 필터링
+	samplerInfo.minFilter = VK_FILTER_LINEAR;							// 축소 시 선형 필터링
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// U축 클램핑
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// V축 클램핑
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// W축 클램핑
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;		// 경계 색상
+	samplerInfo.anisotropyEnable = VK_TRUE;								// 이방성 필터링 활성화
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // 최대 이방성 값
+	samplerInfo.compareEnable = VK_FALSE;								// 깊이 비교 샘플링 비활성화 (Shadow Map이 아님)
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;						// 비교 연산은 사용하지 않음
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;				// Mipmap 보간 모드
+	samplerInfo.minLod = 0.0f;											// 최소 LOD
+	samplerInfo.maxLod = VK_LOD_CLAMP_NONE;								// 최대 LOD
+	samplerInfo.mipLodBias = 0.0f;										// Mipmap Bias 비활성화
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;						// 정규화된 텍스처 좌표 사용
+
+	VkSampler sphericalMapSampler;
+	if (vkCreateSampler(device, &samplerInfo, nullptr, &sphericalMapSampler) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create spherical map sampler in Texture::createSphericalMapSampler");
+	}
+	return sphericalMapSampler;
+}
+
+VkSampler Texture::createBackgroundSampler()
+{
+	auto &context = VulkanContext::getContext();
+	auto device = context.getDevice();
+	auto physicalDevice = context.getPhysicalDevice();
+
+	VkPhysicalDeviceProperties properties{};
+	vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+	VkSamplerCreateInfo samplerInfo{};
+	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+	samplerInfo.magFilter = VK_FILTER_LINEAR;							// 확대 시 선형 필터링
+	samplerInfo.minFilter = VK_FILTER_LINEAR;							// 축소 시 선형 필터링
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// U축 클램핑
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// V축 클램핑
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;	// W축 클램핑
+	samplerInfo.borderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;		// 경계 색상
+	samplerInfo.anisotropyEnable = VK_TRUE;								// 이방성 필터링 활성화
+	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // 디바이스에서 지원하는 최대 이방성 값
+	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;				// Mipmap 보간 모드
+	samplerInfo.minLod = 0.0f;											// 최소 LOD
+	samplerInfo.maxLod = VK_LOD_CLAMP_NONE;								// 최대 LOD
+	samplerInfo.mipLodBias = 0.0f;										// Mipmap Bias 비활성화
+	samplerInfo.unnormalizedCoordinates = VK_FALSE;						// 정규화된 텍스처 좌표 사용
+
+	VkSampler backgroundSampler;
+	if (vkCreateSampler(device, &samplerInfo, nullptr, &backgroundSampler) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to create background sampler!");
+	}
+
+	return backgroundSampler;
 }
 
 std::shared_ptr<Texture> Texture::createTextureFromMemory(const aiTexture *aiTexture)

@@ -180,9 +180,52 @@ class Renderer
 
 	std::unordered_map<std::string, std::shared_ptr<Model>> m_modelsMap;
 
+	// skybox
+	std::shared_ptr<Texture> m_sphericalMapTexture;
+
+	std::unique_ptr<RenderPass> m_sphericalMapRenderPass;
+	VkRenderPass sphericalMapRenderPass;
+
+	std::unique_ptr<FrameBuffers> m_sphericalMapFrameBuffers;
+	std::vector<VkFramebuffer> sphericalMapFramebuffers;
+	VkImageView sphericalMapImageView;
+	VkSampler sphericalMapSampler;
+
+	std::unique_ptr<Pipeline> m_sphericalMapPipeline;
+	VkPipelineLayout sphericalMapPipelineLayout;
+	VkPipeline sphericalMapGraphicsPipeline;
+
+	std::unique_ptr<DescriptorSetLayout> m_sphericalMapDescriptorSetLayout;
+	VkDescriptorSetLayout sphericalMapDescriptorSetLayout;
+
+	std::unique_ptr<ShaderResourceManager> m_sphericalMapShaderResourceManager;
+	std::vector<VkDescriptorSet> sphericalMapDescriptorSets;
+	std::vector<std::shared_ptr<UniformBuffer>> sphericalMapUniformBuffers;
+
+	// background
+	std::unique_ptr<RenderPass> m_backgroundRenderPass;
+	VkRenderPass backgroundRenderPass;
+
+	std::unique_ptr<Pipeline> m_backgroundPipeline;
+	VkPipelineLayout backgroundPipelineLayout;
+	VkPipeline backgroundGraphicsPipeline;
+
+	std::unique_ptr<DescriptorSetLayout> m_backgroundDescriptorSetLayout;
+	VkDescriptorSetLayout backgroundDescriptorSetLayout;
+
+	std::unique_ptr<ShaderResourceManager> m_backgroundShaderResourceManager;
+	std::vector<VkDescriptorSet> backgroundDescriptorSets;
+	std::vector<std::shared_ptr<UniformBuffer>> backgroundUniformBuffers;
+
+	std::unique_ptr<FrameBuffers> m_backgroundFrameBuffers;
+	std::vector<VkFramebuffer> backgroundFramebuffers;
+	VkImageView backgroundImageView;
+	VkSampler backgroundSampler;
+
 	bool firstFrame = true;
 
 	void init(GLFWwindow *window);
+
 	void recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex,
 											   uint32_t shadowMapIndex);
 	void recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
@@ -190,6 +233,8 @@ class Renderer
 									  uint32_t shadowMapIndex);
 	void recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, Light &lightInfo,
 										  uint32_t shadowMapIndex);
+	void recordSphericalMapCommandBuffer();
+	void recordBackgroundCommandBuffer(VkCommandBuffer commandBuffer);
 };
 } // namespace ale
 

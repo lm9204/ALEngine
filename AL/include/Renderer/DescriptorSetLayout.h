@@ -16,6 +16,8 @@ class DescriptorSetLayout
 	static std::unique_ptr<DescriptorSetLayout> createShadowMapDescriptorSetLayout();
 	static std::unique_ptr<DescriptorSetLayout> createShadowCubeMapDescriptorSetLayout();
 	static std::unique_ptr<DescriptorSetLayout> createViewPortDescriptorSetLayout();
+	static std::unique_ptr<DescriptorSetLayout> createSphericalMapDescriptorSetLayout();
+	static std::unique_ptr<DescriptorSetLayout> createBackgroundDescriptorSetLayout();
 
 	~DescriptorSetLayout() = default;
 
@@ -35,6 +37,9 @@ class DescriptorSetLayout
 	void initShadowMapDescriptorSetLayout();
 	void initShadowCubeMapDescriptorSetLayout();
 	void initViewPortDescriptorSetLayout();
+	void initSphericalMapDescriptorSetLayout();
+	void initBackgroundDescriptorSetLayout();
 };
 } // namespace ale
+
 #endif
