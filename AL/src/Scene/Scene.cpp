@@ -50,6 +50,21 @@ static void copyComponent(ComponentGroup<Component...>, entt::registry &dst, ent
 	copyComponent<Component...>(dst, src, enttMap);
 }
 
+template <typename... Component> static void copyComponentIfExists(Entity dst, Entity src)
+{
+	(
+		[&]() {
+			if (src.hasComponent<Component>())
+				dst.addOrReplaceComponent<Component>(src.getComponent<Component>());
+		}(),
+		...);
+}
+
+template <typename... Component> static void copyComponentIfExists(ComponentGroup<Component...>, Entity dst, Entity src)
+{
+	copyComponentIfExists<Component...>(dst, src);
+}
+
 std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 {
 	std::shared_ptr<Scene> newScene = createScene();
@@ -103,8 +118,56 @@ Entity Scene::createEntityWithUUID(UUID uuid, const std::string &name)
 	return entity;
 }
 
+void Scene::insertDestroyEntity(Entity entity)
+{
+	m_DestroyQueue.push(entity);
+}
+
+void Scene::destroyEntities()
+{
+	while (!m_DestroyQueue.empty())
+	{
+		Entity entity{m_DestroyQueue.front(), this};
+		destroyEntity(entity);
+		m_DestroyQueue.pop();
+	}
+}
+
 void Scene::destroyEntity(Entity entity)
 {
+	if (!entity || !m_Registry.valid(entity))
+		return;
+
+	if (entity.hasComponent<RelationshipComponent>())
+	{
+		auto &relationship = entity.getComponent<RelationshipComponent>();
+
+		// 자식 목록 복사(참조값이 파괴 중에 변동되면 안되므로)
+		auto childrenCopy = relationship.children;
+
+		// 자식들에 대해 destroyEntity를 재귀 호출
+		for (auto childEntt : childrenCopy)
+		{
+			if (m_Registry.valid(childEntt))
+			{
+				Entity childEntity{childEntt, this};
+				destroyEntity(childEntity);
+			}
+		}
+
+		// 2) 부모의 자식 목록에서 자신을 제거
+		if (relationship.parent != entt::null)
+		{
+			Entity parentEntity{relationship.parent, this};
+			auto &parentRC = parentEntity.getComponent<RelationshipComponent>();
+
+			// parentRC.children 에서 entity의 entt::entity 핸들을 제거
+			auto it = std::find(parentRC.children.begin(), parentRC.children.end(), (entt::entity)entity);
+			if (it != parentRC.children.end())
+				parentRC.children.erase(it);
+		}
+	}
+
 	m_EntityMap.erase(entity.getUUID());
 	m_Registry.destroy(entity);
 }
@@ -243,6 +306,14 @@ void Scene::onViewportResize(uint32_t width, uint32_t height)
 		if (!cameraComponent.m_FixedAspectRatio)
 			cameraComponent.m_Camera.setViewportSize(width, height); // set viewport size
 	}
+}
+
+Entity Scene::duplicateEntity(Entity entity)
+{
+	std::string name = entity.getComponent<TagComponent>().m_Tag;
+	Entity newEntity = createEntity(name);
+	copyComponentIfExists(AllComponents{}, newEntity, entity);
+	return newEntity;
 }
 
 void Scene::step(int32_t frames)
@@ -546,7 +617,7 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
-	auto &bc = entity.addComponent<BoxColliderComponent>();
+	// auto &bc = entity.addComponent<BoxColliderComponent>();
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)

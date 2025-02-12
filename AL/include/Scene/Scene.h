@@ -9,6 +9,8 @@
 #include "Renderer/EditorCamera.h"
 #include "Renderer/Material.h"
 
+#include <queue>
+
 namespace ale
 {
 class Entity;
@@ -30,6 +32,8 @@ class Scene
 	Entity createEntity(const std::string &name = "");
 	Entity createEntityWithUUID(UUID uuid, const std::string &name = "");
 	void destroyEntity(Entity entity);
+	void insertDestroyEntity(Entity entity);
+	void destroyEntities();
 
 	void onRuntimeStart();
 	void onRuntimeStop();
@@ -37,6 +41,8 @@ class Scene
 	void onUpdateEditor(EditorCamera &camera);
 	void onUpdateRuntime(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
+
+	Entity duplicateEntity(Entity entity);
 
 	void step(int32_t frames);
 
@@ -66,6 +72,19 @@ class Scene
 	{
 		return m_defaultMaterial;
 	}
+	std::shared_ptr<Model> &getBoxModel()
+	{
+		return m_boxModel;
+	}
+	std::shared_ptr<Model> &getSphereModel()
+	{
+		return m_sphereModel;
+	}
+	std::shared_ptr<Model> &getPlaneModel()
+	{
+		return m_planeModel;
+	}
+
 	std::shared_ptr<Model> getDefaultModel(int32_t idx);
 
 	Entity findEntityByName(std::string_view name);
@@ -112,6 +131,7 @@ class Scene
 	int32_t m_StepFrames = 0;
 
 	std::unordered_map<UUID, entt::entity> m_EntityMap;
+	std::queue<entt::entity> m_DestroyQueue;
 
 	DefaultTextures m_defaultTextures;
 	std::shared_ptr<Material> m_defaultMaterial;
