@@ -84,6 +84,8 @@ struct MeshRendererComponent
 	std::shared_ptr<RenderingComponent> m_RenderingComponent;
 	uint32_t type;
 	std::string path;
+
+	// Culling
 	int32_t nodeId;
 	CullSphere cullSphere;
 	bool renderEnabled;
