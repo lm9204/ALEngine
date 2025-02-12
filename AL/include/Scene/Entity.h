@@ -24,7 +24,9 @@ class Entity
 	template <typename T, typename... Args> T &addOrReplaceComponent(Args &&...args)
 	{
 		// ASSERT NOT HAS COMPONENT
-		return m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
+		T &component = m_Scene->m_Registry.emplace_or_replace<T>(m_EntityHandle, std::forward<Args>(args)...);
+		m_Scene->onComponentAdded<T>(*this, component);
+		return component;
 	}
 
 	template <typename T> T &getComponent()
@@ -40,14 +42,12 @@ class Entity
 	}
 
 	// 템플릿 완전 특수화
-	template <>
-	void removeComponent<MeshRendererComponent>()
+	template <> void removeComponent<MeshRendererComponent>()
 	{
 		auto &component = m_Scene->getComponent<MeshRendererComponent>(m_EntityHandle);
 		m_Scene->removeEntityInCullTree(component.nodeId);
 		m_Scene->m_Registry.remove<MeshRendererComponent>(m_EntityHandle);
 	}
-
 
 	template <typename T> bool hasComponent()
 	{
