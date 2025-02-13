@@ -99,6 +99,9 @@ void BoxShape::setVertices(const glm::vec3 &center, const glm::vec3 &size)
 	{
 		m_vertices.insert(vertex);
 	}
+
+	m_center = center;
+	m_halfSize = halfSize;
 }
 
 ConvexInfo BoxShape::getShapeInfo(const Transform &transform) const
