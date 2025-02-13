@@ -1,6 +1,5 @@
 # AfterLife Engine
-## Project Architecture
-
+이 세계에는 없는 뛰어난 성능을 가진 엔진을 개발하고 싶다는 마음을 담아 AfterLife Engine 이라는 이름을 붙였습니다. ALEngine은 Renderer, Physics, Animation, 간단한 Scripting이 지원되는 Game Engine입니다. 
 
 ## Engine Loop
 ### 입력 이벤트 처리
@@ -30,3 +29,18 @@
 - Ctrl + D : Object 복제
 - Ctrl + N : New Scene 열기
 - ESC : 프로그램 종료
+
+## Scripting
+### mono
+- mono 라이브러리를 활용해 간단한 C# Scripting 구현
+- Scripting의 규칙을 정의한 Script Core, 실제 코드를 작성한 Script Module로 이루어짐
+
+## Scene
+### yaml-cpp
+- yaml-cpp를 활용해 Scene을 serialize, deserialize 가능
+- .ale 확장자를 가진 파일로 Scene 저장
+
+## ECS (Entity Component System)
+### entt
+- entt 라이브러리를 활용해 Entity Component System 구현
+- TransformComponent, MeshRendererComponent, RigidbodyComponent 등 여러 Component를 정의해, 데이터를 효과적으로 처리 가능

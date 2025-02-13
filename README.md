@@ -25,13 +25,7 @@ AfterLife Engine 프로젝트는 **Vulkan API를 활용한 게임 엔진 개발 
 ---
 
 ## 3. Project Structure
-- `docs/` - 프로젝트 문서 및 기능별 설명 파일 (.md)
-- `AL/` - 엔진의 핵심 소스 코드 (렌더링, 물리 엔진, 애니메이션 등 포함)
-- `AL-ScriptCore/` - 스크립팅을 할 수 있는 API를 정의한 파일
-- `Sandbox/src/` - ImGui 기반의 에디터 소스 코드
-- `Sandbox/Project/` - 프로젝트가 실행될 환경 (게임 스크립트 코드, Asset 포함)
-
-각 기능별 자세한 설명은 [Docs](./docs/) 디렉터리에서 확인할 수 있습니다.
+![Architecture](./docs/images/EngineArchitecture.png)
 
 ---
 
@@ -73,10 +67,10 @@ make
 
 ## 6. Documentation
 각 기능별 설명은 별도의 `.md` 문서로 제공됩니다.
+- [Engine 설명](./docs/GameEngine.md)
 - [Renderer 설명](./docs/Renderer.md)
 - [Physics Engine 설명](./docs/PhysicsEngine.md)
 - [Animator 설명](./docs/Animator.md)
-- [Editor 설명](./docs/Editor.md)
 
 Doxygen을 사용하여 자동화된 API 문서도 제공할 예정입니다.
 
