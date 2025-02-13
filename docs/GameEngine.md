@@ -23,6 +23,10 @@
 - Scene Hierarchy : Scene Entity들의 계층적 구조
 - Inspector : Entity Component 정보를 표시
 - Content Browser : Project의 작업 공간 표시
+
+![Editor](./images/Editor.png)
+
+
 ### Utils (단축키)
 - Ctrl + S : Scene 저장
 - Ctrl + Shift + S : Scene 이름 지정 저장
