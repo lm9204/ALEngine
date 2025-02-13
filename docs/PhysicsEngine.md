@@ -1,5 +1,7 @@
 # Physics Engine
 ## Physics Main Loop
+<img src="./physicsLoop.png" alt="이미지 설명" style="width:50%; height:auto;">
+
 ### 1) Integrate
 - 각 Rigidbody의 누적된 힘과 토크를 통해 물리 속성을 결정
 ### 2) Broad Phase
