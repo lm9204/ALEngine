@@ -29,8 +29,8 @@
 		"StateName",
 		"AnimationName",
 		"Looping:boolean",
-		"Interruptible",
-		"defaultBlendTime"});
+		"Interruptible:boolean",
+		"defaultBlendTime:float"});
 
 	// lambda
 	stateManager->addTransition({
