@@ -83,7 +83,9 @@ struct MeshRendererComponent
 {
 	std::shared_ptr<RenderingComponent> m_RenderingComponent;
 	uint32_t type;
-	std::string path;
+	std::string path = "";
+	std::string matPath = "";
+	bool isMatChanged = false;
 
 	// Culling
 	int32_t nodeId;
