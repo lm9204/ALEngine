@@ -373,7 +373,10 @@ void Renderer::beginScene(Scene *scene, Camera &camera)
 
 	viewMatirx = camera.getView();
 
+	scene->frustumCulling(camera.getFrustum());
 	drawFrame(scene);
+
+	scene->initFrustumDrawFlag();
 }
 
 void Renderer::drawFrame(Scene *scene)
