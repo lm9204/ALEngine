@@ -634,7 +634,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		ImGui::NextColumn();
 		if (ImGui::BeginCombo("##MeshTypeCombo", currentMeshTypeString))
 		{
-			for (int32_t i = 0; i < 5; ++i)
+			for (int32_t i = 0; i < 6; ++i)
 			{
 				bool isSelected = currentMeshTypeString == meshTypeStrings[i];
 
@@ -652,6 +652,8 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 						component.m_RenderingComponent =
 							RenderingComponent::createRenderingComponent(scene->getDefaultModel(i));
 						component.path.clear();
+						component.matPath.clear();
+						component.isMatChanged = false;
 					}
 				}
 				if (isSelected)
@@ -677,8 +679,9 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				{
 					std::shared_ptr<Model> model = Model::createModel(filePath.string(), scene->getDefaultMaterial());
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
-					component.type = 4;
+					component.type = 5;
 					component.path = filePath.string();
+					component.isMatChanged = false;
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -699,8 +702,8 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 
 					component.m_RenderingComponent->updateMaterial(
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
-					component.type = 4;
-					component.path = filePath.string();
+					component.matPath = filePath.string();
+					component.isMatChanged = true;
 				}
 			}
 			ImGui::EndDragDropTarget();
