@@ -654,7 +654,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		ImGui::NextColumn();
 		if (ImGui::BeginCombo("##MeshTypeCombo", currentMeshTypeString))
 		{
-			for (int32_t i = 0; i < 5; ++i)
+			for (int32_t i = 0; i < 6; ++i)
 			{
 				bool isSelected = currentMeshTypeString == meshTypeStrings[i];
 
@@ -672,6 +672,8 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 						component.m_RenderingComponent =
 							RenderingComponent::createRenderingComponent(scene->getDefaultModel(i));
 						component.path.clear();
+						component.matPath.clear();
+						component.isMatChanged = false;
 					}
 				}
 				if (isSelected)
@@ -697,8 +699,9 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				{
 					std::shared_ptr<Model> model = Model::createModel(filePath.string(), scene->getDefaultMaterial());
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
-					component.type = 4;
+					component.type = 5;
 					component.path = filePath.string();
+					component.isMatChanged = false;
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -719,39 +722,41 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 
 					component.m_RenderingComponent->updateMaterial(
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
-					component.type = 4;
-					component.path = filePath.string();
+					component.matPath = filePath.string();
+					component.isMatChanged = true;
 				}
 			}
 			ImGui::EndDragDropTarget();
 		}
 		auto &materials = rc->getMaterials();
-		if (materials.size() != 1)
-		{
-			std::shared_ptr<Material> material = materials[1];
-			Albedo &albedo = material->getAlbedo();
-			drawVec3Control("Albedo", albedo.albedo);
-			drawCheckBox("Albedo Flag", albedo.flag);
 
-			NormalMap &normalMap = material->getNormalMap();
-			drawCheckBox("Normal Flag", normalMap.flag);
+		static int32_t idx = 0;
+		ImGui::DragInt("Material Index", &idx, 0.1f, 0, materials.size() - 1, "%d");
+		idx = std::clamp(idx, 0, static_cast<int32_t>(materials.size()) - 1);
 
-			Roughness &roughness = material->getRoughness();
-			drawFloatControl("Roughness", roughness.roughness);
-			drawCheckBox("Roughness Flag", roughness.flag);
+		std::shared_ptr<Material> &material = materials[idx];
+		Albedo &albedo = material->getAlbedo();
+		drawVec3Control("Albedo", albedo.albedo);
+		drawCheckBox("Albedo Flag", albedo.flag);
 
-			Metallic &metalic = material->getMetallic();
-			drawFloatControl("Metallic", metalic.metallic);
-			drawCheckBox("Metallic Flag", metalic.flag);
+		NormalMap &normalMap = material->getNormalMap();
+		drawCheckBox("Normal Flag", normalMap.flag);
 
-			AOMap &aoMap = material->getAOMap();
-			drawFloatControl("AOMap", aoMap.ao);
-			drawCheckBox("AOMap Flag", aoMap.flag);
+		Roughness &roughness = material->getRoughness();
+		drawFloatControl("Roughness", roughness.roughness);
+		drawCheckBox("Roughness Flag", roughness.flag);
 
-			HeightMap &heightMap = material->getHeightMap();
-			drawFloatControl("HeightMap", heightMap.height);
-			drawCheckBox("HeightMap Flag", heightMap.flag);
-		}
+		Metallic &metalic = material->getMetallic();
+		drawFloatControl("Metallic", metalic.metallic);
+		drawCheckBox("Metallic Flag", metalic.flag);
+
+		AOMap &aoMap = material->getAOMap();
+		drawFloatControl("AOMap", aoMap.ao);
+		drawCheckBox("AOMap Flag", aoMap.flag);
+
+		HeightMap &heightMap = material->getHeightMap();
+		drawFloatControl("HeightMap", heightMap.height);
+		drawCheckBox("HeightMap Flag", heightMap.flag);
 	});
 
 	drawComponent<LightComponent>("Light", entity, [entity, scene = m_Context](auto &component) mutable {

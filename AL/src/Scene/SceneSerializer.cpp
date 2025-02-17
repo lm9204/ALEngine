@@ -231,6 +231,9 @@ static void serializeEntity(YAML::Emitter &out, Entity entity, Scene *scene)
 		{
 			out << YAML::Key << "Path" << YAML::Value << mc.path;
 		}
+		out << YAML::Key << "MatPath" << YAML::Value << mc.matPath;
+		out << YAML::Key << "IsMatChanged" << YAML::Value << mc.isMatChanged;
+
 		out << YAML::EndMap;
 	}
 	// ScriptComponent
@@ -491,6 +494,8 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 
 				// type에 따라 Primitive Mesh 생성
 				mc.type = meshComponent["MeshType"].as<uint32_t>();
+				mc.isMatChanged = meshComponent["IsMatChanged"].as<bool>();
+
 				std::shared_ptr<Model> model;
 				switch (mc.type)
 				{
@@ -503,7 +508,10 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				case 2:
 					model = m_Scene->getPlaneModel();
 					break;
-				case 4:
+				case 3:
+					model = m_Scene->getGroundModel();
+					break;
+				case 5:
 					mc.path = meshComponent["Path"].as<std::string>();
 					AL_CORE_TRACE("{}", mc.path);
 					model = Model::createModel(mc.path, m_Scene->getDefaultMaterial());
@@ -513,7 +521,13 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 					model = m_Scene->getBoxModel();
 					break;
 				}
+				mc.matPath = meshComponent["MatPath"].as<std::string>();
 				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+				if (mc.isMatChanged)
+				{
+					mc.m_RenderingComponent->updateMaterial(
+						Model::createModel(mc.matPath, m_Scene->getDefaultMaterial()));
+				}
 			}
 
 			auto lightComponent = entity["LightComponent"];
