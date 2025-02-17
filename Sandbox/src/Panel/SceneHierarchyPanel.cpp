@@ -15,6 +15,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "Core/App.h"
+
 #include <cstring>
 
 /* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
@@ -618,6 +620,24 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		float perspectiveFar = camera.getFar();
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setFar(perspectiveFar);
+
+		ImGui::Button("Skybox", ImVec2(200.0f, 0.0f));
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t *path = (const wchar_t *)payload->Data;
+				std::filesystem::path filePath(path);
+				if (filePath.extension().string() == ".hdr")
+				{
+					component.skyboxPath = filePath.string();
+					std::cout << "skybox: " << filePath.string() << '\n';
+					Renderer &renderer = App::get().getRenderer();
+					renderer.updateSkybox(filePath.string());
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
 	});
 
 	drawComponent<MeshRendererComponent>("MeshRenderer", entity, [entity, scene = m_Context](auto &component) mutable {
