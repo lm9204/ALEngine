@@ -157,11 +157,13 @@ class CullTree
 	void setRenderEnable(int32_t nodeId);
 	void setRenderDisable(int32_t nodeId);
 	void frustumCulling(const Frustum &frustum, int32_t nodeId);
+	void changeEntityHandle(int32_t nodeId, uint32_t entityHandle);
 	int32_t createNode(const CullSphere &sphere, uint32_t entityHandle);
 
 	int32_t getRootNodeId();
 
 	void printCullTree(int32_t nodeId);
+	int32_t getSize();
 
 	// const AABB &getFatAABB(int32_t proxyId) const;
 
