@@ -42,7 +42,7 @@ void AnimationStateManager::processRequests()
 
 void AnimationStateManager::processTransitions()
 {
-	if (!currentState.interruptible) return;
+	if (!currentState.interruptible && inTransition) return;
 
 	for (auto& t : m_Transitions)
 	{
