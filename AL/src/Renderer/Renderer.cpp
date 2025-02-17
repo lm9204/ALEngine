@@ -348,7 +348,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 {
 	// frustum culling
 	// AL_CORE_INFO("frustum culling start");
-	// scene->frustumCulling(camera.getFrustum());
+	scene->frustumCulling(camera.getFrustum());
 	// AL_CORE_INFO("frustum culling finish");
 
 	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
@@ -359,7 +359,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 
 	// AL_CORE_INFO("before init Frustum");
 	// scene->printCullTree();
-	// scene->initFrustumDrawFlag();
+	scene->initFrustumDrawFlag();
 	// AL_CORE_INFO("after init Frustum");
 	// scene->printCullTree();
 }
@@ -636,11 +636,11 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	{
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-		// if (meshRendererComponent.renderEnabled == true)
-		// {
-		// drawNum++;
-		meshRendererComponent.m_RenderingComponent->draw(drawInfo);
-		// }
+		if (meshRendererComponent.renderEnabled == true)
+		{
+			// drawNum++;
+			meshRendererComponent.m_RenderingComponent->draw(drawInfo);
+		}
 	}
 
 	// AL_CORE_INFO("draw Num = {}", drawNum);
@@ -840,7 +840,12 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 		drawInfo.pipelineLayout = shadowMapPipelineLayout[shadowMapIndex];
 		drawInfo.currentFrame = currentFrame;
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
+
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		if (meshRendererComponent.renderEnabled == true)
+		{
+			meshRendererComponent.m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
+		}
 	}
 
 	// Render Pass 종료
@@ -924,7 +929,11 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 	for (auto entity : view)
 	{
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		if (meshRendererComponent.renderEnabled == true)
+		{
+			meshRendererComponent.m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
+		}
 	}
 
 	// Render Pass 종료
