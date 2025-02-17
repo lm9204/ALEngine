@@ -33,6 +33,8 @@ class Renderer
 	void recreateSwapChain();
 	void recreateViewPort();
 
+	void updateSkybox(std::string path);
+
 	VkDevice getDevice()
 	{
 		return device;

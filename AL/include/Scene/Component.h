@@ -125,6 +125,7 @@ struct CameraComponent
 	SceneCamera m_Camera;
 	bool m_Primary = true;
 	bool m_FixedAspectRatio = false;
+	std::string skyboxPath = "";
 
 	CameraComponent() = default;
 	CameraComponent(const CameraComponent &) = default;
