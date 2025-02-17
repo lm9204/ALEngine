@@ -1,7 +1,4 @@
-#ifndef TIMESTEP_H
-#define TIMESTEP_H
-
-#include <chrono>
+#pragma once
 
 #include "Core/Base.h"
 #include "Renderer/Common.h"
