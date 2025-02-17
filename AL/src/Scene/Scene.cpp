@@ -211,6 +211,7 @@ void Scene::onRuntimeStop()
 void Scene::onUpdateEditor(EditorCamera &camera)
 {
 	setCamPos(camera.getPosition());
+	findMoveObject();
 	renderScene(camera);
 }
 
@@ -258,10 +259,6 @@ void Scene::onUpdateRuntime(Timestep ts)
 				tf.m_Position = body->getTransform().position;
 				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
 				tf.m_WorldTransform = tf.getTransform();
-				if (body->isMoved(mr.cullSphere.radius * tf.getMaxScale()) == true)
-				{
-					tf.m_isMoved = true;
-				}
 			}
 		}
 	}
@@ -288,6 +285,7 @@ void Scene::onUpdateRuntime(Timestep ts)
 	{
 		Renderer &renderer = App::get().getRenderer();
 		setCamPos(mainCamera->getPosition());
+		findMoveObject();
 		renderer.beginScene(this, *mainCamera);
 	}
 	else
@@ -584,6 +582,25 @@ void Scene::frustumCulling(const Frustum &frustum)
 void Scene::initFrustumDrawFlag()
 {
 	m_cullTree.setRenderDisable(m_cullTree.getRootNodeId());
+}
+
+void Scene::findMoveObject()
+{
+	auto view = m_Registry.view<MeshRendererComponent, TransformComponent>();
+	for (auto e: view)
+	{
+		auto &transform = view.get<TransformComponent>(e);
+		auto &mesh = view.get<MeshRendererComponent>(e);
+
+		float limit = transform.getMaxScale() * mesh.cullSphere.radius * 0.1f;
+		limit = limit * limit;
+
+		if (glm::length2(transform.m_Position - transform.m_LastPosition) > limit)
+		{
+			transform.m_LastPosition = transform.m_Position;
+			transform.m_isMoved = true;
+		}
+	}
 }
 
 // 컴파일 타임에 조건 확인
