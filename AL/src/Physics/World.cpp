@@ -61,15 +61,6 @@ void World::runPhysics(float duration)
 	m_contactManager.collide();
 	// std::cout << "solve\n";
 	solve(duration);
-
-	// std::cout << "transform setting\n";
-
-	body = m_rigidbodies;
-	while (body != nullptr)
-	{
-		body->accumulateMovement();
-		body = body->next;
-	}
 }
 
 void World::solve(float duration)
