@@ -1,8 +1,12 @@
 #include "alpch.h"
 
+#include "Renderer/RenderingComponent.h"
+
 #include "Scene/Component.h"
 #include "Scene/Entity.h"
 #include "Scene/SceneSerializer.h"
+
+#include "Scripting/ScriptingEngine.h"
 
 #include <yaml-cpp/yaml.h>
 
@@ -79,10 +83,37 @@ template <> struct convert<glm::vec4>
 		return true;
 	}
 };
+
+template <> struct convert<ale::UUID>
+{
+	static Node encode(const ale::UUID &uuid)
+	{
+		Node node;
+		node.push_back((uint64_t)uuid);
+		return node;
+	}
+
+	static bool decode(const Node &node, ale::UUID &uuid)
+	{
+		uuid = node.as<uint64_t>();
+		return true;
+	}
+};
 } // namespace YAML
 
 namespace ale
 {
+#define WRITE_SCRIPT_FIELD(FieldType, Type)                                                                            \
+	case EScriptFieldType::FieldType:                                                                                  \
+		out << scriptField.getValue<Type>();                                                                           \
+		break
+
+#define READ_SCRIPT_FIELD(FieldType, Type)                                                                             \
+	case EScriptFieldType::FieldType: {                                                                                \
+		Type data = scriptField["Data"].as<Type>();                                                                    \
+		fieldInstance.setValue(data);                                                                                  \
+		break;                                                                                                         \
+	}
 
 YAML::Emitter &operator<<(YAML::Emitter &out, const glm::vec2 &v)
 {
@@ -121,7 +152,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::BeginMap;
 		auto &tag = entity.getComponent<TagComponent>().m_Tag;
 		out << YAML::Key << "Tag" << YAML::Value << tag;
-		out << YAML::EndMap;
+		out << YAML::EndMap; // Tag
 	}
 
 	// TransformComponent
@@ -133,7 +164,7 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		out << YAML::Key << "Position" << YAML::Value << tf.m_Position;
 		out << YAML::Key << "Rotation" << YAML::Value << tf.m_Rotation;
 		out << YAML::Key << "Scale" << YAML::Value << tf.m_Scale;
-		out << YAML::EndMap;
+		out << YAML::EndMap; // Transform
 	}
 	// CameraComponent
 	if (entity.hasComponent<CameraComponent>())
@@ -145,27 +176,165 @@ static void serializeEntity(YAML::Emitter &out, Entity entity)
 		auto &camera = cc.m_Camera;
 		out << YAML::Key << "Camera";
 		out << YAML::BeginMap;
-		out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.getPerspectiveVerticalFOV();
-		out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.getPerspectiveNearClip();
-		out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.getPerspectiveFarClip();
+		out << YAML::Key << "PerspectiveFOV" << YAML::Value << camera.getFov();
+		out << YAML::Key << "PerspectiveNear" << YAML::Value << camera.getNear();
+		out << YAML::Key << "PerspectiveFar" << YAML::Value << camera.getFar();
 		out << YAML::EndMap;
 
 		out << YAML::Key << "Primary" << YAML::Value << cc.m_Primary;
 		out << YAML::Key << "FixedAspectRatio" << YAML::Value << cc.m_FixedAspectRatio;
 
+		out << YAML::EndMap; // Camera
+	}
+	// MeshRendererComponent
+	if (entity.hasComponent<MeshRendererComponent>())
+	{
+		out << YAML::Key << "MeshRendererComponent";
+		out << YAML::BeginMap;
+
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		out << YAML::Key << "MeshType" << YAML::Value << mc.type;
+
+		if (!mc.path.empty())
+		{
+			out << YAML::Key << "Path" << YAML::Value << mc.path;
+		}
 		out << YAML::EndMap;
 	}
-
-	// MeshRendererComponent
-	// LightComponent
-	// RigidbodyComponent
-	// BoxColliderComponent
-	// SphereColliderComponent
-	// CapsuleColliderComponent
-	// CylinderColliderComponent
 	// ScriptComponent
+	if (entity.hasComponent<ScriptComponent>())
+	{
+		auto &scriptComponent = entity.getComponent<ScriptComponent>();
 
-	out << YAML::EndMap;
+		out << YAML::Key << "ScriptComponent";
+		out << YAML::BeginMap;
+		out << YAML::Key << "ClassName" << YAML::Value << scriptComponent.m_ClassName;
+
+		std::shared_ptr<ScriptClass> entityClass = ScriptingEngine::getEntityClass(scriptComponent.m_ClassName);
+		const auto &fields = entityClass->getFields();
+
+		if (fields.size() > 0)
+		{
+			out << YAML::Key << "ScriptFields" << YAML::Value;
+			auto &entityFields = ScriptingEngine::getScriptFieldMap(entity);
+			out << YAML::BeginSeq;
+
+			for (const auto &[name, field] : fields)
+			{
+				if (entityFields.find(name) == entityFields.end())
+					continue;
+				out << YAML::BeginMap;
+				out << YAML::Key << "Name" << YAML::Value << name;
+				out << YAML::Key << "Type" << YAML::Value << utils::scriptFieldTypeToString(field.m_Type);
+
+				out << YAML::Key << "Data" << YAML::Value;
+				ScriptFieldInstance &scriptField = entityFields.at(name);
+
+				switch (field.m_Type)
+				{
+					WRITE_SCRIPT_FIELD(FLOAT, float);
+					WRITE_SCRIPT_FIELD(DOUBLE, double);
+					WRITE_SCRIPT_FIELD(BOOL, bool);
+					WRITE_SCRIPT_FIELD(CHAR, char);
+					WRITE_SCRIPT_FIELD(BYTE, int8_t);
+					WRITE_SCRIPT_FIELD(SHORT, int16_t);
+					WRITE_SCRIPT_FIELD(INT, int32_t);
+					WRITE_SCRIPT_FIELD(LONG, int64_t);
+					WRITE_SCRIPT_FIELD(UBYTE, uint8_t);
+					WRITE_SCRIPT_FIELD(USHORT, uint16_t);
+					WRITE_SCRIPT_FIELD(UINT, uint32_t);
+					WRITE_SCRIPT_FIELD(ULONG, uint64_t);
+					WRITE_SCRIPT_FIELD(VECTOR2, glm::vec2);
+					WRITE_SCRIPT_FIELD(VECTOR3, glm::vec3);
+					WRITE_SCRIPT_FIELD(VECTOR4, glm::vec4);
+					WRITE_SCRIPT_FIELD(ENTITY, UUID);
+				}
+				out << YAML::EndMap;
+			}
+			out << YAML::EndSeq;
+		}
+
+		out << YAML::EndMap; // End ScriptComponent
+	}
+
+	// LightComponent
+	if (entity.hasComponent<LightComponent>())
+	{
+		out << YAML::Key << "LightComponent";
+		out << YAML::BeginMap;
+
+		auto &lc = entity.getComponent<LightComponent>();
+		Light &light = *lc.m_Light.get();
+		out << YAML::Key << "Type" << YAML::Value << light.type;
+		out << YAML::Key << "ShadowMap" << YAML::Value << light.onShadowMap;
+		out << YAML::Key << "Position" << YAML::Value << light.position;
+		out << YAML::Key << "Direction" << YAML::Value << light.direction;
+		out << YAML::Key << "Color" << YAML::Value << light.color;
+		out << YAML::Key << "Intensity" << YAML::Value << light.intensity;
+		out << YAML::Key << "InnerCutoff" << YAML::Value << light.innerCutoff;
+		out << YAML::Key << "OuterCutoff" << YAML::Value << light.outerCutoff;
+		out << YAML::EndMap;
+	}
+	// RigidbodyComponent
+	if (entity.hasComponent<RigidbodyComponent>())
+	{
+		out << YAML::Key << "RigidbodyComponent";
+		out << YAML::BeginMap;
+		auto &rb = entity.getComponent<RigidbodyComponent>();
+		out << YAML::Key << "Mass" << YAML::Value << rb.m_Mass;
+		out << YAML::Key << "Drag" << YAML::Value << rb.m_Damping;
+		out << YAML::Key << "AngularDrag" << YAML::Value << rb.m_AngularDamping;
+		out << YAML::Key << "UseGravity" << YAML::Value << rb.m_UseGravity;
+		out << YAML::EndMap; // Rigidbody
+	}
+	// BoxColliderComponent
+	if (entity.hasComponent<BoxColliderComponent>())
+	{
+		out << YAML::Key << "BoxColliderComponent";
+		out << YAML::BeginMap;
+		auto &bc = entity.getComponent<BoxColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << bc.m_Center;
+		out << YAML::Key << "Size" << YAML::Value << bc.m_Size;
+		out << YAML::Key << "IsTrigger" << YAML::Value << bc.m_IsTrigger;
+		out << YAML::EndMap; // BoxCollider
+	}
+	// SphereColliderComponent
+	if (entity.hasComponent<SphereColliderComponent>())
+	{
+		out << YAML::Key << "SphereColliderComponent";
+		out << YAML::BeginMap;
+		auto &sc = entity.getComponent<SphereColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << sc.m_Center;
+		out << YAML::Key << "Radius" << YAML::Value << sc.m_Radius;
+		out << YAML::Key << "IsTrigger" << YAML::Value << sc.m_IsTrigger;
+		out << YAML::EndMap; // SphereCollider
+	}
+	// CapsuleColliderComponent
+	if (entity.hasComponent<CapsuleColliderComponent>())
+	{
+		out << YAML::Key << "CapsuleColliderComponent";
+		out << YAML::BeginMap;
+		auto &cc = entity.getComponent<CapsuleColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << cc.m_Center;
+		out << YAML::Key << "Radius" << YAML::Value << cc.m_Radius;
+		out << YAML::Key << "Height" << YAML::Value << cc.m_Height;
+		out << YAML::Key << "IsTrigger" << YAML::Value << cc.m_IsTrigger;
+		out << YAML::EndMap; // CapusuleCollider
+	}
+	// CylinderColliderComponent
+	if (entity.hasComponent<CylinderColliderComponent>())
+	{
+		out << YAML::Key << "CylinderColliderComponent";
+		out << YAML::BeginMap;
+		auto &cc = entity.getComponent<CylinderColliderComponent>();
+		out << YAML::Key << "Center" << YAML::Value << cc.m_Center;
+		out << YAML::Key << "Radius" << YAML::Value << cc.m_Radius;
+		out << YAML::Key << "Height" << YAML::Value << cc.m_Height;
+		out << YAML::Key << "IsTrigger" << YAML::Value << cc.m_IsTrigger;
+		out << YAML::EndMap; // CylinderCollider
+	}
+
+	out << YAML::EndMap; // End Serialize Entity
 }
 
 void SceneSerializer::serialize(const std::string &filepath)
@@ -242,6 +411,7 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				tf.m_Position = tfComponent["Position"].as<glm::vec3>();
 				tf.m_Rotation = tfComponent["Rotation"].as<glm::vec3>();
 				tf.m_Scale = tfComponent["Scale"].as<glm::vec3>();
+				tf.m_WorldTransform = tf.getTransform();
 			}
 
 			// CameraComponent
@@ -251,22 +421,161 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				auto &cc = deserializedEntity.addComponent<CameraComponent>();
 				auto &cameraProps = cameraComponent["Camera"];
 
-				cc.m_Camera.setPerspectiveVerticalFOV(cameraProps["PerspectiveFOV"].as<float>());
-				cc.m_Camera.setPerspectiveNearClip(cameraProps["PerspectiveNear"].as<float>());
-				cc.m_Camera.setPerspectiveFarClip(cameraProps["PerspectiveFar"].as<float>());
+				cc.m_Camera.setFov(cameraProps["PerspectiveFOV"].as<float>());
+				cc.m_Camera.setNear(cameraProps["PerspectiveNear"].as<float>());
+				cc.m_Camera.setFar(cameraProps["PerspectiveFar"].as<float>());
 
-				cc.m_Primary = cameraProps["Primary"].as<bool>();
-				cc.m_FixedAspectRatio = cameraProps["FixedAspectRatio"].as<bool>();
+				cc.m_Primary = cameraComponent["Primary"].as<bool>();
+				cc.m_FixedAspectRatio = cameraComponent["FixedAspectRatio"].as<bool>();
 			}
 
 			// MeshRendererComponent
-			// LightComponent
-			// RigidbodyComponent
-			// BoxColliderComponent
-			// SphereColliderComponent
-			// CapsuleColliderComponent
-			// CylinderColliderComponent
+			auto meshComponent = entity["MeshRendererComponent"];
+			if (meshComponent)
+			{
+				auto &mc = deserializedEntity.addComponent<MeshRendererComponent>();
+
+				// type에 따라 Primitive Mesh 생성
+				mc.type = meshComponent["MeshType"].as<uint32_t>();
+				std::shared_ptr<Model> model;
+				switch (mc.type)
+				{
+				case 0:
+					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
+					break;
+				case 1:
+					model = Model::createSphereModel(m_Scene->getDefaultMaterial());
+					break;
+				case 2:
+					model = Model::createPlaneModel(m_Scene->getDefaultMaterial());
+					break;
+				case 4:
+					mc.path = meshComponent["Path"].as<std::string>();
+					AL_CORE_TRACE("{}", mc.path);
+					model = Model::createModel(mc.path, m_Scene->getDefaultMaterial());
+					break;
+				// 그 외의 이상한 값은 box로 임의로 처리
+				default:
+					model = Model::createBoxModel(m_Scene->getDefaultMaterial());
+					break;
+				}
+				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+			}
+
+			auto lightComponent = entity["LightComponent"];
+			if (lightComponent)
+			{
+				Light &light = *deserializedEntity.addComponent<LightComponent>().m_Light.get();
+				light.type = lightComponent["Type"].as<uint32_t>();
+				light.onShadowMap = lightComponent["ShadowMap"].as<uint32_t>();
+				light.position = lightComponent["Position"].as<glm::vec3>();
+				light.direction = lightComponent["Direction"].as<glm::vec3>();
+				light.color = lightComponent["Color"].as<glm::vec3>();
+				light.intensity = lightComponent["Intensity"].as<float>();
+				light.innerCutoff = lightComponent["InnerCutoff"].as<float>();
+				light.outerCutoff = lightComponent["OuterCutoff"].as<float>();
+			}
+
 			// ScriptComponent
+			auto scriptComponent = entity["ScriptComponent"];
+			if (scriptComponent)
+			{
+				auto &sc = deserializedEntity.addComponent<ScriptComponent>();
+				sc.m_ClassName = scriptComponent["ClassName"].as<std::string>();
+
+				auto scriptFields = scriptComponent["ScriptFields"];
+				if (scriptFields)
+				{
+					std::shared_ptr<ScriptClass> entityClass = ScriptingEngine::getEntityClass(sc.m_ClassName);
+					if (entityClass)
+					{
+						const auto &fields = entityClass->getFields();
+						auto &entityFields = ScriptingEngine::getScriptFieldMap(deserializedEntity);
+
+						for (auto scriptField : scriptFields)
+						{
+							std::string name = scriptField["Name"].as<std::string>();
+							std::string typeString = scriptField["Type"].as<std::string>();
+							EScriptFieldType type = utils::scriptFieldTypeFromString(typeString);
+
+							ScriptFieldInstance &fieldInstance = entityFields[name];
+							if (fields.find(name) == fields.end())
+								continue;
+
+							fieldInstance.m_Field = fields.at(name);
+
+							switch (type)
+							{
+								READ_SCRIPT_FIELD(FLOAT, float);
+								READ_SCRIPT_FIELD(DOUBLE, double);
+								READ_SCRIPT_FIELD(BOOL, bool);
+								READ_SCRIPT_FIELD(CHAR, char);
+								READ_SCRIPT_FIELD(BYTE, int8_t);
+								READ_SCRIPT_FIELD(SHORT, int16_t);
+								READ_SCRIPT_FIELD(INT, int32_t);
+								READ_SCRIPT_FIELD(LONG, int64_t);
+								READ_SCRIPT_FIELD(UBYTE, uint8_t);
+								READ_SCRIPT_FIELD(USHORT, uint16_t);
+								READ_SCRIPT_FIELD(UINT, uint32_t);
+								READ_SCRIPT_FIELD(ULONG, uint64_t);
+								READ_SCRIPT_FIELD(VECTOR2, glm::vec2);
+								READ_SCRIPT_FIELD(VECTOR3, glm::vec3);
+								READ_SCRIPT_FIELD(VECTOR4, glm::vec4);
+								READ_SCRIPT_FIELD(ENTITY, UUID);
+							}
+						}
+					}
+				}
+			}
+
+			// RigidbodyComponent
+			auto rbComponent = entity["RigidbodyComponent"];
+			if (rbComponent)
+			{
+				auto &rb = deserializedEntity.addComponent<RigidbodyComponent>();
+				rb.m_Mass = rbComponent["Mass"].as<float>();
+				rb.m_Damping = rbComponent["Drag"].as<float>();
+				rb.m_AngularDamping = rbComponent["AngularDrag"].as<float>();
+				rb.m_UseGravity = rbComponent["UseGravity"].as<bool>();
+			}
+			// BoxColliderComponent
+			auto bcComponent = entity["BoxColliderComponent"];
+			if (bcComponent)
+			{
+				auto &bc = deserializedEntity.addComponent<BoxColliderComponent>();
+				bc.m_Center = bcComponent["Center"].as<glm::vec3>();
+				bc.m_Size = bcComponent["Size"].as<glm::vec3>();
+				bc.m_IsTrigger = bcComponent["IsTrigger"].as<bool>();
+			}
+			// SphereColliderComponent
+			auto scComponent = entity["SphereColliderComponent"];
+			if (scComponent)
+			{
+				auto &sc = deserializedEntity.addComponent<SphereColliderComponent>();
+				sc.m_Center = scComponent["Center"].as<glm::vec3>();
+				sc.m_Radius = scComponent["Radius"].as<float>();
+				sc.m_IsTrigger = scComponent["IsTrigger"].as<bool>();
+			}
+			// CapsuleColliderComponent
+			auto capcComponent = entity["CapsuleColliderComponent"];
+			if (capcComponent)
+			{
+				auto &cc = deserializedEntity.addComponent<CapsuleColliderComponent>();
+				cc.m_Center = capcComponent["Center"].as<glm::vec3>();
+				cc.m_Radius = capcComponent["Radius"].as<float>();
+				cc.m_Height = capcComponent["Height"].as<float>();
+				cc.m_IsTrigger = capcComponent["IsTrigger"].as<bool>();
+			}
+			// CylinderColliderComponent
+			auto cycComponent = entity["CylinderColliderComponent"];
+			if (cycComponent)
+			{
+				auto &cc = deserializedEntity.addComponent<CylinderColliderComponent>();
+				cc.m_Center = cycComponent["Center"].as<glm::vec3>();
+				cc.m_Radius = cycComponent["Radius"].as<float>();
+				cc.m_Height = cycComponent["Height"].as<float>();
+				cc.m_IsTrigger = cycComponent["IsTrigger"].as<bool>();
+			}
 		}
 	}
 	return true;

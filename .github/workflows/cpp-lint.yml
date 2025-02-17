@@ -1,0 +1,53 @@
+name: C++ Lint Check
+
+on:
+  pull_request:
+    paths:
+      - '**/*.cpp'
+      - '**/*.h'
+
+jobs:
+  code-style:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y clang-format clang-tidy
+
+      - name: Check formatting for all files using .clang-format
+        run: |
+          set +e
+      
+          errors=0
+          while IFS= read -r -d '' file; do
+            echo "Checking $file"
+            diff_output=$(diff -u "$file" <(clang-format "$file"))
+            diff_status=$?
+            if [ $diff_status -ne 0 ]; then
+              echo "Formatting issues found in $file:"
+              echo "$diff_output"
+              echo "-----------------------------------------"
+              errors=1
+            fi
+          done < <(find . -type f \( -name "*.cpp" -o -name "*.h" \) -print0)
+          
+          if [ $errors -ne 0 ]; then
+            echo "Some files do not follow the coding convention."
+            exit 1
+          else
+            echo "All files are correctly formatted."
+          fi
+
+      - name: Run clang-tidy check
+        run: |
+          FILES=$(find . -type f -name "*.cpp")
+          echo "Running clang-tidy on the following files:"
+          echo "$FILES"
+          for file in $FILES; do
+            clang-tidy "$file" -- -I.
+          done

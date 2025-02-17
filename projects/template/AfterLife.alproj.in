@@ -1,0 +1,7 @@
+Project:
+    Name: SandboxProject
+    ProjectPath: "Sandbox/Project"
+    StartScene: "Scenes/3DExample.ale"
+    AssetDirectory: "Assets"
+    ScriptModulePath: "@SCRIPT_MODULE_PATH@"
+    ScriptCorePath: "@SCRIPT_CORE_PATH@"

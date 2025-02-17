@@ -11,7 +11,13 @@ namespace ale
 class Texture : public Buffer
 {
   public:
-	static std::shared_ptr<Texture> createTexture(std::string path);
+	static std::shared_ptr<Texture> createTexture(std::string path, bool flipVertically = false);
+	static std::shared_ptr<Texture> createMaterialTexture(std::string path, bool flipVertically = false);
+	static std::shared_ptr<Texture> createDefaultTexture(glm::vec4 color);
+	static std::shared_ptr<Texture> createDefaultSingleChannelTexture(float value);
+	static std::shared_ptr<Texture> createTextureFromMemory(const aiTexture *aiTexture);
+	static VkSampler createShadowMapSampler();
+	static VkSampler createShadowCubeMapSampler();
 
 	~Texture() = default;
 
@@ -34,10 +40,34 @@ class Texture : public Buffer
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 
-	void initTexture(std::string path);
-	void loadTexture(std::string path);
+	void initTexture(std::string path, bool flipVertically = false);
+	void loadTexture(std::string path, bool flipVertically = false);
 	void createTextureImageView();
 	void createTextureSampler();
+
+	void initMaterialTexture(std::string path, bool flipVertically = false);
+	void loadMaterialTexture(std::string path, bool flipVertically = false);
+	void createMaterialTextureImageView();
+
+	void initDefaultTexture(glm::vec4 color);
+	void createDefaultTextureImageView();
+	void createDefaultTextureSampler();
+
+	void initDefaultSingleChannelTexture(float value);
+	void createDefaultSingleChannelTextureImageView();
+	void createDefaultSingleChannelTextureSampler();
+
+	void initTextureFromMemory(const aiTexture *texture);
+};
+
+struct DefaultTextures
+{
+	std::shared_ptr<Texture> albedo;
+	std::shared_ptr<Texture> normal;
+	std::shared_ptr<Texture> roughness;
+	std::shared_ptr<Texture> metallic;
+	std::shared_ptr<Texture> ao;
+	std::shared_ptr<Texture> height;
 };
 
 } // namespace ale

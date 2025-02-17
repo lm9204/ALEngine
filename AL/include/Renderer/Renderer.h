@@ -13,6 +13,8 @@
 #include "Renderer/SwapChain.h"
 #include "Renderer/SyncObjects.h"
 #include "Renderer/VulkanContext.h"
+
+#include "Scene/Scene.h"
 #include "Scene/SceneCamera.h"
 
 namespace ale
@@ -29,6 +31,7 @@ class Renderer
 	void beginScene(Scene *scene, Camera &camera);
 	void drawFrame(Scene *scene);
 	void recreateSwapChain();
+	void recreateViewPort();
 
 	VkDevice getDevice()
 	{
@@ -45,11 +48,21 @@ class Renderer
 		return geometryPassDescriptorSetLayout;
 	}
 
+	VkDescriptorSet getViewPortDescriptorSet()
+	{
+		return viewPortDescriptorSets[0];
+	}
+	std::unordered_map<std::string, std::shared_ptr<Model>> &getModelsMap()
+	{
+		return m_modelsMap;
+	}
+
   private:
 	Renderer() = default;
 
 	// Scene *scene;
 
+	// Vulkan
 	GLFWwindow *window;
 	VkSurfaceKHR surface;
 	VkPhysicalDevice physicalDevice = VK_NULL_HANDLE;
@@ -58,23 +71,21 @@ class Renderer
 	VkCommandPool commandPool;
 	VkQueue graphicsQueue;
 	VkQueue presentQueue;
+
+	// SwapChain
 	std::unique_ptr<SwapChain> m_swapChain;
 	VkSwapchainKHR swapChain;
 	std::vector<VkImage> swapChainImages;
 	VkFormat swapChainImageFormat;
 	VkExtent2D swapChainExtent;
 	std::vector<VkImageView> swapChainImageViews;
-	std::unique_ptr<FrameBuffers> m_swapChainFrameBuffers;
-	std::vector<VkFramebuffer> swapChainFramebuffers;
+	std::unique_ptr<FrameBuffers> m_viewPortFrameBuffers;
+	std::vector<VkFramebuffer> viewPortFramebuffers;
 
 	std::unique_ptr<FrameBuffers> m_ImGuiSwapChainFrameBuffers;
 	std::vector<VkFramebuffer> imGuiSwapChainFrameBuffers;
 
-	std::unique_ptr<FrameBuffers> m_FinalFrameBuffers;
-	std::vector<VkFramebuffer> finalFrameBuffers;
-	std::vector<VkImageView> finalImageViews;
-	std::vector<VkImage> finalImages;
-
+	// RenderPass
 	std::unique_ptr<RenderPass> m_renderPass;
 	VkRenderPass renderPass;
 
@@ -84,12 +95,14 @@ class Renderer
 	std::unique_ptr<RenderPass> m_deferredRenderPass;
 	VkRenderPass deferredRenderPass;
 
+	// DescriptorSetLayout
 	std::unique_ptr<DescriptorSetLayout> m_geometryPassDescriptorSetLayout;
 	VkDescriptorSetLayout geometryPassDescriptorSetLayout;
 
 	std::unique_ptr<DescriptorSetLayout> m_lightingPassDescriptorSetLayout;
 	VkDescriptorSetLayout lightingPassDescriptorSetLayout;
 
+	// Pipeline
 	std::unique_ptr<Pipeline> m_geometryPassPipeline;
 	VkPipelineLayout geometryPassPipelineLayout;
 	VkPipeline geometryPassGraphicsPipeline;
@@ -98,6 +111,7 @@ class Renderer
 	VkPipelineLayout lightingPassPipelineLayout;
 	VkPipeline lightingPassGraphicsPipeline;
 
+	// Descriptor Pool
 	VkDescriptorPool descriptorPool;
 
 	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
@@ -107,6 +121,7 @@ class Renderer
 	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
 	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
 	std::vector<std::shared_ptr<UniformBuffer>> lightingPassUniformBuffers;
+	std::vector<std::shared_ptr<UniformBuffer>> lightingPassFragmentUniformBuffers;
 
 	std::unique_ptr<CommandBuffers> m_commandBuffers;
 
@@ -117,13 +132,64 @@ class Renderer
 	std::vector<VkFence> inFlightFences;
 	uint32_t currentFrame = 0;
 
+	// ShadowMap Info
+	std::vector<std::unique_ptr<RenderPass>> m_shadowMapRenderPass;
+	std::vector<VkRenderPass> shadowMapRenderPass;
+
+	std::vector<std::unique_ptr<Pipeline>> m_shadowMapPipeline;
+	std::vector<VkPipelineLayout> shadowMapPipelineLayout;
+	std::vector<VkPipeline> shadowMapGraphicsPipeline;
+
+	std::vector<std::unique_ptr<FrameBuffers>> m_shadowMapFrameBuffers;
+	std::vector<std::vector<VkFramebuffer>> shadowMapFramebuffers;
+	std::vector<VkImageView> shadowMapImageViews;
+
+	std::unique_ptr<DescriptorSetLayout> m_shadowMapDescriptorSetLayout;
+	VkDescriptorSetLayout shadowMapDescriptorSetLayout;
+	VkSampler shadowMapSampler;
+
+	std::vector<std::unique_ptr<RenderPass>> m_shadowCubeMapRenderPass;
+	std::vector<VkRenderPass> shadowCubeMapRenderPass;
+
+	std::vector<std::unique_ptr<Pipeline>> m_shadowCubeMapPipeline;
+	std::vector<VkPipelineLayout> shadowCubeMapPipelineLayout;
+	std::vector<VkPipeline> shadowCubeMapGraphicsPipeline;
+
+	std::vector<std::unique_ptr<FrameBuffers>> m_shadowCubeMapFrameBuffers;
+	std::vector<std::vector<VkFramebuffer>> shadowCubeMapFramebuffers;
+	std::vector<VkImageView> shadowCubeMapImageViews;
+
+	std::unique_ptr<DescriptorSetLayout> m_shadowCubeMapDescriptorSetLayout;
+	VkDescriptorSetLayout shadowCubeMapDescriptorSetLayout;
+
+	VkSampler shadowCubeMapSampler;
+
+	VkImageView viewPortImageView;
+	VkSampler viewPortSampler;
+
+	std::unique_ptr<DescriptorSetLayout> m_viewPortDescriptorSetLayout;
+	VkDescriptorSetLayout viewPortDescriptorSetLayout;
+
+	std::unique_ptr<ShaderResourceManager> m_viewPortShaderResourceManager;
+	std::vector<VkDescriptorSet> viewPortDescriptorSets;
+
+	glm::vec2 viewPortSize;
+
 	glm::mat4 projMatrix;
 	glm::mat4 viewMatirx;
 
+	std::unordered_map<std::string, std::shared_ptr<Model>> m_modelsMap;
+
+	bool firstFrame = true;
+
 	void init(GLFWwindow *window);
-	void recordCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
-	void recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex,
+											   uint32_t shadowMapIndex);
 	void recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, Light &lightInfo,
+									  uint32_t shadowMapIndex);
+	void recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, Light &lightInfo,
+										  uint32_t shadowMapIndex);
 };
 } // namespace ale
 

@@ -200,10 +200,24 @@ void IndexBuffer::initIndexBuffer(std::vector<uint32_t> &indices)
 	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 }
 
-std::unique_ptr<ImageBuffer> ImageBuffer::createImageBuffer(std::string path)
+std::unique_ptr<ImageBuffer> ImageBuffer::createImageBuffer(std::string path, bool flipVertically)
 {
 	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
-	imageBuffer->initImageBuffer(path);
+	imageBuffer->initImageBuffer(path, flipVertically);
+	return imageBuffer;
+}
+
+std::unique_ptr<ImageBuffer> ImageBuffer::createMaterialImageBuffer(std::string path, bool flipVertically)
+{
+	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
+	imageBuffer->initMaterialImageBuffer(path, flipVertically);
+	return imageBuffer;
+}
+
+std::unique_ptr<ImageBuffer> ImageBuffer::createImageBufferFromMemory(const aiTexture *texture)
+{
+	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
+	imageBuffer->initImageBufferFromMemory(texture);
 	return imageBuffer;
 }
 
@@ -213,7 +227,7 @@ void ImageBuffer::cleanup()
 	vkFreeMemory(m_device, textureImageMemory, nullptr);
 }
 
-void ImageBuffer::initImageBuffer(std::string path)
+void ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
 {
 	auto &context = VulkanContext::getContext();
 	m_device = context.getDevice();
@@ -222,12 +236,13 @@ void ImageBuffer::initImageBuffer(std::string path)
 	m_graphicsQueue = context.getGraphicsQueue();
 
 	int texWidth, texHeight, texChannels;
+	stbi_set_flip_vertically_on_load(flipVertically);
 	stbi_uc *pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixels)
 	{
-		throw std::runtime_error("failed to load texture image!");
+		throw std::runtime_error("failed to load texture image! " + path);
 	}
 
 	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
@@ -257,6 +272,216 @@ void ImageBuffer::initImageBuffer(std::string path)
 	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 
 	generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
+}
+
+void ImageBuffer::initMaterialImageBuffer(std::string path, bool flipVertically)
+{
+	auto &context = VulkanContext::getContext();
+	m_device = context.getDevice();
+	m_physicalDevice = context.getPhysicalDevice();
+	m_commandPool = context.getCommandPool();
+	m_graphicsQueue = context.getGraphicsQueue();
+
+	int texWidth, texHeight, texChannels;
+	stbi_set_flip_vertically_on_load(flipVertically);
+	stbi_uc *pixels = stbi_load(path.c_str(), &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+	VkDeviceSize imageSize = texWidth * texHeight * 4;
+
+	if (!pixels)
+	{
+		throw std::runtime_error("failed to load texture image!");
+	}
+
+	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+				 stagingBufferMemory);
+
+	void *data;
+	vkMapMemory(m_device, stagingBufferMemory, 0, imageSize, 0, &data);
+	memcpy(data, pixels, static_cast<size_t>(imageSize));
+	vkUnmapMemory(m_device, stagingBufferMemory);
+
+	stbi_image_free(pixels);
+
+	VulkanUtil::createImage(
+		texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+
+	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED,
+						  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+	vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+
+	generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, mipLevels);
+}
+
+void ImageBuffer::initImageBufferFromMemory(const aiTexture *texture)
+{
+	auto &context = VulkanContext::getContext();
+	m_device = context.getDevice();
+	m_physicalDevice = context.getPhysicalDevice();
+	m_commandPool = context.getCommandPool();
+	m_graphicsQueue = context.getGraphicsQueue();
+
+	int texWidth, texHeight, texChannels;
+	unsigned char *pixels = nullptr;
+
+	if (texture->mHeight == 0)
+	{
+		// Compressed texture (e.g., JPEG/PNG)
+		pixels =
+			stbi_load_from_memory(reinterpret_cast<const stbi_uc *>(texture->pcData), static_cast<int>(texture->mWidth),
+								  &texWidth, &texHeight, &texChannels, STBI_rgb_alpha);
+
+		if (!pixels)
+		{
+			throw std::runtime_error("Failed to decode compressed texture!");
+		}
+	}
+	else
+	{
+		// Uncompressed RAW texture
+		texWidth = texture->mWidth;
+		texHeight = texture->mHeight;
+		texChannels = 4; // Assume RGBA for uncompressed textures
+		pixels = reinterpret_cast<unsigned char *>(texture->pcData);
+	}
+
+	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
+
+	VkDeviceSize imageSize = texWidth * texHeight * 4; // RGBA: 4 bytes per pixel
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	createBuffer(imageSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+				 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+				 stagingBufferMemory);
+
+	void *data;
+	vkMapMemory(m_device, stagingBufferMemory, 0, imageSize, 0, &data);
+	memcpy(data, pixels, static_cast<size_t>(imageSize));
+	vkUnmapMemory(m_device, stagingBufferMemory);
+
+	stbi_image_free(pixels);
+
+	VulkanUtil::createImage(
+		texWidth, texHeight, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+		VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+		VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+
+	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED,
+						  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+	copyBufferToImage(stagingBuffer, textureImage, static_cast<uint32_t>(texWidth), static_cast<uint32_t>(texHeight));
+
+	vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+
+	generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, mipLevels);
+}
+
+std::unique_ptr<ImageBuffer> ImageBuffer::createDefaultImageBuffer(glm::vec4 color)
+{
+	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
+	imageBuffer->initDefaultImageBuffer(color);
+	return imageBuffer;
+}
+
+void ImageBuffer::initDefaultImageBuffer(glm::vec4 color)
+{
+	auto &context = VulkanContext::getContext();
+	m_device = context.getDevice();
+	m_physicalDevice = context.getPhysicalDevice();
+	m_commandPool = context.getCommandPool();
+	m_graphicsQueue = context.getGraphicsQueue();
+
+	// 1. 스테이징 버퍼 생성 및 데이터 복사
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	VkDeviceSize bufferSize = 4; // RGBA 1픽셀
+
+	Buffer::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+						 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+						 stagingBufferMemory);
+
+	void *data;
+	vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	uint8_t pixel[4] = {static_cast<uint8_t>(color.r * 255), static_cast<uint8_t>(color.g * 255),
+						static_cast<uint8_t>(color.b * 255), static_cast<uint8_t>(color.a * 255)};
+	memcpy(data, pixel, static_cast<size_t>(bufferSize));
+	vkUnmapMemory(m_device, stagingBufferMemory);
+
+	// 2. VulkanUtil을 사용하여 Default Image 생성
+	mipLevels = 1; // Default Texture는 mipmap이 필요 없음
+
+	VulkanUtil::createImage(1, 1, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+							VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+
+	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED,
+						  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+
+	copyBufferToImage(stagingBuffer, textureImage, 1, 1);
+
+	transitionImageLayout(textureImage, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
+
+	vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
+}
+
+std::unique_ptr<ImageBuffer> ImageBuffer::createDefaultSingleChannelImageBuffer(float value)
+{
+	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
+	imageBuffer->initDefaultSingleChannelImageBuffer(value);
+	return imageBuffer;
+}
+
+void ImageBuffer::initDefaultSingleChannelImageBuffer(float value)
+{
+	auto &context = VulkanContext::getContext();
+	m_device = context.getDevice();
+	m_physicalDevice = context.getPhysicalDevice();
+	m_commandPool = context.getCommandPool();
+	m_graphicsQueue = context.getGraphicsQueue();
+
+	// 1. 스테이징 버퍼 생성 및 데이터 복사
+	VkBuffer stagingBuffer;
+	VkDeviceMemory stagingBufferMemory;
+	VkDeviceSize bufferSize = 1; // 단일 R 채널 1픽셀
+
+	Buffer::createBuffer(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT,
+						 VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, stagingBuffer,
+						 stagingBufferMemory);
+
+	void *data;
+	vkMapMemory(m_device, stagingBufferMemory, 0, bufferSize, 0, &data);
+	uint8_t pixel = static_cast<uint8_t>(value * 255); // 0.0 ~ 1.0 값을 0 ~ 255로 변환
+	memcpy(data, &pixel, sizeof(pixel));
+	vkUnmapMemory(m_device, stagingBufferMemory);
+
+	// 2. VulkanUtil을 사용하여 단일 채널 이미지 생성
+	mipLevels = 1; // Default Texture는 mipmap이 필요 없음
+
+	VulkanUtil::createImage(1, 1, mipLevels, VK_SAMPLE_COUNT_1_BIT, VK_FORMAT_R8_UNORM, VK_IMAGE_TILING_OPTIMAL,
+							VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
+							VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT, textureImage, textureImageMemory);
+
+	transitionImageLayout(textureImage, VK_FORMAT_R8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED,
+						  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mipLevels);
+
+	copyBufferToImage(stagingBuffer, textureImage, 1, 1);
+
+	transitionImageLayout(textureImage, VK_FORMAT_R8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+						  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, mipLevels);
+
+	vkDestroyBuffer(m_device, stagingBuffer, nullptr);
+	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 }
 
 // 이미지 레이아웃, 접근 권한을 변경할 수 있는 베리어를 커맨드 버퍼에 기록

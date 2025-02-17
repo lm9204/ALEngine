@@ -11,22 +11,27 @@ namespace ale
 class FrameBuffers
 {
   public:
-	static std::unique_ptr<FrameBuffers> createSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
-	static std::unique_ptr<FrameBuffers> createFinalFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createViewPortFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass);
 	static std::unique_ptr<FrameBuffers> createImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createShadowMapFrameBuffers(VkRenderPass renderPass);
+	static std::unique_ptr<FrameBuffers> createShadowCubeMapFrameBuffers(VkRenderPass renderPass);
 
-	~FrameBuffers()
-	{
-	}
+	~FrameBuffers() = default;
+
 	void cleanup();
 
-	void initSwapChainFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
-	void initFinalFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	void initViewPortFrameBuffers(glm::vec2 viewPortSize, VkRenderPass renderPass);
 	void initImGuiFrameBuffers(SwapChain *swapChain, VkRenderPass renderPass);
+	void initShadowMapFrameBuffers(VkRenderPass renderPass);
+	void initShadowCubeMapFrameBuffers(VkRenderPass renderPass);
 
 	std::vector<VkFramebuffer> &getFramebuffers()
 	{
 		return framebuffers;
+	}
+	VkImage &getDepthImage()
+	{
+		return depthImage;
 	}
 	VkImageView &getDepthImageView()
 	{
@@ -44,13 +49,17 @@ class FrameBuffers
 	{
 		return albedoImageView;
 	}
-	VkImageView &getFinalImageView()
+	VkImageView &getPbrImageView()
 	{
-		return finalImageView;
+		return pbrImageView;
 	}
-	VkImage &getFinalImage()
+	VkImageView &getViewPortImageView()
 	{
-		return finalImage;
+		return viewPortImageView;
+	}
+	VkImage &getViewPortImage()
+	{
+		return viewPortImage;
 	}
 
   private:
@@ -70,9 +79,13 @@ class FrameBuffers
 	VkDeviceMemory albedoImageMemory;
 	VkImageView albedoImageView;
 
-	VkImage finalImage;
-	VkDeviceMemory finalMemory;
-	VkImageView finalImageView;
+	VkImage pbrImage;
+	VkDeviceMemory pbrImageMemory;
+	VkImageView pbrImageView;
+
+	VkImage viewPortImage;
+	VkDeviceMemory viewPortImageMemory;
+	VkImageView viewPortImageView;
 
 	std::vector<VkFramebuffer> framebuffers;
 };

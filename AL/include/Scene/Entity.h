@@ -39,6 +39,16 @@ class Entity
 		m_Scene->m_Registry.remove<T>(m_EntityHandle);
 	}
 
+	// 템플릿 완전 특수화
+	template <>
+	void removeComponent<MeshRendererComponent>()
+	{
+		auto &component = m_Scene->getComponent<MeshRendererComponent>(m_EntityHandle);
+		m_Scene->removeEntityInCullTree(component.nodeId);
+		m_Scene->m_Registry.remove<MeshRendererComponent>(m_EntityHandle);
+	}
+
+
 	template <typename T> bool hasComponent()
 	{
 		return m_Scene->m_Registry.all_of<T>(m_EntityHandle);

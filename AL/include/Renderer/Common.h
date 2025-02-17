@@ -36,7 +36,8 @@ const int MAX_FRAMES_IN_FLIGHT = 2;
 const std::vector<const char *> validationLayers = {"VK_LAYER_KHRONOS_validation"};
 
 // 스왑 체인 확장
-const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME};
+const std::vector<const char *> deviceExtensions = {VK_KHR_SWAPCHAIN_EXTENSION_NAME,
+													VK_EXT_SHADER_VIEWPORT_INDEX_LAYER_EXTENSION_NAME};
 
 // 디버그 모드시 검증 레이어 사용
 #ifdef NDEBUG
@@ -108,7 +109,7 @@ struct Vertex
 			VK_FORMAT_R32G32B32_SFLOAT; // 저장되는 데이터 형식 (VK_FORMAT_R32G32B32_SFLOAT = vec3)
 		attributeDescriptions[0].offset = offsetof(Vertex, pos); // 버텍스 구조체에서 해당 속성이 시작되는 위치
 
-		// color 속성 정보 입력
+		// normal 속성 정보 입력
 		attributeDescriptions[1].binding = 0;
 		attributeDescriptions[1].location = 1;
 		attributeDescriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
@@ -137,7 +138,7 @@ struct Vertex
 		attributeDescriptions[5].location = 5;
 		attributeDescriptions[5].format = VK_FORMAT_R32G32B32A32_SFLOAT;
 		attributeDescriptions[5].offset = offsetof(Vertex, weights);
-
+    
 		return attributeDescriptions;
 	}
 };
@@ -149,53 +150,97 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 };
 
-struct Transform
+struct GeometryPassUniformBufferObject
 {
-	glm::vec3 position;
-	glm::vec3 rotation;
-	glm::vec3 scale;
-};
+	alignas(16) glm::mat4 model;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 proj;
 
-
+// legacy
+// struct GeometryPassVertexUniformBufferObject
+// {
+// 	alignas(16) glm::mat4 model;  // 64바이트
+// 	alignas(16) glm::mat4 view;	  // 64바이트
+// 	alignas(16) glm::mat4 proj;	  // 64바이트
+// 	alignas(4) bool heightFlag;	  // 4바이트
+// 	alignas(4) float heightScale; // 4바이트
+// 	alignas(8) glm::vec2 padding; // 8바이트 (패딩)
+// };
+  
 struct GeometryPassVertexUniformBufferObject {
     alignas(16) glm::mat4 model;      // 64바이트
     alignas(16) glm::mat4 view;       // 64바이트
     alignas(16) glm::mat4 proj;       // 64바이트
-	glm::mat4 finalBonesMatrices[MAX_BONES];
+	  glm::mat4 finalBonesMatrices[MAX_BONES];
     alignas(4) bool heightFlag;       // 4바이트
     alignas(4) float heightScale;     // 4바이트
     alignas(8) glm::vec2 padding;     // 8바이트 (패딩)
 };
 
+struct GeometryPassFragmentUniformBufferObject
+{
+	alignas(16) glm::vec4 albedoValue; // 16바이트 (정렬 우선순위)
+	alignas(4) float roughnessValue;
+	alignas(4) float metallicValue;
+	alignas(4) float aoValue;
 
-struct GeometryPassFragmentUniformBufferObject {
-    alignas(16) glm::vec4 albedoValue; // 16바이트 (정렬 우선순위)
-    alignas(4) float roughnessValue;
-    alignas(4) float metallicValue;
-    alignas(4) float aoValue;
-
-    alignas(4) bool albedoFlag;
-    alignas(4) bool normalFlag;
-    alignas(4) bool roughnessFlag;
-    alignas(4) bool metallicFlag;
-    alignas(4) bool aoFlag;
-    alignas(8) glm::vec2 padding; // 패딩 추가 (8바이트)
+	alignas(4) bool albedoFlag;
+	alignas(4) bool normalFlag;
+	alignas(4) bool roughnessFlag;
+	alignas(4) bool metallicFlag;
+	alignas(4) bool aoFlag;
+	alignas(8) glm::vec2 padding; // 패딩 추가 (8바이트)
 };
 
-struct Light {
-	alignas(16) glm::vec3 position;      // 광원의 위치 (점광원, 스포트라이트)
-    alignas(16) glm::vec3 direction;     // 광원의 방향 (스포트라이트, 방향성 광원)
-    alignas(16) glm::vec3 color;         // 광원의 색상
-    alignas(4) float intensity;          // 광원의 강도
-    alignas(4) float innerCutoff;        // 스포트라이트 내부 각도 (cosine 값)
-    alignas(4) float outerCutoff;        // 스포트라이트 외부 각도 (cosine 값)
-    alignas(4) uint32_t type;                 // 광원 타입 (0: 점광원, 1: 스포트라이트, 2: 방향성 광원)
+struct Light
+{
+	alignas(16) glm::vec3 position;	 // 광원의 위치 (점광원, 스포트라이트)
+	alignas(16) glm::vec3 direction; // 광원의 방향 (스포트라이트, 방향성 광원)
+	alignas(16) glm::vec3 color;	 // 광원의 색상
+	alignas(4) float intensity;		 // 광원의 강도
+	alignas(4) float innerCutoff;	 // 스포트라이트 내부 각도 (cosine 값)
+	alignas(4) float outerCutoff;	 // 스포트라이트 외부 각도 (cosine 값)
+	alignas(4) uint32_t type;		 // 광원 타입 (0: 점광원, 1: 스포트라이트, 2: 방향성 광원)
+	alignas(4) uint32_t onShadowMap;
+	alignas(4) uint32_t padding;
+	alignas(8) glm::vec2 padding2;
 };
 
-struct LightingPassUniformBufferObject {
-	alignas(16) glm::vec3 lightPos;
-	alignas(16) glm::vec3 lightColor;
-	alignas(16) glm::vec3 cameraPos;
+// struct LightingPassUniformBufferObject
+// {
+// 	alignas(16) glm::vec3 lightPos;
+// 	alignas(16) glm::vec3 lightColor;
+// 	alignas(16) glm::vec3 cameraPos;
+// };
+
+struct LightingPassUniformBufferObject
+{
+	alignas(16) Light lights[16];	 // 최대 16개의 광원 정보
+	alignas(16) glm::vec3 cameraPos; // 카메라 위치
+	alignas(16) glm::mat4 view[4][6];
+	alignas(16) glm::mat4 proj[4];
+	alignas(4) uint32_t numLights;	  // 활성화된 광원 개수
+	alignas(4) float ambientStrength; // 주변광 강도
+	alignas(8) glm::vec2 padding;
+};
+
+struct ShadowMapUniformBufferObject
+{
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::mat4 view;
+	alignas(16) glm::mat4 model;
+};
+
+struct ShadowCubeMapUniformBufferObject
+{
+	alignas(16) glm::mat4 proj;
+	alignas(16) glm::mat4 view[6];
+	alignas(16) glm::mat4 model;
+};
+
+struct ShadowCubeMapLayerIndex
+{
+	alignas(4) uint32_t layerIndex;
 };
 
 } // namespace ale

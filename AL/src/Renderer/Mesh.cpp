@@ -128,10 +128,72 @@ void Mesh::draw(VkCommandBuffer commandBuffer)
 
 void Mesh::initMesh(std::vector<Vertex> &vertices, std::vector<uint32_t> &indices)
 {
-	auto &context = VulkanContext::getContext();
+	calculateTangents(vertices, indices);
+	calculateAABB(vertices);
 
 	m_vertexBuffer = VertexBuffer::createVertexBuffer(vertices);
 	m_indexBuffer = IndexBuffer::createIndexBuffer(indices);
+}
+
+void Mesh::calculateTangents(std::vector<Vertex> &vertices, const std::vector<uint32_t> &indices)
+{
+	for (size_t i = 0; i < indices.size(); i += 3)
+	{
+		Vertex &v0 = vertices[indices[i]];
+		Vertex &v1 = vertices[indices[i + 1]];
+		Vertex &v2 = vertices[indices[i + 2]];
+
+		glm::vec3 edge1 = v1.pos - v0.pos;
+		glm::vec3 edge2 = v2.pos - v0.pos;
+
+		glm::vec2 deltaUV1 = v1.texCoord - v0.texCoord;
+		glm::vec2 deltaUV2 = v2.texCoord - v0.texCoord;
+
+		float f = 1.0f / (deltaUV1.x * deltaUV2.y - deltaUV2.x * deltaUV1.y);
+		if (std::isnan(f))
+		{
+			f = 0.0f;
+		}
+
+		glm::vec3 tangent;
+		tangent.x = f * (deltaUV2.y * edge1.x - deltaUV1.y * edge2.x);
+		tangent.y = f * (deltaUV2.y * edge1.y - deltaUV1.y * edge2.y);
+		tangent.z = f * (deltaUV2.y * edge1.z - deltaUV1.y * edge2.z);
+
+		tangent = glm::normalize(tangent);
+
+		v0.tangent += tangent;
+		v1.tangent += tangent;
+		v2.tangent += tangent;
+	}
+
+	// 정점 Tangent 정규화
+	for (auto &vertex : vertices)
+	{
+		vertex.tangent = glm::normalize(vertex.tangent);
+	}
+}
+
+void Mesh::calculateAABB(std::vector<Vertex> &vertices)
+{
+	m_minPos = glm::vec3(FLT_MAX);
+	m_maxPos = glm::vec3(-FLT_MAX);
+
+	for (Vertex &vertex : vertices)
+	{
+		m_minPos = glm::min(m_minPos, vertex.pos);
+		m_maxPos = glm::max(m_maxPos, vertex.pos);
+	}
+}
+
+glm::vec3 Mesh::getMaxPos()
+{
+	return m_maxPos;
+}
+
+glm::vec3 Mesh::getMinPos()
+{
+	return m_minPos;
 }
 
 } // namespace ale
