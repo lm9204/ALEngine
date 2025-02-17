@@ -150,12 +150,6 @@ struct UniformBufferObject
 	alignas(16) glm::mat4 proj;
 };
 
-struct GeometryPassUniformBufferObject
-{
-	alignas(16) glm::mat4 model;
-	alignas(16) glm::mat4 view;
-	alignas(16) glm::mat4 proj;
-
 // legacy
 // struct GeometryPassVertexUniformBufferObject
 // {
