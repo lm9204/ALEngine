@@ -85,10 +85,18 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 		enttMap[uuid] = (entt::entity)newEntity;
 	}
 	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
-
-	auto view = newScene->m_Registry.view<CameraComponent>();
+	
+	newScene->m_cullTree = scene->m_cullTree;
+	
+	auto view = newScene->m_Registry.view<MeshRendererComponent>();
+	for (auto entityHandle : view)
+	{
+		auto &mesh = dstRegistry.get<MeshRendererComponent>(entityHandle);
+		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));		
+	}
+		
 	newScene->initScene();
-
+	
 	return newScene;
 }
 
@@ -620,6 +628,7 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
+
 	// auto &bc = entity.addComponent<BoxColliderComponent>();
 }
 
