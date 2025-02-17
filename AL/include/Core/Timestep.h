@@ -1,7 +1,4 @@
-#ifndef TIMESTEP_H
-#define TIMESTEP_H
-
-#include <chrono>
+#pragma once
 
 #include "Core/Base.h"
 #include "Renderer/Common.h"
@@ -23,7 +20,7 @@ class Timestep
 	Timestep(std::chrono::duration<float, std::chrono::seconds::period> time);
 
 	std::chrono::duration<float, std::chrono::seconds::period> getSeconds() const;
-	std::chrono::duration<float, std::chrono::milliseconds::period> getMilliseconds() const;
+	std::chrono::duration<float, std::chrono::milliseconds::period> getMiliSeconds() const;
 
 	void print() const;
 	float count() const;
@@ -45,5 +42,3 @@ class Timestep
 	std::chrono::duration<float, std::chrono::seconds::period> m_Timestep;
 };
 } // namespace ale
-
-#endif

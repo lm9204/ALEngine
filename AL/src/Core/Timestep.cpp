@@ -29,14 +29,14 @@ bool Timestep::operator<=(const std::chrono::duration<float, std::chrono::second
 
 std::chrono::duration<float, std::chrono::seconds::period> Timestep::getSeconds() const { return m_Timestep; }
 
-std::chrono::duration<float, std::chrono::milliseconds::period> Timestep::getMilliseconds() const
+std::chrono::duration<float, std::chrono::milliseconds::period> Timestep::getMiliSeconds() const
 {
 	return (std::chrono::duration<float, std::chrono::milliseconds::period>)m_Timestep;
 }
 
 void Timestep::print() const
 {
-	auto inMilliSeconds = getMilliseconds();
+	auto inMilliSeconds = getMiliSeconds();
 	std::cout << "timestep in milli seconds: " << inMilliSeconds.count() << "ms\n";
 	auto inSeconds = getSeconds();
 	std::cout << "timestep in seconds: " << inSeconds.count() << "s\n";
