@@ -20,7 +20,7 @@ public:
 	void start(size_t index);
 	void start() { start(0); };
 	void stop() { m_CurrentAnimation->stop(); };
-	void setRepeat(bool repeat);
+	void setRepeat(bool repeat, int index = -1);
 	void setRepeatAll(bool repeat);
 	bool isRunning() const { return m_CurrentAnimation->isRunning(); };
 	bool willExpire(const Timestep& timestep) const { return m_CurrentAnimation->willExpire(timestep); };
@@ -54,6 +54,7 @@ private:
 	float	m_SpeedFactor;
 	uint32_t m_FrameCounter;
 	std::vector<bool> m_Repeats;
+	Bones m_CapturedPose;
 
 	struct SAData m_Data[2];
 

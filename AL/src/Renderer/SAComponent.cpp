@@ -25,6 +25,9 @@ SAComponent::SAComponent(std::shared_ptr<Model>& model) :
 		m_Repeats.resize(m_Animations->size());
 		for (size_t i = 0; i < m_Animations->size(); ++i)
 			m_Repeats[i] = false;
+
+		if (m_Animations->size() > 0)
+			m_CurrentAnimation = &(*m_Animations)[0]; // basic animation init
 	}
 }
 
@@ -40,13 +43,17 @@ void SAComponent::start(size_t index)
 	init(&(*m_Animations)[index]);
 }
 
-void SAComponent::setRepeat(bool repeat)
+void SAComponent::setRepeat(bool repeat, int index)
 {
-	if (m_CurrentAnimation)
+	if (m_CurrentAnimation && index == -1)
 	{
 		int index = m_Animations->getIndex(m_CurrentAnimation->getName());
 		if (index != -1)
 			m_Repeats[index] = repeat;
+	}
+	else
+	{
+		m_Repeats[index] = repeat;
 	}
 }
 
@@ -69,15 +76,18 @@ void SAComponent::init(SkeletalAnimation* animation)
 
 void SAComponent::updateAnimation(const Timestep& timestep, uint32_t currentFrame)
 {
-	m_StateManager->update(timestep);
 	if (m_StateManager->inTransition) // BLENDING-ANIMATION (2)
 	{
 		if (m_StateManager->currentState.animationName != m_CurrentAnimation->getName())
 		{
 			auto& prevAnim = (*m_Animations)[m_StateManager->prevState.animationName];
+			// if (!getAnimRepeat(&prevAnim))
+				// prevAnim.start();
 			setData(m_FrameCounter, prevAnim.getData(), 0);
 			
 			m_CurrentAnimation = &(*m_Animations)[m_StateManager->currentState.animationName];
+			if (!getAnimRepeat(m_CurrentAnimation))
+				m_CurrentAnimation->start();
 			setData(m_FrameCounter, m_CurrentAnimation->getData(), 1);
 		}
 		blendUpdate(timestep, *m_Skeleton, currentFrame);
@@ -102,6 +112,7 @@ void SAComponent::updateAnimation(const Timestep& timestep, uint32_t currentFram
 		m_Model->setShaderData(m_Skeleton->m_ShaderData.m_FinalBonesMatrices);
 		this->setData(m_Animations->getCurrentFrame() ,m_CurrentAnimation->getData(), 0);
 	}
+	m_StateManager->update(timestep);
 }
 
 void SAComponent::blendUpdate(
@@ -118,10 +129,24 @@ void SAComponent::blendUpdate(
 	float blendFactor = std::min(m_StateManager->transitionTime / m_StateManager->transitionDuration, 1.0f);
 	Bones poseFrom, poseTo;
 
-	m_Animations->uploadData(&animA, m_FrameCounter);
-	m_Animations->update(timestep, *m_Skeleton, currentFrame);
-	poseFrom = m_Skeleton->m_Bones;
-	this->setData(m_FrameCounter, animA.getData(), 0); // prevState 애니메이션이 기존 애니메이션이므로 기존 애니메이션의 키프레임 데이터를 유지
+	if (animA.isRunning())
+	{
+		m_Animations->uploadData(&animA, m_FrameCounter);
+		m_Animations->update(timestep, *m_Skeleton, currentFrame);
+		poseFrom = m_Skeleton->m_Bones;
+		this->setData(m_FrameCounter, animA.getData(), 0); // prevState 애니메이션이 기존 애니메이션이므로 기존 애니메이션의 키프레임 데이터를 유지
+	}
+	else 
+	{
+		if (m_StateManager->transitionTime == 0.0f)
+		{
+			m_Animations->uploadData(&animA, m_FrameCounter);
+			m_Animations->update(timestep, *m_Skeleton, currentFrame);
+			m_CapturedPose = m_Skeleton->m_Bones;
+			this->setData(m_FrameCounter, animA.getData(), 0); // prevState 애니메이션이 기존 애니메이션이므로 기존 애니메이션의 키프레임 데이터를 유지
+		}
+		poseFrom = m_CapturedPose;
+	}
 
 	m_Animations->uploadData(&animB, m_FrameCounter);
 	m_Animations->update(timestep, *m_Skeleton, currentFrame);
@@ -138,7 +163,6 @@ SAComponent::Bones SAComponent::blendBones(Bones& to, Bones& from, float blendFa
 {
 	if (to.size() != from.size())
 	{
-		AL_ERROR("SAComponent::blendBones(): Each Bones has different size! ({0}:{1})", to.size(), from.size());
 		return to;
 	}
 
