@@ -96,18 +96,29 @@ void Scene::initScene() {
     std::uniform_real_distribution<float> posDist(-3.0f, 3.0f); // 위치는 -5 ~ 5 사이
     std::uniform_real_distribution<float> colorDist(0.0f, 1.0f); // 색상은 0 ~ 1 사이
 
-    for (size_t i = 0; i < 16; ++i) {
-        Light light {
-            glm::vec3(posDist(gen), posDist(gen), posDist(gen)), // 랜덤 위치
-            glm::vec3(0.0f, -1.0f, 0.0f),                      // 방향은 고정
-            glm::vec3(colorDist(gen), colorDist(gen), colorDist(gen)), // 랜덤 색상
-            1.0f,                                              // 강도 (기본값)
-            0.0f,                                              // Inner Cutoff
-            0.0f,                                              // Outer Cutoff
-            0                                                 // 점광원 (type = 0)
-        };
-        m_lights.push_back(light);
-    }
+    Light light {
+        glm::vec3(0.0f, 1.0f, 0.0f),
+        glm::vec3(0.0f, -1.0f, 0.0f),
+        glm::vec3(1.0f, 1.0f, 1.0f),
+        10.0f,
+        0.0f,
+        0.0f,
+        0
+    };
+
+    m_lights.push_back(light);
+    // for (size_t i = 0; i < 16; ++i) {
+    //     Light light {
+    //         glm::vec3(posDist(gen), posDist(gen), posDist(gen)), // 랜덤 위치
+    //         glm::vec3(0.0f, -1.0f, 0.0f),                      // 방향은 고정
+    //         glm::vec3(colorDist(gen), colorDist(gen), colorDist(gen)), // 랜덤 색상
+    //         1.0f,                                              // 강도 (기본값)
+    //         0.0f,                                              // Inner Cutoff
+    //         0.0f,                                              // Outer Cutoff
+    //         0                                                 // 점광원 (type = 0)
+    //     };
+    //     m_lights.push_back(light);
+    // }
     m_numLights = m_lights.size(); // 광원 개수 설정
 
 
@@ -133,52 +144,13 @@ void Scene::initScene() {
         {0.0f, m_defaultTextures.height, false}
     );
 
-
     m_floorObject = Object::createObject("floor", m_planeModel, 
     Transform{glm::vec3(0.0f, -1.7f, 0.0f), glm::vec3(-90.0f, 0.0f, 0.0f), glm::vec3(5.0f, 5.0f, 5.0f)});
     m_objects.push_back(m_floorObject);
 
-    m_cameraModel = Model::createModel("Models/Camera_01_2k.gltf/Camera_01_2k.gltf", m_defaultMaterial);
-    m_cameraObject = Object::createObject("camera", m_cameraModel, 
-    Transform{glm::vec3(0.1f, -1.2f, 0.1f), glm::vec3(0.0f, -50.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_cameraObject);
-
-    m_tableModel = Model::createModel("Models/coffee_table_round_01_4k.gltf/coffee_table_round_01_4k.gltf", m_defaultMaterial);
-    m_tableObject = Object::createObject("table", m_tableModel, 
-    Transform{glm::vec3(0.0f, -1.7f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_tableObject);
-
-    m_sofaModel = Model::createModel("Models/Sofa_01_4k.gltf/Sofa_01_4k.gltf", m_defaultMaterial);
-    m_sofaObject = Object::createObject("sofa", m_sofaModel, 
-    Transform{glm::vec3(0.0f, -1.7f, -1.2f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_sofaObject);
-
-    m_jugModel = Model::createModel("Models/jug_01_4k.gltf/jug_01_4k.gltf", m_defaultMaterial);
-    m_jugObject = Object::createObject("jug", m_jugModel, 
-    Transform{glm::vec3(-0.1f, -1.2f, -0.1f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_jugObject);
-
-
-    m_shelfModel = Model::createModel("Models/steel_frame_shelves_02_4k.gltf/steel_frame_shelves_02_4k.gltf", m_defaultMaterial);
-    m_shelfObject = Object::createObject("shelf", m_shelfModel, 
-    Transform{glm::vec3(-1.6f, -1.7f, -1.25f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_shelfObject);
-
-
-    m_plant1Model = Model::createModel("Models/potted_plant_01_4k.gltf/potted_plant_01_4k.gltf", m_defaultMaterial);
-    m_plant1Object = Object::createObject("plant1", m_plant1Model, 
-    Transform{glm::vec3(1.5f, -1.7f, -0.8f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_plant1Object);
-
-
-    m_plant2Model = Model::createModel("Models/potted_plant_04_4k.gltf/potted_plant_04_4k.gltf", m_defaultMaterial);
-    m_plant2Object = Object::createObject("plant2", m_plant2Model, 
-    Transform{glm::vec3(-1.6f, -0.56f, -1.25f), glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(1.0f, 1.0f, 1.0f)});
-    m_objects.push_back(m_plant2Object);
-
-    std::shared_ptr<Model> saModel = Model::createModel("models/animated.gltf/animated.gltf", m_defaultMaterial);
+    std::shared_ptr<Model> saModel = Model::createModel("models/Mannequin.gltf/Mannequin.gltf", m_defaultMaterial);
     std::shared_ptr<Object> SAplayerObject = Object::createObject("SAplayer", saModel,
-    Transform{glm::vec3(1.0f, 1.0f, 1.0f), glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(0.01f, 0.01f, 0.01f)});
+    Transform{glm::vec3(0.0f, -1.5f, 0.0f), glm::vec3(90.0f, 0.0f, 0.0f), glm::vec3(0.01f, 0.01f, 0.01f)});
     m_SAComponent = std::make_shared<SAComponent>(saModel);
     m_objects.push_back(SAplayerObject);
 

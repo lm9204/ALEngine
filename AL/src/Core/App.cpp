@@ -52,17 +52,47 @@ void App::run()
 	timeLastFrame = time;
 
 	SAComponent* sac = &(*m_Scene->m_SAComponent);
-	sac->setRepeatAll(true);
-	sac->start(0);
+	sac->start(1);
+	sac->setRepeat(true, 0);
+	sac->setRepeat(true, 1);
+	sac->setRepeat(true, 4);
 
 	sac->m_StateManager->addState({"Idle", "Idle", true, true, 0.5f});
 	sac->m_StateManager->addState({"Walk", "StartWalk", true, true, 0.5f});
+	sac->m_StateManager->addState({"FastRun", "FastRun", true, true, 0.5f});
+	sac->m_StateManager->addState({"Jumping", "Jumping", false, false, 0.5f});
+	sac->m_StateManager->addState({"JumpingDown", "JumpingDown", false, false, 0.5f});
 	sac->m_StateManager->currentState = *sac->m_StateManager->getState("Idle");
 	
 	sac->m_StateManager->addTransition({
 		"Idle", "Walk",
 		[&](){
-			return glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_G) == GLFW_PRESS;
+			return glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_W) == GLFW_PRESS &&
+					glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE;
+		},
+		0.5f
+	});
+	sac->m_StateManager->addTransition({
+		"Idle", "FastRun",
+		[&](){
+			return  glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_W) == GLFW_PRESS &&
+					glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
+		},
+		5.0f
+	});
+	sac->m_StateManager->addTransition({
+		"Idle", "Jumping",
+		[&](){
+			return  glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_SPACE) == GLFW_PRESS &&
+					glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE;
+		},
+		0.5f
+	});
+	sac->m_StateManager->addTransition({
+		"Idle", "JumpingDown",
+		[&](){
+			return  glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_SPACE) == GLFW_PRESS &&
+					glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_LEFT_SHIFT) == GLFW_PRESS;
 		},
 		0.5f
 	});
@@ -70,8 +100,9 @@ void App::run()
 		"*", "Idle",
 		[&](){
 			auto window = m_Window->getNativeWindow();
-			return	sac->m_StateManager->hasNoTransitionFor(0.2f) &&
-					(glfwGetKey(window, GLFW_KEY_G) == GLFW_RELEASE);
+			return  (glfwGetKey(window, GLFW_KEY_W) == GLFW_RELEASE) &&
+					(glfwGetKey(window, GLFW_KEY_SPACE) == GLFW_RELEASE) &&
+					(glfwGetKey(window, GLFW_KEY_LEFT_SHIFT) == GLFW_RELEASE);
 		},
 		0.5f
 	});
@@ -102,10 +133,6 @@ void App::run()
 		}
 		m_Window->onUpdate();
 		m_Scene->processInput(m_Window->getNativeWindow());
-		if (glfwGetKey(m_Window->getNativeWindow(), GLFW_KEY_G) == GLFW_PRESS)
-		{
-			sac->m_StateManager->pushStateChangeRequest("Walk");
-		}
 		m_Scene->updateAnimation(timestep, m_Renderer->getCurrentFrame());
 		m_Renderer->drawFrame(m_Scene.get());
 		time = std::chrono::high_resolution_clock::now();
