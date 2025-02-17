@@ -25,21 +25,21 @@ void CameraController::onUpdate(Timestep ts)
 
 	if (Input::isKeyPressed(Key::W))
 	{
-		m_CameraPos += m_CameraFront * m_Speed * ts.getMiliSeconds();
+		m_CameraPos += m_CameraFront * m_Speed * ts.getMiliSeconds().count();
 	}
 	if (Input::isKeyPressed(Key::S))
 	{
-		m_CameraPos -= m_CameraFront * m_Speed * ts.getMiliSeconds();
+		m_CameraPos -= m_CameraFront * m_Speed * ts.getMiliSeconds().count();
 	}
 
 	auto cameraRight = glm::normalize(glm::cross(m_CameraUp, -m_CameraFront));
 	if (Input::isKeyPressed(Key::A))
 	{
-		m_CameraPos -= cameraRight * m_Speed * ts.getMiliSeconds();
+		m_CameraPos -= cameraRight * m_Speed * ts.getMiliSeconds().count();
 	}
 	if (Input::isKeyPressed(Key::D))
 	{
-		m_CameraPos += cameraRight * m_Speed * ts.getMiliSeconds();
+		m_CameraPos += cameraRight * m_Speed * ts.getMiliSeconds().count();
 	}
 	m_Camera.setPosition(m_CameraPos);
 }

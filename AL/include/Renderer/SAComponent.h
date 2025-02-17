@@ -2,6 +2,7 @@
 #define SACOMPONENT_H
 
 #include "Core/Base.h"
+#include "Core/Timestep.h"
 #include "Renderer/Common.h"
 #include "Renderer/Model.h"
 #include "Renderer/Animation/SkeletalAnimations.h"

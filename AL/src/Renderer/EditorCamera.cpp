@@ -16,21 +16,21 @@ void EditorCamera::onUpdate(Timestep ts)
 
 	if (Input::isKeyPressed(Key::W))
 	{
-		m_cameraPos += m_cameraFront * m_Speed * ts.getMiliSeconds();
+		m_cameraPos += m_cameraFront * m_Speed * ts.getMiliSeconds().count();
 	}
 	if (Input::isKeyPressed(Key::S))
 	{
-		m_cameraPos -= m_cameraFront * m_Speed * ts.getMiliSeconds();
+		m_cameraPos -= m_cameraFront * m_Speed * ts.getMiliSeconds().count();
 	}
 
 	auto cameraRight = glm::normalize(glm::cross(m_cameraUp, -m_cameraFront));
 	if (Input::isKeyPressed(Key::A))
 	{
-		m_cameraPos -= cameraRight * m_Speed * ts.getMiliSeconds();
+		m_cameraPos -= cameraRight * m_Speed * ts.getMiliSeconds().count();
 	}
 	if (Input::isKeyPressed(Key::D))
 	{
-		m_cameraPos += cameraRight * m_Speed * ts.getMiliSeconds();
+		m_cameraPos += cameraRight * m_Speed * ts.getMiliSeconds().count();
 	}
 
 	updateView();
