@@ -44,7 +44,7 @@ float PCFShadow(sampler2DShadow shadowMap, vec3 shadowCoord, float currentDepth)
     for (int x = -1; x <= 1; ++x) {
         for (int y = -1; y <= 1; ++y) {
             vec2 offset = vec2(x, y) * texelSize;
-            shadow += texture(shadowMap, vec3(shadowCoord.xy + offset, shadowCoord.z));
+            shadow += texture(shadowMap, vec3(shadowCoord.xy + offset, shadowCoord.z - 0.005));
         }
     }
 
@@ -263,7 +263,7 @@ void main() {
         vec3 kD = vec3(1.0) - kS;
         kD *= 1.0 - metallic;
 
-        float NdotL = max(dot(N, L), 0.0);
+        float NdotL = max(dot(N, L), 0.05);
         vec3 diffuse = kD * albedo / 3.14159265359;
         vec3 radiance = lights[i].color * lights[i].intensity * NdotL * attenuation;
 
