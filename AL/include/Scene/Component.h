@@ -85,7 +85,9 @@ struct MeshRendererComponent
 {
 	std::shared_ptr<RenderingComponent> m_RenderingComponent;
 	uint32_t type;
-	std::string path;
+	std::string path = "";
+	std::string matPath = "";
+	bool isMatChanged = false;
 
 	// Culling
 	int32_t nodeId;
@@ -127,6 +129,7 @@ struct CameraComponent
 	SceneCamera m_Camera;
 	bool m_Primary = true;
 	bool m_FixedAspectRatio = false;
+	std::string skyboxPath = "";
 
 	CameraComponent() = default;
 	CameraComponent(const CameraComponent &) = default;

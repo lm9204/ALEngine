@@ -50,7 +50,7 @@ void Renderer::init(GLFWwindow *window)
 	inFlightFences = m_syncObjects->getInFlightFences();
 #pragma endregion
 
-	m_sphericalMapTexture = Texture::createTexture("./textures/skybox_tmp.hdr");
+	m_sphericalMapTexture = Texture::createTexture("./Sandbox/assets/defaultSkybox.hdr");
 
 	m_sphericalMapRenderPass = RenderPass::createSphericalMapRenderPass();
 	sphericalMapRenderPass = m_sphericalMapRenderPass->getRenderPass();
@@ -332,6 +332,69 @@ void Renderer::recreateViewPort()
 	m_viewPortShaderResourceManager->initViewPortShaderResourceManager(viewPortDescriptorSetLayout, viewPortImageView,
 																	   viewPortSampler);
 	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
+}
+
+void Renderer::updateSkybox(std::string path)
+{
+	vkDeviceWaitIdle(device);
+
+	// clean up은 초기화의 역순
+
+	m_lightingPassShaderResourceManager->cleanup();
+	m_backgroundShaderResourceManager->cleanup();
+	m_backgroundFrameBuffers->cleanup();
+	m_backgroundPipeline->cleanup();
+	m_backgroundRenderPass->cleanup();
+	m_sphericalMapShaderResourceManager->cleanup();
+	m_sphericalMapPipeline->cleanup();
+	m_sphericalMapFrameBuffers->cleanup();
+	m_sphericalMapRenderPass->cleanup();
+	m_sphericalMapTexture->cleanup();
+
+	// 새로운 텍스쳐 로드
+	m_sphericalMapTexture->initTexture(path);
+
+	m_sphericalMapRenderPass->initSphericalMapRenderPass();
+	sphericalMapRenderPass = m_sphericalMapRenderPass->getRenderPass();
+
+	m_sphericalMapFrameBuffers->initSphericalMapFrameBuffers(sphericalMapRenderPass);
+	sphericalMapFramebuffers = m_sphericalMapFrameBuffers->getFramebuffers();
+	sphericalMapImageView = m_sphericalMapFrameBuffers->getSphericalMapImageView();
+	// sphericalMapSampler = Texture::createSphericalMapSampler();
+	m_sphericalMapPipeline->initSphericalMapPipeline(sphericalMapRenderPass, sphericalMapDescriptorSetLayout);
+	sphericalMapPipelineLayout = m_sphericalMapPipeline->getPipelineLayout();
+	sphericalMapGraphicsPipeline = m_sphericalMapPipeline->getPipeline();
+
+	m_sphericalMapShaderResourceManager->initSphericalMapShaderResourceManager(
+		sphericalMapDescriptorSetLayout, m_sphericalMapTexture->getImageView(), m_sphericalMapTexture->getSampler());
+	sphericalMapDescriptorSets = m_sphericalMapShaderResourceManager->getDescriptorSets();
+	sphericalMapUniformBuffers = m_sphericalMapShaderResourceManager->getUniformBuffers();
+
+	recordSphericalMapCommandBuffer();
+	m_backgroundRenderPass->initBackgroundRenderPass();
+	backgroundRenderPass = m_backgroundRenderPass->getRenderPass();
+	m_backgroundPipeline->initBackgroundPipeline(backgroundRenderPass, backgroundDescriptorSetLayout);
+	backgroundPipelineLayout = m_backgroundPipeline->getPipelineLayout();
+	backgroundGraphicsPipeline = m_backgroundPipeline->getPipeline();
+
+	m_backgroundFrameBuffers->initBackgroundFrameBuffers(viewPortSize, backgroundRenderPass);
+	backgroundFramebuffers = m_backgroundFrameBuffers->getFramebuffers();
+	backgroundImageView = m_backgroundFrameBuffers->getBackgroundImageView();
+	// backgroundSampler = Texture::createBackgroundSampler();
+
+	m_backgroundShaderResourceManager->initBackgroundShaderResourceManager(backgroundDescriptorSetLayout,
+																		   sphericalMapImageView, sphericalMapSampler);
+	backgroundDescriptorSets = m_backgroundShaderResourceManager->getDescriptorSets();
+	backgroundUniformBuffers = m_backgroundShaderResourceManager->getUniformBuffers();
+
+	m_lightingPassShaderResourceManager->initLightingPassShaderResourceManager(
+		lightingPassDescriptorSetLayout, m_viewPortFrameBuffers->getPositionImageView(),
+		m_viewPortFrameBuffers->getNormalImageView(), m_viewPortFrameBuffers->getAlbedoImageView(),
+		m_viewPortFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
+		shadowCubeMapSampler, backgroundImageView, backgroundSampler);
+
+	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
+	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
 }
 
 void Renderer::loadScene(Scene *scene)
@@ -706,10 +769,10 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 			}
 			else if (light->type == 2)
 			{
-				lightPos = glm::vec3(0.0f) - lightDir * 15.0f;
+				lightPos = glm::vec3(0.0f) - lightDir * 10.0f;
 				lightingPassUbo.view[index][0] = glm::lookAt(lightPos, glm::vec3(0.0f), up);
-				float orthoSize = 15.0f;
-				lightingPassUbo.proj[index] = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, -15.0f, 30.0f);
+				float orthoSize = 10.0f;
+				lightingPassUbo.proj[index] = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, -10.0f, 20.0f);
 				lightingPassUbo.proj[index][1][1] *= -1;
 			}
 			index++;
@@ -817,17 +880,17 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 	}
 	else if (lightInfo.type == 2)
 	{												   // directional light
-		lightPos = glm::vec3(0.0f) - lightDir * 15.0f; // 광원을 기준으로 카메라처럼 뒤쪽으로 멀어짐
+		lightPos = glm::vec3(0.0f) - lightDir * 10.0f; // 광원을 기준으로 카메라처럼 뒤쪽으로 멀어짐
 		// View 행렬 계산
 		lightView = glm::lookAt(lightPos,		 // 광원이 가리키는 가상의 위치
 								glm::vec3(0.0f), // 광원이 비추는 중심 (월드 좌표계 원점)
 								up				 // 카메라의 상단 방향
 		);
 		// Projection 행렬 계산 (Orthographic)
-		float orthoSize = 15.0f;					  // 광원의 영향을 받는 영역의 크기
+		float orthoSize = 10.0f;					  // 광원의 영향을 받는 영역의 크기
 		lightProj = glm::ortho(-orthoSize, orthoSize, // 좌/우 클립 경계
 							   -orthoSize, orthoSize, // 아래/위 클립 경계
-							   -15.0f, 30.0f		  // 근/원 클립 경계
+							   -10.0f, 20.0f		  // 근/원 클립 경계
 		);
 		// Vulkan 좌표계 보정
 		lightProj[1][1] *= -1;

@@ -77,7 +77,7 @@ class App
 
 	ApplicationSpecification m_Spec;
 
-	float m_LastFrameTime = 0.0f;
+	Chrono::TimePoint m_LastFrameTime;
 	bool m_Running = true;
 	bool m_Minimized = false;
 

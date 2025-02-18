@@ -15,6 +15,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "Core/App.h"
+
 #include <cstring>
 
 /* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
@@ -79,13 +81,17 @@ void SceneHierarchyPanel::onImGuiRender()
 			if (ImGui::BeginMenu("3D Object"))
 			{
 				if (ImGui::MenuItem("Box"))
-					;
+					m_Context->createPrimitiveMeshEntity("Box", 1);
 				if (ImGui::MenuItem("Sphere"))
-					;
+					m_Context->createPrimitiveMeshEntity("Sphere", 2);
+				if (ImGui::MenuItem("Plane"))
+					m_Context->createPrimitiveMeshEntity("Plane", 3);
+				if (ImGui::MenuItem("Ground"))
+					m_Context->createPrimitiveMeshEntity("Ground", 4);
 				if (ImGui::MenuItem("Capsule"))
-					;
+					m_Context->createPrimitiveMeshEntity("Capsule", 5);
 				if (ImGui::MenuItem("Cylinder"))
-					;
+					m_Context->createPrimitiveMeshEntity("Cylinder", 6);
 				ImGui::EndMenu();
 			}
 			ImGui::EndPopup();
@@ -618,13 +624,31 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		float perspectiveFar = camera.getFar();
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setFar(perspectiveFar);
+
+		ImGui::Button("Skybox", ImVec2(200.0f, 0.0f));
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t *path = (const wchar_t *)payload->Data;
+				std::filesystem::path filePath(path);
+				if (filePath.extension().string() == ".hdr")
+				{
+					component.skyboxPath = filePath.string();
+					std::cout << "skybox: " << filePath.string() << '\n';
+					Renderer &renderer = App::get().getRenderer();
+					renderer.updateSkybox(filePath.string());
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
 	});
 
 	drawComponent<MeshRendererComponent>("MeshRenderer", entity, [entity, scene = m_Context](auto &component) mutable {
 		uint32_t meshType = component.type;
 		std::shared_ptr<RenderingComponent> rc = component.m_RenderingComponent;
 
-		const char *meshTypeStrings[] = {"Box", "Sphere", "Plane", "Ground", "None", "Model"};
+		const char *meshTypeStrings[] = {"None", "Box", "Sphere", "Plane", "Ground", "Capsule", "Cylinder", "Model"};
 		const char *currentMeshTypeString = meshTypeStrings[(int)meshType];
 
 		ImGui::Columns(2);
@@ -634,7 +658,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		ImGui::NextColumn();
 		if (ImGui::BeginCombo("##MeshTypeCombo", currentMeshTypeString))
 		{
-			for (int32_t i = 0; i < 5; ++i)
+			for (int32_t i = 0; i < 8; ++i)
 			{
 				bool isSelected = currentMeshTypeString == meshTypeStrings[i];
 
@@ -644,14 +668,20 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					// model 정보 바꾸기
 
 					component.type = i;
-					if (i == 4) // None
+					if (i == 0) // None
 					{
+					}
+					else if (i == 7)
+					{
+						break;
 					}
 					else
 					{
 						component.m_RenderingComponent =
 							RenderingComponent::createRenderingComponent(scene->getDefaultModel(i));
 						component.path.clear();
+						component.matPath.clear();
+						component.isMatChanged = false;
 					}
 				}
 				if (isSelected)
@@ -677,8 +707,9 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				{
 					std::shared_ptr<Model> model = Model::createModel(filePath.string(), scene->getDefaultMaterial());
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
-					component.type = 4;
+					component.type = 7;
 					component.path = filePath.string();
+					component.isMatChanged = false;
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -693,45 +724,43 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				if (filePath.extension().string() == ".gltf" || filePath.extension().string() == ".glb" ||
 					filePath.extension().string() == ".obj")
 				{
-					// std::shared_ptr<Model> model = Model::createModel(filePath.string(),
-					// scene->getDefaultMaterial()); component.m_RenderingComponent =
-					// RenderingComponent::createRenderingComponent(model);
-
 					component.m_RenderingComponent->updateMaterial(
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
-					component.type = 4;
-					component.path = filePath.string();
+					component.matPath = filePath.string();
+					component.isMatChanged = true;
 				}
 			}
 			ImGui::EndDragDropTarget();
 		}
 		auto &materials = rc->getMaterials();
-		if (materials.size() != 1)
-		{
-			std::shared_ptr<Material> material = materials[1];
-			Albedo &albedo = material->getAlbedo();
-			drawVec3Control("Albedo", albedo.albedo);
-			drawCheckBox("Albedo Flag", albedo.flag);
 
-			NormalMap &normalMap = material->getNormalMap();
-			drawCheckBox("Normal Flag", normalMap.flag);
+		static int32_t idx = 0;
+		ImGui::DragInt("Material Index", &idx, 0.1f, 0, materials.size() - 1, "%d");
+		idx = std::clamp(idx, 0, static_cast<int32_t>(materials.size()) - 1);
 
-			Roughness &roughness = material->getRoughness();
-			drawFloatControl("Roughness", roughness.roughness);
-			drawCheckBox("Roughness Flag", roughness.flag);
+		std::shared_ptr<Material> &material = materials[idx];
+		Albedo &albedo = material->getAlbedo();
+		drawVec3Control("Albedo", albedo.albedo);
+		drawCheckBox("Albedo Flag", albedo.flag);
 
-			Metallic &metalic = material->getMetallic();
-			drawFloatControl("Metallic", metalic.metallic);
-			drawCheckBox("Metallic Flag", metalic.flag);
+		NormalMap &normalMap = material->getNormalMap();
+		drawCheckBox("Normal Flag", normalMap.flag);
 
-			AOMap &aoMap = material->getAOMap();
-			drawFloatControl("AOMap", aoMap.ao);
-			drawCheckBox("AOMap Flag", aoMap.flag);
+		Roughness &roughness = material->getRoughness();
+		drawFloatControl("Roughness", roughness.roughness);
+		drawCheckBox("Roughness Flag", roughness.flag);
 
-			HeightMap &heightMap = material->getHeightMap();
-			drawFloatControl("HeightMap", heightMap.height);
-			drawCheckBox("HeightMap Flag", heightMap.flag);
-		}
+		Metallic &metalic = material->getMetallic();
+		drawFloatControl("Metallic", metalic.metallic);
+		drawCheckBox("Metallic Flag", metalic.flag);
+
+		AOMap &aoMap = material->getAOMap();
+		drawFloatControl("AOMap", aoMap.ao);
+		drawCheckBox("AOMap Flag", aoMap.flag);
+
+		HeightMap &heightMap = material->getHeightMap();
+		drawFloatControl("HeightMap", heightMap.height);
+		drawCheckBox("HeightMap Flag", heightMap.flag);
 	});
 
 	drawComponent<LightComponent>("Light", entity, [entity, scene = m_Context](auto &component) mutable {

@@ -180,6 +180,18 @@ void Scene::destroyEntity(Entity entity)
 	m_Registry.destroy(entity);
 }
 
+Entity Scene::createPrimitiveMeshEntity(const std::string &name, uint32_t idx)
+{
+	Entity entity = createEntity(name);
+
+	auto &mc = entity.addComponent<MeshRendererComponent>();
+	std::shared_ptr<Model> &model = getDefaultModel(idx);
+
+	mc.type = idx;
+	mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+	return entity;
+}
+
 void Scene::onRuntimeStart()
 {
 	m_IsRunning = true;
@@ -345,6 +357,8 @@ void Scene::initScene()
 	m_sphereModel = Model::createSphereModel(m_defaultMaterial);
 	m_planeModel = Model::createPlaneModel(m_defaultMaterial);
 	m_groundModel = Model::createGroundModel(m_defaultMaterial);
+	m_capsuleModel = Model::createCapsuleModel(m_defaultMaterial);
+	m_cylinderModel = Model::createCylinderModel(m_defaultMaterial);
 
 	m_cullTree.setScene(this);
 }
@@ -520,14 +534,18 @@ std::shared_ptr<Model> Scene::getDefaultModel(int32_t idx)
 	// ASSERT idx
 	switch (idx)
 	{
-	case 0:
-		return m_boxModel;
 	case 1:
-		return m_sphereModel;
+		return m_boxModel;
 	case 2:
-		return m_planeModel;
+		return m_sphereModel;
 	case 3:
+		return m_planeModel;
+	case 4:
 		return m_groundModel;
+	case 5:
+		return m_capsuleModel;
+	case 6:
+		return m_cylinderModel;
 	default:
 		return nullptr;
 	}
@@ -633,9 +651,8 @@ template <> void Scene::onComponentAdded<CameraComponent>(Entity entity, CameraC
 
 template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent &component)
 {
-	component.type = 0;
-	component.m_RenderingComponent =
-		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
+	component.type = 1;
+	component.m_RenderingComponent = RenderingComponent::createRenderingComponent(getBoxModel());
 	component.cullSphere = component.m_RenderingComponent->getCullSphere();
 
 	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
@@ -645,8 +662,6 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
-
-	// auto &bc = entity.addComponent<BoxColliderComponent>();
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)

@@ -40,6 +40,9 @@ class ShaderResourceManager
 
 	void initViewPortShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
 										   VkSampler viewPortSampler);
+
+	void initSphericalMapShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout,
+											   VkImageView sphericalMapImageView, VkSampler sphericalMapSampler);
 	~ShaderResourceManager() = default;
 
 	void cleanup();
@@ -99,8 +102,6 @@ class ShaderResourceManager
 	void createViewPortDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView viewPortImageView,
 									  VkSampler viewPortSampler);
 
-	void initSphericalMapShaderResourceManager(VkDescriptorSetLayout descriptorSetLayout,
-											   VkImageView sphericalMapImageView, VkSampler sphericalMapSampler);
 	void createSphericalMapUniformBuffers();
 	void createSphericalMapDescriptorSets(VkDescriptorSetLayout descriptorSetLayout, VkImageView sphericalMapImageView,
 										  VkSampler sphericalMapSampler);
