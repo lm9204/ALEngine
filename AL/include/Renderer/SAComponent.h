@@ -13,6 +13,12 @@ namespace ale
 
 class SAComponent
 {
+public:
+	#define NON_CURRENT_ANIMATION_STRING "NONE"
+	#define NON_CURRENT_ANIMATION_FLOAT -1.0f
+	#define NON_CURRENT_ANIMATION_INT -1
+	#define NON_CURRENT_ANIMATION_BOOL false
+
 	using Bones = std::vector<Armature::Bone>;
 public:
 	SAComponent(std::shared_ptr<Model>& model);
