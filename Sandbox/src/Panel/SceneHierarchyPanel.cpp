@@ -679,6 +679,15 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
 					component.type = 4;
 					component.path = filePath.string();
+
+					// SAC가 존재하는 경우 모델 갱신
+					if (entity.hasComponent<SkeletalAnimatorComponent>())
+					{
+						auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
+
+						auto* sac = sa.sac.get();
+						sac->setModel(component.m_RenderingComponent->getModel());
+					}
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -701,6 +710,15 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
 					component.type = 4;
 					component.path = filePath.string();
+
+					// SAC가 존재하는 경우 모델 갱신
+					if (entity.hasComponent<SkeletalAnimatorComponent>())
+					{
+						auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
+
+						auto* sac = sa.sac.get();
+						sac->setModel(component.m_RenderingComponent->getModel());
+					}
 				}
 			}
 			ImGui::EndDragDropTarget();
