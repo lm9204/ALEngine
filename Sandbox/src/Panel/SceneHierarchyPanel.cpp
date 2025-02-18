@@ -2,6 +2,7 @@
 #include "Scene/Component.h"
 
 #include "Renderer/RenderingComponent.h"
+#include "Renderer/SAComponent.h"
 #include "Scripting/ScriptingEngine.h"
 
 #include "imgui/imgui.h"
@@ -576,6 +577,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		displayAddComponentEntry<MeshRendererComponent>("Mesh Renderer");
 		displayAddComponentEntry<LightComponent>("Light");
 		displayAddComponentEntry<RigidbodyComponent>("Rigidbody");
+		displayAddComponentEntry<SkeletalAnimatorComponent>("Animator");
 
 		bool hasCollider = m_SelectionContext.hasComponent<BoxColliderComponent>() ||
 						   m_SelectionContext.hasComponent<SphereColliderComponent>() ||
@@ -618,6 +620,172 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		float perspectiveFar = camera.getFar();
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setFar(perspectiveFar);
+	});
+
+	drawComponent<SkeletalAnimatorComponent>("Animator", entity, [](auto &component) {
+		SAComponent* sac = (SAComponent *)component.sac.get();
+		// 1. 현재 애니메이션 버튼/박스
+		ImGui::Text("Current Animation:");
+		std::string currentAnimationName = sac->getCurrentAnimationName();
+		if (ImGui::Button(currentAnimationName.c_str(), ImVec2(200, 30)))
+		{
+			// 클릭 시 추가 동작을 넣을 수 있음
+		}
+
+		ImGui::Spacing();
+
+		// 2. 애니메이션 목록 (더블클릭하면 선택)
+		ImGui::Text("Animation List:");
+		ImGui::BeginChild("AnimationList", ImVec2(200, 100), true);
+		std::shared_ptr<SkeletalAnimations> animationList = sac->getAnimations();
+		if (animationList != nullptr)
+		{
+			for (int i = 0; i < animationList->size(); i++)
+			{
+				// 항목 선택: 더블클릭하면 현재 애니메이션에 반영
+				ImGui::Selectable((*animationList)[i].getName().c_str(), sac->getCurrentAnimationIndex() == i);
+				if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+					sac->setCurrentAnimation(&(*animationList)[i]);
+			}
+		}
+		ImGui::EndChild();
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		SAData keyframe = sac->getData();
+		float totalDuration = std::max(sac->getDuration(), 0.0f);
+		float timelineProgress;
+
+		// 현재 진행률 계산 (현재시간을 기반으로)
+		if (totalDuration == 0.0f)
+			totalDuration = 1.0f;
+		timelineProgress = (keyframe.m_CurrentKeyFrameTime - keyframe.m_FirstKeyFrameTime) / totalDuration;
+		timelineProgress = std::clamp(timelineProgress, 0.0f, 1.0f);
+
+		// 3. 애니메이션 재생바 (재생, 정지, 멈춤, 맨앞, 맨뒤)
+		// button icon id
+
+		ImGui::Text("Playback Controls:");
+		// 맨앞 버튼
+		if (ImGui::Button("<<", ImVec2(40, 30)))
+		{
+			keyframe.m_CurrentKeyFrameTime = keyframe.m_FirstKeyFrameTime;
+			component.m_IsPlaying = false;
+		}
+		ImGui::SameLine();
+		// 재생 / 멈춤 버튼
+		if (component.m_IsPlaying)
+		{
+			if (ImGui::Button("Pause", ImVec2(60, 30)))
+			{
+				component.m_IsPlaying = false;
+			}
+		}
+		else
+		{
+			if (ImGui::Button("Play", ImVec2(60, 30)))
+			{
+				component.m_IsPlaying = true;
+				sac->start();
+			}
+		}
+		ImGui::SameLine();
+		// 정지 버튼
+		if (ImGui::Button("Stop", ImVec2(60, 30)))
+		{
+			component.m_IsPlaying = false;
+			keyframe.m_CurrentKeyFrameTime = keyframe.m_FirstKeyFrameTime;
+			timelineProgress = 0.0f;
+		}
+		ImGui::SameLine();
+		// 맨뒤 버튼
+		if (ImGui::Button(">>", ImVec2(40, 30)))
+		{
+			keyframe.m_CurrentKeyFrameTime = keyframe.m_LastKeyFrameTime;
+			timelineProgress = 1.0f;
+			component.m_IsPlaying = false;
+		}
+
+		// 6. 재생속도배수 (플레이백 스피드 조절)
+		ImGui::SameLine();
+		if (ImGui::Button("-", ImVec2(30, 30)))
+		{
+			component.m_SpeedFactor = std::max(0.1f, component.m_SpeedFactor - 0.5f);
+		}
+		ImGui::SameLine();
+		// 현재 속도 텍스트 (더블클릭 시 입력 팝업)
+		ImGui::Text("Speed: %.1fx", component.m_SpeedFactor);
+		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
+		{
+			ImGui::OpenPopup("SpeedEditPopup");
+		}
+		if (ImGui::BeginPopup("SpeedEditPopup"))
+		{
+			ImGui::InputFloat("Playback Speed", &component.m_SpeedFactor, 0.5f, 1.0f, "%.1f");
+			ImGui::EndPopup();
+		}
+		ImGui::SameLine();
+		if (ImGui::Button("+", ImVec2(30, 30)))
+		{
+			component.m_SpeedFactor += 0.5f;
+		}
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// 4. 애니메이션 타임라인
+		// 타임라인 위젯의 위치와 크기 설정
+		ImVec2 timelinePos = ImGui::GetCursorScreenPos();
+		float timelineWidth = 300.0f;
+		float timelineHeight = 20.0f;
+
+		// 드래그 입력: 마우스 위치에 따라 진행률 업데이트
+		// ImGui::SetCursorScreenPos(ImVec2(buttonCenter.x - buttonRadius, buttonCenter.y - buttonRadius));
+		ImGui::InvisibleButton("TimelineDrag", ImVec2(timelineWidth, timelineHeight));
+		if (ImGui::IsItemActive())
+		{
+			ImVec2 mousePos = ImGui::GetIO().MousePos;
+			timelineProgress = (mousePos.x - timelinePos.x) / timelineWidth;
+			timelineProgress = std::clamp(timelineProgress, 0.0f, 1.0f);
+
+			// 진행률에 따른 현재시간 업데이트
+			keyframe.m_CurrentKeyFrameTime = keyframe.m_FirstKeyFrameTime + timelineProgress * totalDuration;
+			sac->setData(0, keyframe);
+		}
+
+		// 타임라인 버튼(원형)의 위치 계산
+		float buttonRadius = timelineHeight * 0.3f;
+		float buttonX = timelinePos.x + timelineProgress * timelineWidth;
+		ImVec2 buttonCenter(buttonX, timelinePos.y + timelineHeight * 0.5f);
+
+		ImDrawList* draw_list = ImGui::GetWindowDrawList();
+		draw_list->AddLine(ImVec2(timelinePos.x, timelinePos.y + timelineHeight * 0.5f),
+						ImVec2(timelinePos.x + timelineWidth, timelinePos.y + timelineHeight * 0.5f),
+						IM_COL32(200,200,200,255), 2.0f);
+		draw_list->AddCircleFilled(buttonCenter, buttonRadius, IM_COL32(239,109,128,255));
+
+		// Dummy로 위젯 크기 확보
+		ImGui::Dummy(ImVec2(timelineWidth, timelineHeight));
+
+		ImGui::Spacing();
+		ImGui::Separator();
+		ImGui::Spacing();
+
+		// 5. 애니메이션 속성 (테스트용: 반복 체크박스)
+		bool repeat;
+		int index = sac->getCurrentAnimationIndex();
+		if (index != NON_CURRENT_ANIMATION_INT)
+		{
+			repeat = sac->getRepeat(index);
+
+			ImGui::Text("Animation Properties:");
+			ImGui::Checkbox("loop", &repeat);
+
+			sac->setRepeat(repeat, index);
+		}
 	});
 
 	drawComponent<MeshRendererComponent>("MeshRenderer", entity, [entity, scene = m_Context](auto &component) mutable {
