@@ -1051,7 +1051,6 @@ void Contact::setCylinderFace(Face &face, const ConvexInfo &cylinder, const glm:
 		center = cylinder.center - cylinder.axes[0] * cylinder.height * 0.5f;
 		face.normal = -cylinder.axes[0];
 		face.distance = glm::dot(-cylinder.axes[0], face.vertices[0]);
-		// std::cout << "distance: " << face.distance << "\n";
 	}
 	else
 	{

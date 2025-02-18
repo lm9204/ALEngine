@@ -51,44 +51,6 @@ void CapsuleShape::computeAABB(AABB *aabb, const Transform &xf) const
 	aabb->lowerBound = lower - glm::vec3(0.1f);
 }
 
-// void CapsuleShape::computeCapsuleFeatures(const std::vector<Vertex> &vertices)
-// {
-// 	glm::vec3 min(FLT_MAX);
-// 	glm::vec3 max(-FLT_MAX);
-
-// 	for (const Vertex &vertex : vertices)
-// 	{
-// 		max.x = std::max(vertex.position.x, max.x);
-// 		max.y = std::max(vertex.position.y, max.y);
-// 		max.z = std::max(vertex.position.z, max.z);
-
-// 		min.x = std::min(vertex.position.x, min.x);
-// 		min.y = std::min(vertex.position.y, min.y);
-// 		min.z = std::min(vertex.position.z, min.z);
-
-// 		m_vertices.insert(vertex.position);
-// 	}
-
-// 	m_center = (min + max) / 2.0f;
-// 	m_axes[0] = glm::vec3(0.0f, 1.0f, 0.0f);
-
-// 	m_radius = 0.0f;
-// 	glm::vec2 center(m_center.x, m_center.z);
-
-// 	for (const Vertex &vertex : vertices)
-// 	{
-// 		m_radius = std::max(m_radius, glm::length2(glm::vec2(vertex.position.x, vertex.position.z) - center));
-// 	}
-
-// 	m_radius = std::sqrt(m_radius);
-// 	m_height = max.y - min.y - 2.0f * m_radius;
-
-// 	if (m_height < 0.0f)
-// 	{
-// 		throw std::runtime_error("fail to create capsule shape!!");
-// 	}
-// }
-
 void CapsuleShape::createCapsulePoints()
 {
 	int32_t segments = 20;
@@ -121,12 +83,6 @@ void CapsuleShape::createCapsulePoints()
 		m_points[i] = rotationMatrix * bottomPoint;
 	}
 }
-
-// void CapsuleShape::setShapeFeatures(const std::vector<Vertex> &vertices)
-// {
-// 	computeCapsuleFeatures(vertices);
-// 	createCapsulePoints();
-// }
 
 void CapsuleShape::setShapeFeatures(const glm::vec3 &center, float radius, float height)
 {
@@ -169,9 +125,6 @@ ConvexInfo CapsuleShape::getShapeInfo(const Transform &transform) const
 		capsule.points[i] = matrix * glm::vec4(m_points[i], 1.0f);
 		capsule.points[i + segments] = matrix * glm::vec4(m_points[i + segments], 1.0f);
 	}
-
-	// std::cout << "topPoint: " << topPoint.x << " " << topPoint.y << " " << topPoint.z << "\n";
-	// std::cout << "bottomPoint: " << bottomPoint.x << " " << bottomPoint.y << " " << bottomPoint.z << "\n";
 
 	return capsule;
 }
