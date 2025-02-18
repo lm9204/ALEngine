@@ -505,11 +505,15 @@ void Renderer::drawFrame(Scene *scene)
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
-	auto view = scene->getAllEntitiesWith<LightComponent>();
+	auto view = scene->getAllEntitiesWith<LightComponent, TagComponent>();
 
 	uint32_t shadowMapIndex = 0;
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive)
+		{
+			continue;
+		}
 		std::shared_ptr<Light> light = view.get<LightComponent>(entity).m_Light;
 		if (light->onShadowMap == 1 && shadowMapIndex < 4)
 		{
@@ -694,9 +698,13 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 	drawInfo.projection[1][1] *= -1;
 
 	// int32_t drawNum = 0;
-	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
+	auto view = scene->getAllEntitiesWith<TransformComponent, TagComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive || view.get<MeshRendererComponent>(entity).type == 0)
+		{
+			continue;
+		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
 		// if (meshRendererComponent.renderEnabled == true)
@@ -893,9 +901,14 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 		lightProj[1][1] *= -1;
 	}
 
-	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
+	auto view = scene->getAllEntitiesWith<TransformComponent, TagComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive || view.get<MeshRendererComponent>(entity).type == 0)
+		{
+			continue;
+		}
+
 		ShadowMapDrawInfo drawInfo;
 		drawInfo.view = lightView;
 		drawInfo.projection = lightProj;
@@ -983,9 +996,13 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 	drawInfo.pipelineLayout = shadowCubeMapPipelineLayout[shadowMapIndex];
 	drawInfo.currentFrame = currentFrame;
 
-	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
+	auto view = scene->getAllEntitiesWith<TransformComponent, TagComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive || view.get<MeshRendererComponent>(entity).type == 0)
+		{
+			continue;
+		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
 	}
