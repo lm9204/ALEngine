@@ -43,11 +43,16 @@ struct BodyDef
 		m_useGravity = true;
 		m_type = EBodyType::STATIC_BODY;
 		m_gravityScale = 15.0f;
+		glm::vec3 m_posFreeze = glm::vec3(1.0f);
+		glm::vec3 m_rotFreeze = glm::vec3(1.0f);
 	}
 
 	EBodyType m_type;
 	glm::vec3 m_position;
 	glm::quat m_orientation;
+
+	glm::vec3 m_posFreeze;
+	glm::vec3 m_rotFreeze;
 	// float m_angle;
 
 	glm::vec3 m_linearVelocity;
@@ -109,13 +114,13 @@ class Rigidbody
 	void unsetFlag(EBodyFlag flag);
 	void setMassData(float mass, const glm::mat3 &inertiaTensor);
 	void setMass(float mass);
-	void setPosition(const glm::vec3 &position);
+	void setPosition(glm::vec3 &position);
 	void setIslandIndex(int32_t idx);
-	void setOrientation(const glm::quat &orientation);
+	void setOrientation(glm::quat &orientation);
 	void setAcceleration(const glm::vec3 &acceleration);
 	void setContactLinks(ContactLink *contactLink);
-	void setLinearVelocity(const glm::vec3 &linearVelocity);
-	void setAngularVelocity(const glm::vec3 &angularVelocity);
+	void setLinearVelocity(glm::vec3 &linearVelocity);
+	void setAngularVelocity(glm::vec3 &angularVelocity);
 	void setSleep(float duration);
 	void setAwake();
 	void setRBComponentValue(BodyDef &bdDef);
@@ -162,6 +167,8 @@ class Rigidbody
 	int32_t m_islandIndex;
 	int32_t m_bodyID;
 	EBodyType m_type;
+	glm::vec3 m_posFreeze;
+	glm::vec3 m_rotFreeze;
 
 	ContactLink *m_contactLinks;
 
