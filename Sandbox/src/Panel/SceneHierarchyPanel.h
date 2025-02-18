@@ -29,7 +29,9 @@ class SceneHierarchyPanel
 	void drawEntityNode(Entity entity);
 	void drawComponents(Entity entity);
 
+	void updateActiveInfo(Entity &entity, bool parentEffectiveActive);
 	void updateRelationship(Entity &newParent, Entity &child);
+	void updateRelationship(Entity &entity);
 	void updateTransforms(Entity entity);
 	void updateTransformRecursive(Entity entity, const glm::mat4 &parentWorldTransform);
 
