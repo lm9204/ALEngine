@@ -85,18 +85,18 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 		enttMap[uuid] = (entt::entity)newEntity;
 	}
 	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
-	
+
 	newScene->m_cullTree = scene->m_cullTree;
-	
+
 	auto view = newScene->m_Registry.view<MeshRendererComponent>();
 	for (auto entityHandle : view)
 	{
 		auto &mesh = dstRegistry.get<MeshRendererComponent>(entityHandle);
-		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));		
+		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));
 	}
-		
+
 	newScene->initScene();
-	
+
 	return newScene;
 }
 
@@ -387,11 +387,13 @@ void Scene::onPhysicsStart()
 		BodyDef bdDef;
 		bdDef.m_type = EBodyType::DYNAMIC_BODY;
 		bdDef.m_position = tf.m_Position;
-		bdDef.m_orientation = glm::quat(glm::radians(tf.m_Rotation));
+		bdDef.m_orientation = glm::quat(tf.m_Rotation);
 		bdDef.m_linearDamping = rb.m_Damping;
 		bdDef.m_angularDamping = rb.m_AngularDamping;
 		bdDef.m_gravityScale = 15.0f;
 		bdDef.m_useGravity = rb.m_UseGravity;
+		bdDef.m_posFreeze = rb.m_FreezePos;
+		bdDef.m_rotFreeze = rb.m_FreezeRot;
 
 		// create body
 		Rigidbody *body = m_World->createBody(bdDef);
@@ -605,7 +607,7 @@ void Scene::initFrustumDrawFlag()
 void Scene::findMoveObject()
 {
 	auto view = m_Registry.view<MeshRendererComponent, TransformComponent>();
-	for (auto e: view)
+	for (auto e : view)
 	{
 		auto &transform = view.get<TransformComponent>(e);
 		auto &mesh = view.get<MeshRendererComponent>(e);
