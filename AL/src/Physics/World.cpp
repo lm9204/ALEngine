@@ -34,38 +34,24 @@ void World::startFrame()
 
 void World::runPhysics(float duration)
 {
-	// std::cout << "start runPhysics\n";
-
 	Rigidbody *body = m_rigidbodies;
 	while (body != nullptr)
 	{
 		if (body->isAwake())
 		{
-			// std::cout << "body: " << body->getBodyId() << "\n";
 			body->calculateForceAccum();
-
 			body->integrate(duration);
-
 			body->synchronizeFixtures();
 		}
-
 		body = body->next;
 	}
-
-	// std::cout << "broad phase\n";
-	// update Possible Contact Pairs - BroadPhase
 	m_contactManager.findNewContacts();
-
-	// std::cout << "narrow phase\n";
-	// Process Contacts
 	m_contactManager.collide();
-	// std::cout << "solve\n";
 	solve(duration);
 }
 
 void World::solve(float duration)
 {
-	// std::cout << "solve start\n";
 	// island 초기화
 	Island island(m_rigidbodyCount, m_contactManager.m_contactCount);
 
@@ -137,10 +123,6 @@ void World::solve(float duration)
 					continue;
 				}
 
-				// std::cout << "add Contact\n";
-				// std::cout << "bodyA : " << contact->getNodeB()->other->getBodyId() << "\n";
-				// std::cout << "bodyB : " << contact->getNodeA()->other->getBodyId() << "\n";
-
 				// 위 조건을 다 충족하는 경우 island에 추가 후 island 플래그 on
 				island.add(contact);
 				contact->setFlag(EContactFlag::ISLAND);
@@ -178,7 +160,6 @@ void World::solve(float duration)
 	island.destroy();
 
 	PhysicsAllocator::m_stackAllocator.freeStack();
-	// std::cout << "finish solve\n\n\n";
 }
 
 Rigidbody *World::createBody(BodyDef &bdDef)

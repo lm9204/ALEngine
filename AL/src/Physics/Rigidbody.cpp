@@ -167,7 +167,6 @@ void Rigidbody::addGravity()
 
 void Rigidbody::calculateForceAccum()
 {
-	// std::cout << "start calculateForceAccum\n";
 	while (!m_forceRegistry.empty())
 	{
 		addForce(m_forceRegistry.front());
