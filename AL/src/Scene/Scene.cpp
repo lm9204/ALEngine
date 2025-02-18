@@ -256,6 +256,21 @@ void Scene::onUpdateRuntime(Timestep ts)
 				}
 			}
 		}
+
+		// update animations
+		{
+			auto view = m_Registry.view<SkeletalAnimatorComponent>();
+			
+			for (auto e : view)
+			{
+				Entity entity = {e, this};
+				auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
+
+				SAComponent* sac = sa.sac.get();
+				if (sa.m_IsPlaying)
+					sac->updateAnimation(ts * sa.m_SpeedFactor, 0);
+			}
+		}
 	}
 
 	// find main camera
