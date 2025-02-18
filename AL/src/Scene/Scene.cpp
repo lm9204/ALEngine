@@ -187,6 +187,17 @@ Entity Scene::createPrimitiveMeshEntity(const std::string &name, uint32_t idx)
 
 	mc.type = idx;
 	mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+
+	mc.cullSphere = mc.m_RenderingComponent->getCullSphere();
+
+	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
+
+	CullSphere sphere(transformComponent.getTransform() * glm::vec4(mc.cullSphere.center, 1.0f),
+					  mc.cullSphere.radius * transformComponent.getMaxScale());
+
+	// cullTree에 추가 sphere
+	mc.nodeId = insertEntityInCullTree(sphere, entity);
+
 	return entity;
 }
 
@@ -653,17 +664,17 @@ template <> void Scene::onComponentAdded<CameraComponent>(Entity entity, CameraC
 
 template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent &component)
 {
-	component.type = 1;
-	component.m_RenderingComponent = RenderingComponent::createRenderingComponent(getBoxModel());
-	component.cullSphere = component.m_RenderingComponent->getCullSphere();
+	// component.type = 1;
+	// component.m_RenderingComponent = RenderingComponent::createRenderingComponent(getBoxModel());
+	// component.cullSphere = component.m_RenderingComponent->getCullSphere();
 
-	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
+	// TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
 
-	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
-					  component.cullSphere.radius * transformComponent.getMaxScale());
+	// CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
+	// 				  component.cullSphere.radius * transformComponent.getMaxScale());
 
-	// cullTree에 추가 sphere
-	component.nodeId = insertEntityInCullTree(sphere, entity);
+	// // cullTree에 추가 sphere
+	// component.nodeId = insertEntityInCullTree(sphere, entity);
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
@@ -709,4 +720,25 @@ template <> void Scene::onComponentAdded<CylinderColliderComponent>(Entity entit
 template <> void Scene::onComponentAdded<ScriptComponent>(Entity entity, ScriptComponent &component)
 {
 }
+
+void Scene::cleanup()
+{
+	// delete model
+	m_boxModel->cleanup();
+	m_sphereModel->cleanup();
+	m_planeModel->cleanup();
+	m_groundModel->cleanup();
+	m_capsuleModel->cleanup();
+	m_cylinderModel->cleanup();
+
+	m_defaultMaterial->cleanup();
+
+	auto view = m_Registry.view<MeshRendererComponent>();
+	for (auto e : view)
+	{
+		auto &mesh = view.get<MeshRendererComponent>(e);
+		mesh.m_RenderingComponent->cleanup();
+	}
+}
+
 } // namespace ale

@@ -35,6 +35,8 @@ class Scene
 	void insertDestroyEntity(Entity entity);
 	void destroyEntities();
 
+	void cleanup();
+
 	Entity createPrimitiveMeshEntity(const std::string &name, uint32_t idx);
 
 	void onRuntimeStart();

@@ -219,19 +219,73 @@ void Renderer::init(GLFWwindow *window)
 
 void Renderer::cleanup()
 {
-	m_viewPortFrameBuffers->cleanup();
-	m_swapChain->cleanup();
+	// texture
+	m_sphericalMapTexture->cleanup();
+	m_noCamTexture->cleanup();
 
+	// framebuffer
+	m_viewPortFrameBuffers->cleanup();
+	m_ImGuiSwapChainFrameBuffers->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapFrameBuffers[i]->cleanup();
+		m_shadowCubeMapFrameBuffers[i]->cleanup();
+	}
+	m_sphericalMapFrameBuffers->cleanup();
+	m_backgroundFrameBuffers->cleanup();
+
+	// swapchain
+	m_swapChain->cleanup();
+	// model
+	for (auto &model : m_modelsMap)
+	{
+		model.second->cleanup();
+	}
+
+	// pipeline
 	m_geometryPassPipeline->cleanup();
 	m_lightingPassPipeline->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapPipeline[i]->cleanup();
+		m_shadowCubeMapPipeline[i]->cleanup();
+	}
+	m_sphericalMapPipeline->cleanup();
+	m_backgroundPipeline->cleanup();
 
+	// renderpass
 	m_deferredRenderPass->cleanup();
+	m_sphericalMapRenderPass->cleanup();
+	m_backgroundRenderPass->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapRenderPass[i]->cleanup();
+		m_shadowCubeMapRenderPass[i]->cleanup();
+	}
+	m_ImGuiRenderPass->cleanup();
 
-	m_geometryPassShaderResourceManager->cleanup();
+	// sampler
+	vkDestroySampler(device, sphericalMapSampler, nullptr);
+	vkDestroySampler(device, backgroundSampler, nullptr);
+	vkDestroySampler(device, shadowMapSampler, nullptr);
+	vkDestroySampler(device, shadowCubeMapSampler, nullptr);
+	vkDestroySampler(device, viewPortSampler, nullptr);
+
+	// shaderResourceManager
+	m_sphericalMapShaderResourceManager->cleanup();
+	m_backgroundShaderResourceManager->cleanup();
+	m_viewPortShaderResourceManager->cleanup();
+	m_noCamShaderResourceManager->cleanup();
 	m_lightingPassShaderResourceManager->cleanup();
 
+	// descriptorSetLayout
 	m_geometryPassDescriptorSetLayout->cleanup();
 	m_lightingPassDescriptorSetLayout->cleanup();
+	m_viewPortDescriptorSetLayout->cleanup();
+	m_shadowMapDescriptorSetLayout->cleanup();
+	m_shadowCubeMapDescriptorSetLayout->cleanup();
+	m_sphericalMapDescriptorSetLayout->cleanup();
+	m_backgroundDescriptorSetLayout->cleanup();
 
 	m_syncObjects->cleanup();
 	VulkanContext::getContext().cleanup();
@@ -389,7 +443,6 @@ void Renderer::updateSkybox(std::string path)
 	m_backgroundFrameBuffers->initBackgroundFrameBuffers(viewPortSize, backgroundRenderPass);
 	backgroundFramebuffers = m_backgroundFrameBuffers->getFramebuffers();
 	backgroundImageView = m_backgroundFrameBuffers->getBackgroundImageView();
-	// backgroundSampler = Texture::createBackgroundSampler();
 
 	m_backgroundShaderResourceManager->initBackgroundShaderResourceManager(backgroundDescriptorSetLayout,
 																		   sphericalMapImageView, sphericalMapSampler);
@@ -407,13 +460,7 @@ void Renderer::updateSkybox(std::string path)
 }
 
 void Renderer::loadScene(Scene *scene)
-
 {
-	// this->scene = scene;
-	// m_geometryPassShaderResourceManager =
-	// 	ShaderResourceManager::createGeometryPassShaderResourceManager(scene, geometryPassDescriptorSetLayout);
-	// geometryPassDescriptorSets = m_geometryPassShaderResourceManager->getDescriptorSets();
-	// geometryPassUniformBuffers = m_geometryPassShaderResourceManager->getUniformBuffers();
 }
 
 void Renderer::beginScene(Scene *scene, EditorCamera &camera)

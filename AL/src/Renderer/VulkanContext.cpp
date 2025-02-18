@@ -511,7 +511,7 @@ VKAPI_ATTR VkBool32 VKAPI_CALL VulkanContext::debugCallback(VkDebugUtilsMessageS
 															void *pUserData)
 {
 	// 메시지 내용만 출력
-	std::cerr << "validation layer: " << pCallbackData->pMessage << std::endl;
+	std::cout << "validation layer: " << pCallbackData->pMessage << std::endl;
 	// VK_TRUE 반환시 프로그램 종료됨
 	return VK_FALSE;
 }

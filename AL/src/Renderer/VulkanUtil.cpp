@@ -16,16 +16,16 @@ void VulkanUtil::createImage(uint32_t width, uint32_t height, uint32_t mipLevels
 	imageInfo.imageType = VK_IMAGE_TYPE_2D; // 이미지의 차원을 설정
 	imageInfo.extent.width = width;			// 이미지의 너비 지정
 	imageInfo.extent.height = height;		// 이미지의 높이 지정
-	imageInfo.extent.depth = 1; // 이미지의 깊이 지정 (2D 이미지의 경우 depth는 1로 지정해야 함)
-	imageInfo.mipLevels = mipLevels; // 생성할 mipLevel의 개수 지정
-	imageInfo.arrayLayers = 1;		 // 생성할 이미지 레이어 수 (큐브맵의 경우 6개 생성)
-	imageInfo.format = format; // 이미지의 포맷을 지정하며, 채널 구성과 각 채널의 비트 수를 정의
+	imageInfo.extent.depth = 1;				// 이미지의 깊이 지정 (2D 이미지의 경우 depth는 1로 지정해야 함)
+	imageInfo.mipLevels = mipLevels;		// 생성할 mipLevel의 개수 지정
+	imageInfo.arrayLayers = 1;				// 생성할 이미지 레이어 수 (큐브맵의 경우 6개 생성)
+	imageInfo.format = format;				// 이미지의 포맷을 지정하며, 채널 구성과 각 채널의 비트 수를 정의
 	imageInfo.tiling = tiling; // 이미지를 GPU 메모리에 배치할 때 메모리 레이아웃을 결정하는 설정 (CPU에서도 접근
 							   // 가능하게 할꺼냐, GPU에만 접근 가능하게 최적화 할거냐 결정)
 	imageInfo.initialLayout =
-		VK_IMAGE_LAYOUT_UNDEFINED; // 이미지 초기 레이아웃 설정 (이미지가 메모리에 배치될 때 초기 상태를 정의)
-	imageInfo.usage = usage;						   // 이미지의 사용 용도 결정
-	imageInfo.samples = numSamples;					   // 멀티 샘플링을 위한 샘플 개수
+		VK_IMAGE_LAYOUT_UNDEFINED;	// 이미지 초기 레이아웃 설정 (이미지가 메모리에 배치될 때 초기 상태를 정의)
+	imageInfo.usage = usage;		// 이미지의 사용 용도 결정
+	imageInfo.samples = numSamples; // 멀티 샘플링을 위한 샘플 개수
 	imageInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE; // 이미지의 큐 공유 모드 설정 (VK_SHARING_MODE_EXCLUSIVE: 한 번에
 													   // 하나의 큐 패밀리에서만 접근 가능한 단일 큐 모드)
 
@@ -244,8 +244,8 @@ VkSampler VulkanUtil::createSampler()
 	// 샘플러 생성시 필요한 구조체
 	VkSamplerCreateInfo samplerInfo{};
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
-	samplerInfo.magFilter = VK_FILTER_LINEAR; // 확대시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
-	samplerInfo.minFilter = VK_FILTER_LINEAR; // 축소시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
+	samplerInfo.magFilter = VK_FILTER_LINEAR;				   // 확대시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
+	samplerInfo.minFilter = VK_FILTER_LINEAR;				   // 축소시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
 	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 U축(너비)에서 범위를 벗어난 경우 래핑
 															   // 모드 설정 (현재 반복 설정)
 	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 V축(높이)에서 범위를 벗어난 경우 래핑
@@ -261,7 +261,7 @@ VkSampler VulkanUtil::createSampler()
 		VK_FALSE; // VK_TRUE로 설정시 텍스처 좌표가 0 ~ 1의 정규화된 좌표가 아닌 실제 텍셀의 좌표 범위로 바뀜
 	samplerInfo.compareEnable =
 		VK_FALSE; // 비교 연산 사용할지 결정 (보통 쉐도우 맵같은 경우 깊이 비교 샘플링에서 사용됨)
-	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS; // 비교 연산에 사용할 연산 지정
+	samplerInfo.compareOp = VK_COMPARE_OP_ALWAYS;			// 비교 연산에 사용할 연산 지정
 	samplerInfo.mipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR; // mipmap 사용시 mipmap 간 보간 방식 결정 (현재 선형 보간)
 	samplerInfo.minLod = 0.0f; // 최소 level을 0으로 설정 (가장 높은 해상도의 mipmap 을 사용가능하게 허용)
 	samplerInfo.maxLod = 1.0f; // 최대 level을 mipLevel로 설정 (VK_LOD_CLAMP_NONE 설정시 제한 해제)
@@ -275,6 +275,64 @@ VkSampler VulkanUtil::createSampler()
 		throw std::runtime_error("failed to create texture sampler!");
 	}
 	return textureSampler;
+}
+
+VkDescriptorSetLayout VulkanUtil::createIconDescriptorSetLayout(VkDevice device, VkDescriptorPool descriptorPool)
+{
+	VkDescriptorSetLayout descriptorSetLayout;
+	VkDescriptorSetLayoutBinding samplerLayoutBinding{};
+	samplerLayoutBinding.binding = 0; // 샘플러를 binding 0으로 설정
+	samplerLayoutBinding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	samplerLayoutBinding.descriptorCount = 1;
+	samplerLayoutBinding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+	samplerLayoutBinding.pImmutableSamplers = nullptr;
+
+	// DescriptorSetLayout 생성
+	VkDescriptorSetLayoutCreateInfo layoutInfo{};
+	layoutInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+	layoutInfo.bindingCount = 1; // 샘플러만 포함
+	layoutInfo.pBindings = &samplerLayoutBinding;
+
+	if (vkCreateDescriptorSetLayout(device, &layoutInfo, nullptr, &descriptorSetLayout) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to create sampler-only descriptor set layout!");
+	}
+	return descriptorSetLayout;
+}
+
+VkDescriptorSet VulkanUtil::createIconDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool,
+													VkDescriptorSetLayout descriptorSetLayout, VkImageView imageView,
+													VkSampler sampler)
+{
+	VkDescriptorSet descriptorSet;
+	VkDescriptorSetAllocateInfo allocInfo{};
+	allocInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+	allocInfo.descriptorPool = descriptorPool;
+	allocInfo.descriptorSetCount = 1;
+	allocInfo.pSetLayouts = &descriptorSetLayout;
+
+	if (vkAllocateDescriptorSets(device, &allocInfo, &descriptorSet) != VK_SUCCESS)
+	{
+		throw std::runtime_error("Failed to allocate descriptor set!");
+	}
+
+	VkDescriptorImageInfo imageInfo{};
+	imageInfo.imageView = imageView;
+	imageInfo.sampler = sampler;
+	imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
+	VkWriteDescriptorSet descriptorWrite{};
+	descriptorWrite.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+	descriptorWrite.dstSet = descriptorSet;
+	descriptorWrite.dstBinding = 0;
+	descriptorWrite.dstArrayElement = 0;
+	descriptorWrite.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+	descriptorWrite.descriptorCount = 1;
+	descriptorWrite.pImageInfo = &imageInfo;
+
+	vkUpdateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
+
+	return descriptorSet;
 }
 
 ImTextureID VulkanUtil::createIconTexture(VkDevice device, VkDescriptorPool descriptorPool, VkImageView imageView,

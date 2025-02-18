@@ -36,6 +36,8 @@ App::App(const ApplicationSpecification &spec) : m_Spec(spec)
 App::~App()
 {
 	ScriptingEngine::shutDown();
+	m_LayerStack.onDetach();
+	m_Renderer->cleanup();
 }
 
 void App::pushLayer(Layer *layer)

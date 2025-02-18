@@ -491,11 +491,9 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 			if (meshComponent)
 			{
 				auto &mc = deserializedEntity.addComponent<MeshRendererComponent>();
-
 				// type에 따라 Primitive Mesh 생성
 				mc.type = meshComponent["MeshType"].as<uint32_t>();
 				mc.isMatChanged = meshComponent["IsMatChanged"].as<bool>();
-
 				std::shared_ptr<Model> model;
 				switch (mc.type)
 				{
@@ -527,7 +525,16 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 					break;
 				}
 				mc.matPath = meshComponent["MatPath"].as<std::string>();
+
 				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+
+				mc.cullSphere = mc.m_RenderingComponent->getCullSphere();
+				TransformComponent &transformComponent = m_Scene->getComponent<TransformComponent>(deserializedEntity);
+				CullSphere sphere(transformComponent.getTransform() * glm::vec4(mc.cullSphere.center, 1.0f),
+								  mc.cullSphere.radius * transformComponent.getMaxScale());
+				// cullTree에 추가 sphere
+				mc.nodeId = m_Scene->insertEntityInCullTree(sphere, deserializedEntity);
+
 				if (mc.isMatChanged)
 				{
 					mc.m_RenderingComponent->updateMaterial(

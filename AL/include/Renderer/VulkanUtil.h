@@ -40,6 +40,11 @@ class VulkanUtil
 								   VkDeviceMemory &imageMemory);
 	static VkImageView createCubeMapImageView(VkImage image, VkFormat format, VkImageAspectFlags aspectFlags,
 											  uint32_t mipLevels);
+
+	static VkDescriptorSetLayout createIconDescriptorSetLayout(VkDevice device, VkDescriptorPool descriptorPool);
+	static VkDescriptorSet createIconDescriptorSet(VkDevice device, VkDescriptorPool descriptorPool,
+												   VkDescriptorSetLayout descriptorSetLayout, VkImageView imageView,
+												   VkSampler sampler);
 };
 } // namespace ale
 

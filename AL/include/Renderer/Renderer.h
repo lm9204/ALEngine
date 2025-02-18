@@ -118,10 +118,6 @@ class Renderer
 	// Descriptor Pool
 	VkDescriptorPool descriptorPool;
 
-	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
-	std::vector<VkDescriptorSet> geometryPassDescriptorSets;
-	std::vector<std::shared_ptr<UniformBuffer>> geometryPassUniformBuffers;
-
 	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
 	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
 	std::vector<std::shared_ptr<UniformBuffer>> lightingPassUniformBuffers;
