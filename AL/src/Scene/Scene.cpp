@@ -636,6 +636,15 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 	// cullTree에 추가 sphere
 	component.nodeId = insertEntityInCullTree(sphere, entity);
 	// auto &bc = entity.addComponent<BoxColliderComponent>();
+
+	// 이미 SAC가 존재하는 경우 새로 생긴 모델 갱신
+	if (entity.hasComponent<SkeletalAnimatorComponent>())
+	{
+		auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
+
+		auto* sac = sa.sac.get();
+		sac->setModel(component.m_RenderingComponent->getModel());
+	}
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
