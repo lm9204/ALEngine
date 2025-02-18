@@ -40,17 +40,37 @@ void Texture::initMaterialTexture(std::string path, bool flipVertically)
 void Texture::loadTexture(std::string path, bool flipVertically)
 {
 	m_imageBuffer = ImageBuffer::createImageBuffer(path, flipVertically);
-	mipLevels = m_imageBuffer->getMipLevels();
-	createTextureImageView();
-	createTextureSampler();
+	if (!m_imageBuffer)
+	{
+		m_imageBuffer = ImageBuffer::createDefaultImageBuffer(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		mipLevels = m_imageBuffer->getMipLevels();
+		createDefaultTextureImageView();
+		createDefaultTextureSampler();
+	}
+	else
+	{
+		mipLevels = m_imageBuffer->getMipLevels();
+		createTextureImageView();
+		createTextureSampler();
+	}
 }
 
 void Texture::loadMaterialTexture(std::string path, bool flipVertically)
 {
 	m_imageBuffer = ImageBuffer::createMaterialImageBuffer(path, flipVertically);
-	mipLevels = m_imageBuffer->getMipLevels();
-	createMaterialTextureImageView();
-	createTextureSampler();
+	if (!m_imageBuffer)
+	{
+		m_imageBuffer = ImageBuffer::createDefaultImageBuffer(glm::vec4(0.0f, 0.0f, 0.0f, 1.0f));
+		mipLevels = m_imageBuffer->getMipLevels();
+		createDefaultTextureImageView();
+		createDefaultTextureSampler();
+	}
+	else
+	{
+		mipLevels = m_imageBuffer->getMipLevels();
+		createMaterialTextureImageView();
+		createTextureSampler();
+	}
 }
 
 // 텍스처 이미지 뷰 생성
@@ -83,12 +103,12 @@ void Texture::createTextureSampler()
 	samplerInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
 	samplerInfo.magFilter = VK_FILTER_LINEAR;				   // 확대시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
 	samplerInfo.minFilter = VK_FILTER_LINEAR;				   // 축소시 필터링 적용 설정 (현재 선형 보간 필터링 적용)
-	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 U축(너비)에서 범위를 벗어난 경우 래핑
-															   // 모드 설정 (현재 반복 설정)
-	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 V축(높이)에서 범위를 벗어난 경우 래핑
-															   // 모드 설정 (현재 반복 설정)
-	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 W축(깊이)에서 범위를 벗어난 경우 래핑
-															   // 모드 설정 (현재 반복 설정)
+	samplerInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 U축(너비)에서 범위를 벗어난 경우
+															   // 래핑 모드 설정 (현재 반복 설정)
+	samplerInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 V축(높이)에서 범위를 벗어난 경우
+															   // 래핑 모드 설정 (현재 반복 설정)
+	samplerInfo.addressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT; // 텍스처 좌표계의 W축(깊이)에서 범위를 벗어난 경우
+															   // 래핑 모드 설정 (현재 반복 설정)
 	samplerInfo.anisotropyEnable =
 		VK_TRUE; // 이방성 필터링 적용 여부 설정 (경사진 곳이나 먼 곳의 샘플을 늘려 좀 더 정확한 값을 가져오는 방법)
 	samplerInfo.maxAnisotropy = properties.limits.maxSamplerAnisotropy; // GPU가 지원하는 최대의 이방성 필터링 제한 설정

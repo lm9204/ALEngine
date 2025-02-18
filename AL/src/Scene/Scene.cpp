@@ -85,18 +85,16 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 		enttMap[uuid] = (entt::entity)newEntity;
 	}
 	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
-	
+
 	newScene->m_cullTree = scene->m_cullTree;
-	
+
 	auto view = newScene->m_Registry.view<MeshRendererComponent>();
 	for (auto entityHandle : view)
 	{
 		auto &mesh = dstRegistry.get<MeshRendererComponent>(entityHandle);
-		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));		
+		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));
 	}
-		
 	newScene->initScene();
-	
 	return newScene;
 }
 
@@ -302,7 +300,9 @@ void Scene::onUpdateRuntime(Timestep ts)
 	}
 	else
 	{
-		AL_CORE_ERROR("No Camera!");
+		// AL_CORE_ERROR("No Camera!");
+		Renderer &renderer = App::get().getRenderer();
+		renderer.biginNoCamScene();
 	}
 
 	// imguilayer::renderDrawData
@@ -605,7 +605,7 @@ void Scene::initFrustumDrawFlag()
 void Scene::findMoveObject()
 {
 	auto view = m_Registry.view<MeshRendererComponent, TransformComponent>();
-	for (auto e: view)
+	for (auto e : view)
 	{
 		auto &transform = view.get<TransformComponent>(e);
 		auto &mesh = view.get<MeshRendererComponent>(e);
