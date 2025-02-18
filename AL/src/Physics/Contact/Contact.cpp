@@ -538,6 +538,8 @@ bool Contact::isSameDirection(glm::vec3 v1, glm::vec3 v2)
 
 EpaInfo Contact::getEpaResult(const ConvexInfo &convexA, const ConvexInfo &convexB, SimplexArray &simplexArray)
 {
+	const int32_t ITERATION = 64;
+
 	FaceArray faceArray;
 	FaceArray newFaceArray;
 	int32_t initIdx[12] = {0, 1, 2, 0, 3, 1, 0, 2, 3, 1, 3, 2};
@@ -555,8 +557,17 @@ EpaInfo Contact::getEpaResult(const ConvexInfo &convexA, const ConvexInfo &conve
 		minDistance = -1.0f;
 	}
 
+	int32_t iter = -1;
+
 	while (minDistance == FLT_MAX)
 	{
+		if (++iter > ITERATION)
+		{
+			minNormal = glm::vec3(0.0f);
+			minDistance = -1.0f;
+			break;
+		}
+
 		// 최소 거리의 법선, 거리 쿼리
 		minNormal = glm::vec3(faceArray.normals[minFace]);
 		minDistance = faceArray.normals[minFace].w;
@@ -625,7 +636,9 @@ EpaInfo Contact::getEpaResult(const ConvexInfo &convexA, const ConvexInfo &conve
 			// 새로 추가되는 면이 없다면 종료료
 			if (newFaceArray.count == 0)
 			{
-				throw std::runtime_error("failed to EPA!");
+				minNormal = glm::vec3(0.0f);
+				minDistance = -1.0f;
+				break;
 			}
 
 			PhysicsAllocator::m_stackAllocator.freeStack();
