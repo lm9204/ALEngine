@@ -99,22 +99,11 @@ void Model::draw(DrawInfo &drawInfo)
 		vertexUbo.model = drawInfo.model;
 		vertexUbo.view = drawInfo.view;
 		vertexUbo.proj = drawInfo.projection;
+		for (size_t i = 0; i < MAX_BONES; ++i)
+			vertexUbo.finalBonesMatrices[i] = drawInfo.finalBonesMatrices[i];
 		vertexUbo.heightFlag = drawInfo.materials[i]->getHeightMap().flag;
 		vertexUbo.heightScale = 0.1;
 		vertexUbo.padding = glm::vec2(0.0f);
-   
-		if (m_SkeletalAnimations)
-		{
-			for (size_t boneIndex = 0; boneIndex < m_ShaderData.m_FinalBonesMatrices.size(); ++boneIndex)
-			{
-				vertexUbo.finalBonesMatrices[boneIndex] = m_ShaderData.m_FinalBonesMatrices[boneIndex];
-			}
-		}
-    else
-    {
-       for (size_t i = 0; i < MAX_BONES; ++i)
-			    vertexUbo.finalBonesMatrices[i] = glm::mat4(1.0f);
-    }
    
 		vertexUniformBuffers[index]->updateUniformBuffer(&vertexUbo, sizeof(vertexUbo));
 
@@ -245,7 +234,7 @@ void Model::loadGLTFModel(std::string path, std::shared_ptr<Material> &defaultMa
 		materials[i] = processGLTFMaterial(scene, scene->mMaterials[i], defaultMaterial, path);
 	}
 
-  processGLTFSkeleton(scene);
+	processGLTFSkeleton(scene);
 	processGLTFNode(scene->mRootNode, scene, materials);
 }
 
@@ -549,7 +538,6 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 
 	if (mesh->mNumBones > 0)
 	{
-		AL_INFO("Model: m_Skeleton->m_NodeNameToBoneIndex.size(): {0}", m_Skeleton->m_NodeNameToBoneIndex.size());
 		std::vector<VertexBoneData> vertexBoneData(mesh->mNumVertices);
 
 		// 영향을 미치는 모든 본 정보 처리
@@ -887,8 +875,6 @@ void Model::loadAnimations(const aiScene* scene)
 			animation->setFirstKeyFrameTime(sampler.m_Timestamps[0]);
 			animation->setLastKeyFrameTime(sampler.m_Timestamps.back());
 		}
-		// animation->setFirstKeyFrameTime(0);
-		// animation->setLastKeyFrameTime(durationSeconds);
 
 		m_Animations->push(animation);
 	}
@@ -907,18 +893,6 @@ glm::mat4 Model::convertMatrix(const aiMatrix4x4& m)
 void Model::setShaderData(const std::vector<glm::mat4>& shaderData)
 {
 	m_ShaderData.m_FinalBonesMatrices = shaderData;
-}
-
-void Model::updateAnimations(SkeletalAnimation* animation, const Timestep& timestep, uint32_t prevImage, uint32_t currentImage)
-{
-	if (!m_SkeletalAnimations)
-		return;
-
-	m_Animations->uploadData(animation, prevImage);
-	m_Animations->update(timestep, *m_Skeleton, currentImage);
-	m_Skeleton->update();
-
-	m_ShaderData.m_FinalBonesMatrices = m_Skeleton->m_ShaderData.m_FinalBonesMatrices;
 }
 
 std::shared_ptr<SkeletalAnimations>& Model::getAnimations()  { return m_Animations; }
