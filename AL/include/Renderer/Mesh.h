@@ -15,6 +15,8 @@ class Mesh
 	static std::shared_ptr<Mesh> createSphere();
 	static std::shared_ptr<Mesh> createPlane();
 	static std::shared_ptr<Mesh> createGround();
+	static std::shared_ptr<Mesh> createCapsule();
+	static std::shared_ptr<Mesh> createCylinder();
 
 	~Mesh() = default;
 
