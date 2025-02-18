@@ -118,10 +118,18 @@ void ContactSolver::solveVelocityConstraints()
 			// 상대 속도 계산
 			glm::vec3 velocityA = linearVelocityA + glm::cross(angularVelocityA, rA);
 			glm::vec3 velocityB = linearVelocityB + glm::cross(angularVelocityB, rB);
+
+			// rA, rB 중 1개라도 0.0f 면 continue (cross 연산 오류 발생 가능)
+			if (glm::length2(rA) == 0.0f || glm::length2(rB) == 0.0f)
+			{
+				continue;
+			}
+
+			// 상대 속도
 			glm::vec3 relativeVelocity = velocityB - velocityA;
 
-			// 법선 방향 속도
 
+			// 법선 방향 속도
 			float normalSpeed = glm::dot(relativeVelocity, manifoldPoint.normal);
 			float appliedNormalImpulse;
 
@@ -153,24 +161,10 @@ void ContactSolver::solveVelocityConstraints()
 				linearVelocityBufferA -= velocityConstraint.invMassA * appliedNormalImpulse * manifoldPoint.normal;
 				linearVelocityBufferB += velocityConstraint.invMassB * appliedNormalImpulse * manifoldPoint.normal;
 
-				if (glm::length2(rA) == 0.0f)
-				{
-					throw std::runtime_error("normal rA is zero!!");
-				}
-
-				if (glm::length2(rB) == 0.0f)
-				{
-					throw std::runtime_error("normal rB is zero!!");
-				}
-
-				{
-					angularVelocityBufferA -=
-						velocityConstraint.invIA * glm::cross(rA, appliedNormalImpulse * manifoldPoint.normal);
-				}
-				{
-					angularVelocityBufferB +=
-						velocityConstraint.invIB * glm::cross(rB, appliedNormalImpulse * manifoldPoint.normal);
-				}
+				angularVelocityBufferA -=
+					velocityConstraint.invIA * glm::cross(rA, appliedNormalImpulse * manifoldPoint.normal);
+				angularVelocityBufferB +=
+					velocityConstraint.invIB * glm::cross(rB, appliedNormalImpulse * manifoldPoint.normal);
 			}
 
 			// 접선 방향 충격량 계산
@@ -178,7 +172,7 @@ void ContactSolver::solveVelocityConstraints()
 			glm::vec3 tangent = glm::normalize(tangentVelocity);
 			float tangentSpeed = glm::dot(tangent, tangentVelocity);
 
-			if (tangentSpeed > TANGENT_STOP_VELOCITY)
+			if (tangentSpeed > TANGENT_STOP_VELOCITY && glm::length2(tangent) != 0.0f)
 			{
 				float oldTangentImpulse = manifoldPoint.tangentImpulse;
 				float newTangentImpulse = tangentSpeed * (manifoldPoint.seperation / seperationSum);
@@ -202,30 +196,10 @@ void ContactSolver::solveVelocityConstraints()
 				linearVelocityBufferA += velocityConstraint.invMassA * appliedTangentImpulse * tangent;
 				linearVelocityBufferB -= velocityConstraint.invMassB * appliedTangentImpulse * tangent;
 
-				if (glm::length2(rA) == 0.0f)
-				{
-					throw std::runtime_error("tangent rA is zero!!");
-				}
-
-				if (glm::length2(rB) == 0.0f)
-				{
-					throw std::runtime_error("tangent rB is zero!!");
-				}
-
-				if (glm::length2(tangent) == 0.0f)
-				{
-					throw std::runtime_error("tangent vector is zero!!");
-				}
-
-				{
-					angularVelocityBufferA +=
-						velocityConstraint.invIA * glm::cross(rA, appliedTangentImpulse * tangent);
-				}
-
-				{
-					angularVelocityBufferB -=
-						velocityConstraint.invIB * glm::cross(rB, appliedTangentImpulse * tangent);
-				}
+				angularVelocityBufferA +=
+					velocityConstraint.invIA * glm::cross(rA, appliedTangentImpulse * tangent);
+				angularVelocityBufferB -=
+					velocityConstraint.invIB * glm::cross(rB, appliedTangentImpulse * tangent);
 			}
 		}
 		linearVelocityA += linearVelocityBufferA;

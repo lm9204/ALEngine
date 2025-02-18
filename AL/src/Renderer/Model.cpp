@@ -274,7 +274,11 @@ void Model::loadGLTFModel(std::string path, std::shared_ptr<Material> &defaultMa
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cerr << "Failed to load GLTF model!" << std::endl;
-		throw std::runtime_error("Failed to load GLTF model!");
+		// box모델 로드
+		m_meshes.push_back(Mesh::createBox());
+		m_materials.push_back(defaultMaterial);
+		return;
+		// throw std::runtime_error("Failed to load GLTF model!");
 	}
 
 	// material부터 처리
@@ -969,7 +973,11 @@ void Model::loadOBJModel(std::string path, std::shared_ptr<Material> &defaultMat
 	if (!objLoader->getFlag())
 	{
 		std::cerr << "Failed to load OBJ model!" << std::endl;
-		throw std::runtime_error("Failed to load OBJ model!");
+		// box모델 로드
+		m_meshes.push_back(Mesh::createBox());
+		m_materials.push_back(defaultMaterial);
+		return;
+		// throw std::runtime_error("Failed to load OBJ model!");
 	}
 
 	auto &subMeshMap = objLoader->getSubMesh();

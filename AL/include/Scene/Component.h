@@ -43,6 +43,8 @@ struct TransformComponent
 	glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Rotation = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Scale = {1.0f, 1.0f, 1.0f};
+	glm::vec3 m_LastPosition = {0.0f, 0.0f, 0.0f};
+
 	bool m_isMoved = false;
 
 	glm::mat4 m_WorldTransform = glm::mat4(1.0f);
@@ -50,7 +52,7 @@ struct TransformComponent
 	// 생성자
 	TransformComponent() = default;
 	TransformComponent(const TransformComponent &) = default;
-	TransformComponent(const glm::vec3 &position) : m_Position(position)
+	TransformComponent(const glm::vec3 &position) : m_Position(position), m_LastPosition(position)
 	{
 	}
 
@@ -139,8 +141,8 @@ struct CameraComponent
 struct RigidbodyComponent
 {
 	// FLAG
-	glm::vec3 m_FreezePos;
-	glm::vec3 m_FreezeRot;
+	glm::vec3 m_FreezePos = {1, 1, 1};
+	glm::vec3 m_FreezeRot = {1, 1, 1};
 
 	void *body = nullptr;
 

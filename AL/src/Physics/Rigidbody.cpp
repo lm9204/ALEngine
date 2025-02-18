@@ -33,7 +33,6 @@ Rigidbody::Rigidbody(const BodyDef *bd, World *world)
 
 	m_xf.position = bd->m_position;
 	m_xf.orientation = bd->m_orientation;
-	m_accumulatedPos = glm::vec3(0.0f);
 
 	m_linearVelocity = bd->m_linearVelocity;
 	m_angularVelocity = bd->m_angularVelocity;
@@ -42,6 +41,9 @@ Rigidbody::Rigidbody(const BodyDef *bd, World *world)
 	m_angularDamping = bd->m_angularDamping;
 	m_gravityScale = bd->m_gravityScale;
 
+	m_posFreeze = bd->m_posFreeze;
+	m_rotFreeze = bd->m_rotFreeze;
+	
 	m_useGravity = bd->m_useGravity;
 	m_canSleep = bd->m_canSleep;
 	m_isAwake = bd->m_isAwake;
@@ -100,9 +102,9 @@ void Rigidbody::integrate(float duration)
 	glm::vec3 angularAcceleration = m_inverseInertiaTensorWorld * m_torqueAccum;
 
 	// set velocity by accerleration
-	m_linearVelocity += (m_lastFrameAcceleration * duration);
-	m_angularVelocity += (angularAcceleration * duration);
-
+	m_linearVelocity += (m_lastFrameAcceleration * duration) * m_posFreeze;
+	m_angularVelocity += (angularAcceleration * duration) * m_rotFreeze;
+	
 	// impose drag
 	m_linearVelocity *= (1.0f - m_linearDamping);
 	m_angularVelocity *= (1.0f - m_angularDamping);
@@ -168,7 +170,6 @@ void Rigidbody::addGravity()
 
 void Rigidbody::calculateForceAccum()
 {
-	// std::cout << "start calculateForceAccum\n";
 	while (!m_forceRegistry.empty())
 	{
 		addForce(m_forceRegistry.front());
@@ -193,25 +194,6 @@ void Rigidbody::clearAccumulators()
 	m_torqueAccum.x = 0;
 	m_torqueAccum.y = 0;
 	m_torqueAccum.z = 0;
-}
-
-bool Rigidbody::isMoved(float radius)
-{
-	float length2 = glm::length2(m_accumulatedPos);
-	if (length2 > radius * radius)
-	{
-		m_accumulatedPos = glm::vec3(0.0f);
-		return true;
-	}
-	else
-	{
-		return false;
-	}
-}
-
-void Rigidbody::accumulateMovement()
-{
-	m_accumulatedPos += m_xf.position - m_sweep.p;
 }
 
 glm::vec3 Rigidbody::getPointInWorldSpace(const glm::vec3 &point) const
@@ -285,24 +267,25 @@ int32_t Rigidbody::getBodyId() const
 	return m_bodyID;
 }
 
-void Rigidbody::setPosition(const glm::vec3 &position)
+void Rigidbody::setPosition(glm::vec3 &position)
 {
-	this->m_xf.position = position;
+	position -= m_xf.position;
+	m_xf.position += position * m_posFreeze;
 }
 
-void Rigidbody::setOrientation(const glm::quat &orientation)
+void Rigidbody::setOrientation(glm::quat &orientation)
 {
 	m_xf.orientation = orientation;
 }
 
-void Rigidbody::setLinearVelocity(const glm::vec3 &linearVelocity)
+void Rigidbody::setLinearVelocity(glm::vec3 &linearVelocity)
 {
-	this->m_linearVelocity = linearVelocity;
+	m_linearVelocity = linearVelocity * m_posFreeze;
 }
 
-void Rigidbody::setAngularVelocity(const glm::vec3 &angularVelocity)
+void Rigidbody::setAngularVelocity(glm::vec3 &angularVelocity)
 {
-	this->m_angularVelocity = angularVelocity;
+	m_angularVelocity = angularVelocity * m_rotFreeze;
 }
 
 void Rigidbody::setMassData(float mass, const glm::mat3 &inertiaTensor)

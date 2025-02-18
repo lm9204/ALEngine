@@ -206,6 +206,11 @@ void Renderer::init(GLFWwindow *window)
 		viewPortDescriptorSetLayout, viewPortImageView, viewPortSampler);
 	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
 
+	m_noCamTexture = Texture::createTexture("./Sandbox/assets/noCam.png");
+	m_noCamShaderResourceManager = ShaderResourceManager::createViewPortShaderResourceManager(
+		viewPortDescriptorSetLayout, m_noCamTexture->getImageView(), m_noCamTexture->getSampler());
+	noCamDescriptorSets = m_noCamShaderResourceManager->getDescriptorSets();
+
 	m_commandBuffers = CommandBuffers::createCommandBuffers();
 	commandBuffers = m_commandBuffers->getCommandBuffers();
 
@@ -283,6 +288,7 @@ void Renderer::recreateViewPort()
 
 	m_viewPortFrameBuffers->cleanup();
 	m_viewPortShaderResourceManager->cleanup();
+	m_noCamShaderResourceManager->cleanup();
 
 	m_backgroundShaderResourceManager->cleanup();
 	m_backgroundFrameBuffers->cleanup();
@@ -332,6 +338,9 @@ void Renderer::recreateViewPort()
 	m_viewPortShaderResourceManager->initViewPortShaderResourceManager(viewPortDescriptorSetLayout, viewPortImageView,
 																	   viewPortSampler);
 	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
+	m_noCamShaderResourceManager->initViewPortShaderResourceManager(
+		viewPortDescriptorSetLayout, m_noCamTexture->getImageView(), m_noCamTexture->getSampler());
+	noCamDescriptorSets = m_noCamShaderResourceManager->getDescriptorSets();
 }
 
 void Renderer::updateSkybox(std::string path)
@@ -411,7 +420,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 {
 	// frustum culling
 	// AL_CORE_INFO("frustum culling start");
-	// scene->frustumCulling(camera.getFrustum());
+	scene->frustumCulling(camera.getFrustum());
 	// AL_CORE_INFO("frustum culling finish");
 
 	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
@@ -422,7 +431,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 
 	// AL_CORE_INFO("before init Frustum");
 	// scene->printCullTree();
-	// scene->initFrustumDrawFlag();
+	scene->initFrustumDrawFlag();
 	// AL_CORE_INFO("after init Frustum");
 	// scene->printCullTree();
 }
@@ -433,10 +442,17 @@ void Renderer::beginScene(Scene *scene, Camera &camera)
 	// projMatrix = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
 	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
 	projMatrix = camera.getProjection();
-
 	viewMatirx = camera.getView();
 
+	scene->frustumCulling(camera.getFrustum());
 	drawFrame(scene);
+
+	scene->initFrustumDrawFlag();
+}
+
+void Renderer::biginNoCamScene()
+{
+	drawNoCamFrame();
 }
 
 void Renderer::drawFrame(Scene *scene)
@@ -545,7 +561,7 @@ void Renderer::drawFrame(Scene *scene)
 	vkCmdPipelineBarrier(commandBuffers[currentFrame], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 						 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	recordImGuiCommandBuffer(scene, commandBuffers[currentFrame], imageIndex);
+	recordImGuiCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS)
 	{
@@ -615,7 +631,143 @@ void Renderer::drawFrame(Scene *scene)
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void Renderer::drawNoCamFrame()
+{
+	// [이전 GPU 작업 대기]
+	// 동시에 작업 가능한 최대 Frame 개수만큼 작업 중인 경우 대기 (가장 먼저 시작한 Frame 작업이 끝나서 Fence에 signal을
+	// 보내기를 기다림)
+	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+	// [작업할 image 준비]
+	// 이번 Frame 에서 사용할 이미지 준비 및 해당 이미지 index 받아오기 (준비가 끝나면 signal 보낼 세마포어 등록)
+	// vkAcquireNextImageKHR 함수는 CPU에서 swapChain과 surface의 호환성을 확인하고 GPU에 이미지 준비 명령을 내리는 함수
+	// 만약 image가 프레젠테이션 큐에 작업이 진행 중이거나 대기 중이면 해당 image는 사용하지 않고 대기한다.
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
+											VK_NULL_HANDLE, &imageIndex);
+
+	// image 준비 실패로 인한 오류 처리
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		// 스왑 체인이 surface 크기와 호환되지 않는 경우로(창 크기 변경), 스왑 체인 재생성 후 다시 draw
+		recreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		// 진짜 오류 gg
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
+	if (firstFrame)
+	{
+		ImGui::Begin("ViewPort");
+		ImGui::Image(reinterpret_cast<ImTextureID>(noCamDescriptorSets[0]), ImVec2{viewPortSize.x, viewPortSize.y});
+		ImGui::End();
+		firstFrame = false;
+	}
+	else
+	{
+		ImGui::Begin("ViewPort");
+		ImVec2 guiViewPortSize = ImGui::GetContentRegionAvail();
+		if (guiViewPortSize.x != viewPortSize.x || guiViewPortSize.y != viewPortSize.y)
+		{
+			viewPortSize = glm::vec2(guiViewPortSize.x, guiViewPortSize.y);
+			recreateViewPort();
+		}
+		ImGui::Image(reinterpret_cast<ImTextureID>(noCamDescriptorSets[0]), ImVec2{viewPortSize.x, viewPortSize.y});
+		ImGui::End();
+	}
+
+	// [Fence 초기화]
+	// Fence signal 상태 not signaled 로 초기화
+	vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
+	// [Command Buffer에 명령 기록]
+	// 커맨드 버퍼 초기화 및 명령 기록
+	vkResetCommandBuffer(
+		commandBuffers[currentFrame],
+		/*VkCommandBufferResetFlagBits*/ 0); // 두 번째 매개변수인 Flag 를 0으로 초기화하면 기본 초기화 진행
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	if (vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to begin recording command buffer!");
+	}
+
+	recordImGuiCommandBuffer(commandBuffers[currentFrame], imageIndex);
+
+	if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to record deferred renderpass command buffer!");
+	}
+
+	// [렌더링 Command Buffer 제출]
+	// 렌더링 커맨드 버퍼 제출 정보 객체 생성
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	// 작업 실행 신호를 받을 대기 세마포어 설정 (해당 세마포어가 signal 상태가 되기 전엔 대기)
+	VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	submitInfo.waitSemaphoreCount = 1;			 // 대기 세마포어 개수
+	submitInfo.pWaitSemaphores = waitSemaphores; // 대기 세마포어 등록
+	submitInfo.pWaitDstStageMask = waitStages;	 // 대기할 시점 등록 (그 전까지는 세마포어 상관없이 그냥 진행)
+
+	// 커맨드 버퍼 등록
+	submitInfo.commandBufferCount = 1;							// 커맨드 버퍼 개수 등록
+	submitInfo.pCommandBuffers = &commandBuffers[currentFrame]; // 커매드 버퍼 등록
+
+	// 작업이 완료된 후 신호를 보낼 세마포어 설정 (작업이 끝나면 해당 세마포어 signal 상태로 변경)
+	VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+	submitInfo.signalSemaphoreCount = 1;			 // 작업 끝나고 신호를 보낼 세마포어 개수
+	submitInfo.pSignalSemaphores = signalSemaphores; // 작업 끝나고 신호를 보낼 세마포어 등록
+
+	// 커맨드 버퍼 제출
+	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to submit draw command buffer!");
+	}
+
+	// [프레젠테이션 Command Buffer 제출]
+	// 프레젠테이션 커맨드 버퍼 제출 정보 객체 생성
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+	// 작업 실행 신호를 받을 대기 세마포어 설정
+	presentInfo.waitSemaphoreCount = 1;				// 대기 세마포어 개수
+	presentInfo.pWaitSemaphores = signalSemaphores; // 대기 세마포어 등록
+
+	// 제출할 스왑 체인 설정
+	VkSwapchainKHR swapChains[] = {swapChain};
+	presentInfo.swapchainCount = 1;			 // 스왑체인 개수
+	presentInfo.pSwapchains = swapChains;	 // 스왑체인 등록
+	presentInfo.pImageIndices = &imageIndex; // 스왑체인에서 표시할 이미지 핸들 등록
+
+	// 프레젠테이션 큐에 이미지 제출
+	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+	// 프레젠테이션 실패 오류 발생 시
+	// if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) { <-
+	// framebufferResized는 명시적으로 해줄뿐 사실상 필요하지가 않음 나중에 수정할꺼면 하자
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	{
+		// 스왑 체인 크기와 surface의 크기가 호환되지 않는 경우
+		recreateSwapChain(); // 변경된 surface에 맞는 SwapChain, ImageView, FrameBuffer 생성
+	}
+	else if (result != VK_SUCCESS)
+	{
+		// 진짜 오류 gg
+		throw std::runtime_error("failed to present swap chain image!");
+	}
+	// [프레임 인덱스 증가]
+	// 다음 작업할 프레임 변경
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Renderer::recordImGuiCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
 	// 렌더 패스 시작
 	VkRenderPassBeginInfo renderPassInfo{};
@@ -707,11 +859,11 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-		// if (meshRendererComponent.renderEnabled == true)
-		// {
-		// drawNum++;
-		meshRendererComponent.m_RenderingComponent->draw(drawInfo);
-		// }
+		if (meshRendererComponent.renderEnabled == true)
+		{
+			// drawNum++;
+			meshRendererComponent.m_RenderingComponent->draw(drawInfo);
+		}
 	}
 
 	// AL_CORE_INFO("draw Num = {}", drawNum);
@@ -916,7 +1068,12 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 		drawInfo.pipelineLayout = shadowMapPipelineLayout[shadowMapIndex];
 		drawInfo.currentFrame = currentFrame;
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
+
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		if (meshRendererComponent.renderEnabled == true)
+		{
+			meshRendererComponent.m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
+		}
 	}
 
 	// Render Pass 종료
@@ -1004,7 +1161,11 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 			continue;
 		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		if (meshRendererComponent.renderEnabled == true)
+		{
+			meshRendererComponent.m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
+		}
 	}
 
 	// Render Pass 종료

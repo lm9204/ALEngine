@@ -86,9 +86,15 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 	}
 	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
 
-	auto view = newScene->m_Registry.view<CameraComponent>();
-	newScene->initScene();
+	newScene->m_cullTree = scene->m_cullTree;
 
+	auto view = newScene->m_Registry.view<MeshRendererComponent>();
+	for (auto entityHandle : view)
+	{
+		auto &mesh = dstRegistry.get<MeshRendererComponent>(entityHandle);
+		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));
+	}
+	newScene->initScene();
 	return newScene;
 }
 
@@ -215,6 +221,7 @@ void Scene::onRuntimeStop()
 void Scene::onUpdateEditor(EditorCamera &camera)
 {
 	setCamPos(camera.getPosition());
+	findMoveObject();
 	renderScene(camera);
 }
 
@@ -262,10 +269,6 @@ void Scene::onUpdateRuntime(Timestep ts)
 				tf.m_Position = body->getTransform().position;
 				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
 				tf.m_WorldTransform = tf.getTransform();
-				if (body->isMoved(mr.cullSphere.radius * tf.getMaxScale()) == true)
-				{
-					tf.m_isMoved = true;
-				}
 			}
 		}
 	}
@@ -292,11 +295,14 @@ void Scene::onUpdateRuntime(Timestep ts)
 	{
 		Renderer &renderer = App::get().getRenderer();
 		setCamPos(mainCamera->getPosition());
+		findMoveObject();
 		renderer.beginScene(this, *mainCamera);
 	}
 	else
 	{
-		AL_CORE_ERROR("No Camera!");
+		// AL_CORE_ERROR("No Camera!");
+		Renderer &renderer = App::get().getRenderer();
+		renderer.biginNoCamScene();
 	}
 
 	// imguilayer::renderDrawData
@@ -381,11 +387,13 @@ void Scene::onPhysicsStart()
 		BodyDef bdDef;
 		bdDef.m_type = EBodyType::DYNAMIC_BODY;
 		bdDef.m_position = tf.m_Position;
-		bdDef.m_orientation = glm::quat(glm::radians(tf.m_Rotation));
+		bdDef.m_orientation = glm::quat(tf.m_Rotation);
 		bdDef.m_linearDamping = rb.m_Damping;
 		bdDef.m_angularDamping = rb.m_AngularDamping;
 		bdDef.m_gravityScale = 15.0f;
 		bdDef.m_useGravity = rb.m_UseGravity;
+		bdDef.m_posFreeze = rb.m_FreezePos;
+		bdDef.m_rotFreeze = rb.m_FreezeRot;
 
 		// create body
 		Rigidbody *body = m_World->createBody(bdDef);
@@ -594,6 +602,25 @@ void Scene::frustumCulling(const Frustum &frustum)
 void Scene::initFrustumDrawFlag()
 {
 	m_cullTree.setRenderDisable(m_cullTree.getRootNodeId());
+}
+
+void Scene::findMoveObject()
+{
+	auto view = m_Registry.view<MeshRendererComponent, TransformComponent>();
+	for (auto e : view)
+	{
+		auto &transform = view.get<TransformComponent>(e);
+		auto &mesh = view.get<MeshRendererComponent>(e);
+
+		float limit = transform.getMaxScale() * mesh.cullSphere.radius * 0.1f;
+		limit = limit * limit;
+
+		if (glm::length2(transform.m_Position - transform.m_LastPosition) > limit)
+		{
+			transform.m_LastPosition = transform.m_Position;
+			transform.m_isMoved = true;
+		}
+	}
 }
 
 // 컴파일 타임에 조건 확인

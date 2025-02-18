@@ -72,11 +72,6 @@ void ContactManager::addPair(void *proxyUserDataA, void *proxyUserDataB)
 	// 충돌 생성
 	Contact *contact = Contact::create(fixtureA, fixtureB, indexA, indexB);
 
-	if (contact == nullptr)
-	{
-		throw std::runtime_error("Generating Contact fail!");
-	}
-
 	fixtureA = contact->getFixtureA();
 	fixtureB = contact->getFixtureB();
 	indexA = contact->getChildIndexA();

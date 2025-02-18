@@ -128,6 +128,7 @@ class Scene
 	void renderScene(EditorCamera &camera);
 	void onPhysicsStart();
 	void onPhysicsStop();
+	void findMoveObject();
 
 	void setCamPos(glm::vec3 &pos)
 	{
