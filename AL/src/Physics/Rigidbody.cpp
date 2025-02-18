@@ -102,12 +102,12 @@ void Rigidbody::integrate(float duration)
 	glm::vec3 angularAcceleration = m_inverseInertiaTensorWorld * m_torqueAccum;
 
 	// set velocity by accerleration
-	m_linearVelocity += (m_lastFrameAcceleration * duration);
-	m_angularVelocity += (angularAcceleration * duration);
-
+	m_linearVelocity += (m_lastFrameAcceleration * duration) * m_posFreeze;
+	m_angularVelocity += (angularAcceleration * duration) * m_rotFreeze;
+	
 	// impose drag
-	m_linearVelocity *= (1.0f - m_linearDamping) * m_posFreeze;
-	m_angularVelocity *= (1.0f - m_angularDamping) * m_rotFreeze;
+	m_linearVelocity *= (1.0f - m_linearDamping);
+	m_angularVelocity *= (1.0f - m_angularDamping);
 
 	// set sweep (previous Transform)
 	m_sweep.p = m_xf.position;
