@@ -20,4 +20,14 @@ void Material::initMaterial(Albedo albedo, NormalMap normalMap, Roughness roughn
 	m_aoMap = aoMap;
 	m_heightMap = heightMap;
 }
+
+void Material::cleanup()
+{
+	m_albedo.albedoTexture->cleanup();
+	m_normalMap.normalTexture->cleanup();
+	m_roughness.roughnessTexture->cleanup();
+	m_metallic.metallicTexture->cleanup();
+	m_aoMap.aoTexture->cleanup();
+	m_heightMap.heightTexture->cleanup();
+}
 } // namespace ale

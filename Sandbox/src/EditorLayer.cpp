@@ -23,12 +23,20 @@ void EditorLayer::onAttach()
 	descriptorPool = context.getDescriptorPool();
 	device = context.getDevice();
 
-	playTextureID =
-		VulkanUtil::createIconTexture(device, descriptorPool, m_PlayIcon->getImageView(), m_PlayIcon->getSampler());
-	pauseTextureID =
-		VulkanUtil::createIconTexture(device, descriptorPool, m_PauseIcon->getImageView(), m_PauseIcon->getSampler());
-	stepTextureID =
-		VulkanUtil::createIconTexture(device, descriptorPool, m_StepIcon->getImageView(), m_StepIcon->getSampler());
+	iconDescriptorSetLayout = VulkanUtil::createIconDescriptorSetLayout(device, descriptorPool);
+	playDescriptorSet = VulkanUtil::createIconDescriptorSet(device, descriptorPool, iconDescriptorSetLayout,
+															m_PlayIcon->getImageView(), m_PlayIcon->getSampler());
+	pauseDescriptorSet = VulkanUtil::createIconDescriptorSet(device, descriptorPool, iconDescriptorSetLayout,
+															 m_PauseIcon->getImageView(), m_PauseIcon->getSampler());
+	stepDescriptorSet = VulkanUtil::createIconDescriptorSet(device, descriptorPool, iconDescriptorSetLayout,
+															m_StepIcon->getImageView(), m_StepIcon->getSampler());
+
+	// playTextureID =
+	// 	VulkanUtil::createIconTexture(device, descriptorPool, m_PlayIcon->getImageView(), m_PlayIcon->getSampler());
+	// pauseTextureID =
+	// 	VulkanUtil::createIconTexture(device, descriptorPool, m_PauseIcon->getImageView(), m_PauseIcon->getSampler());
+	// stepTextureID =
+	// 	VulkanUtil::createIconTexture(device, descriptorPool, m_StepIcon->getImageView(), m_StepIcon->getSampler());
 
 	auto cmdLineArgs = App::get().getSpecification().m_CommandLineArgs;
 
@@ -50,6 +58,13 @@ void EditorLayer::onAttach()
 void EditorLayer::onDetach()
 {
 	// texture clean up
+	m_PlayIcon->cleanup();
+	m_PauseIcon->cleanup();
+	m_StepIcon->cleanup();
+
+	vkDestroyDescriptorSetLayout(device, iconDescriptorSetLayout, nullptr);
+
+	m_EditorScene->cleanup();
 }
 
 void EditorLayer::onUpdate(Timestep ts)
@@ -295,8 +310,8 @@ void EditorLayer::uiToolBar()
 	static bool isPlayPressed = false;
 	static bool isPausePressed = false;
 
-	if (ImGui::ImageButton("a", playTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
-						   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), isPlayPressed ? activeColor : tintColor) &&
+	if (ImGui::ImageButton("a", reinterpret_cast<ImTextureID>(playDescriptorSet), ImVec2(size + 4, size), ImVec2(0, 0),
+						   ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.45f), isPlayPressed ? activeColor : tintColor) &&
 		toolbarEnabled)
 	{
 		isPlayPressed = !isPlayPressed;
@@ -310,8 +325,9 @@ void EditorLayer::uiToolBar()
 		ImGui::BeginDisabled();
 	ImGui::SameLine();
 	{
-		if (ImGui::ImageButton("b", pauseTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
-							   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), isPausePressed ? activeColor : tintColor) &&
+		if (ImGui::ImageButton("b", reinterpret_cast<ImTextureID>(pauseDescriptorSet), ImVec2(size + 4, size),
+							   ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.45f),
+							   isPausePressed ? activeColor : tintColor) &&
 			toolbarEnabled)
 		{
 			isPausePressed = !isPausePressed;
@@ -325,8 +341,8 @@ void EditorLayer::uiToolBar()
 		ImGui::BeginDisabled();
 	ImGui::SameLine();
 	{
-		if (ImGui::ImageButton("c", stepTextureID, ImVec2(size + 4, size), ImVec2(0, 0), ImVec2(1, 1),
-							   ImVec4(0.0f, 0.0f, 0.0f, 0.45f), tintColor) &&
+		if (ImGui::ImageButton("c", reinterpret_cast<ImTextureID>(stepDescriptorSet), ImVec2(size + 4, size),
+							   ImVec2(0, 0), ImVec2(1, 1), ImVec4(0.0f, 0.0f, 0.0f, 0.45f), tintColor) &&
 			toolbarEnabled)
 		{
 			isPausePressed = true;

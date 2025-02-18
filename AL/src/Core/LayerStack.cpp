@@ -4,6 +4,15 @@ namespace ale
 {
 LayerStack::~LayerStack()
 {
+	// for (Layer *layer : m_Layers)
+	// {
+	// 	layer->onDetach();
+	// delete layer;
+	// }
+}
+
+void LayerStack::onDetach()
+{
 	for (Layer *layer : m_Layers)
 	{
 		layer->onDetach();

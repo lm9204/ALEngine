@@ -22,8 +22,16 @@ void Texture::cleanup()
 	auto &context = VulkanContext::getContext();
 	auto device = context.getDevice();
 
-	vkDestroySampler(device, textureSampler, nullptr);
-	vkDestroyImageView(device, textureImageView, nullptr);
+	if (textureSampler != VK_NULL_HANDLE)
+	{
+		vkDestroySampler(device, textureSampler, nullptr);
+		textureSampler = VK_NULL_HANDLE;
+	}
+	if (textureImageView != VK_NULL_HANDLE)
+	{
+		vkDestroyImageView(device, textureImageView, nullptr);
+		textureImageView = VK_NULL_HANDLE;
+	}
 	m_imageBuffer->cleanup();
 }
 

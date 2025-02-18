@@ -19,16 +19,25 @@ ContentBrowserPanel::ContentBrowserPanel()
 	descriptorPool = context.getDescriptorPool();
 	device = context.getDevice();
 
-	directoryTextureID = VulkanUtil::createIconTexture(device, descriptorPool, m_DirectoryIcon->getImageView(),
-													   m_DirectoryIcon->getSampler());
-	fileTextureID =
-		VulkanUtil::createIconTexture(device, descriptorPool, m_FileIcon->getImageView(), m_FileIcon->getSampler());
+	iconDescriptorSetLayout = VulkanUtil::createIconDescriptorSetLayout(device, descriptorPool);
+	directoryDescriptorSet =
+		VulkanUtil::createIconDescriptorSet(device, descriptorPool, iconDescriptorSetLayout,
+											m_DirectoryIcon->getImageView(), m_DirectoryIcon->getSampler());
+	fileDescriptorSet = VulkanUtil::createIconDescriptorSet(device, descriptorPool, iconDescriptorSetLayout,
+															m_FileIcon->getImageView(), m_FileIcon->getSampler());
+
+	// directoryTextureID = VulkanUtil::createIconTexture(device, descriptorPool, m_DirectoryIcon->getImageView(),
+	// 												   m_DirectoryIcon->getSampler());
+	// fileTextureID =
+	// 	VulkanUtil::createIconTexture(device, descriptorPool, m_FileIcon->getImageView(), m_FileIcon->getSampler());
 }
 
 ContentBrowserPanel::~ContentBrowserPanel()
 {
 	m_DirectoryIcon->cleanup();
 	m_FileIcon->cleanup();
+
+	vkDestroyDescriptorSetLayout(device, iconDescriptorSetLayout, nullptr);
 }
 
 ImTextureID ContentBrowserPanel::createIconTexture(VkImageView imageView, VkSampler sampler)
@@ -112,7 +121,8 @@ void ContentBrowserPanel::onImGuiRender()
 		std::string filenameString = path.filename().string();
 
 		ImGui::PushID(filenameString.c_str()); // 각 요소를 구분하기 위해 필요
-		ImTextureID icon = directoryEntry.is_directory() ? directoryTextureID : fileTextureID;
+		ImTextureID icon = directoryEntry.is_directory() ? reinterpret_cast<ImTextureID>(directoryDescriptorSet)
+														 : reinterpret_cast<ImTextureID>(fileDescriptorSet);
 		ImGui::PushStyleColor(ImGuiCol_Button, ImVec4(0, 0, 0, 0));
 		ImGui::ImageButton("Icon", icon, {thumbnailSize, thumbnailSize}, {0, 1}, {1, 0});
 

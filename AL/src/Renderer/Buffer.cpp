@@ -111,8 +111,16 @@ std::unique_ptr<VertexBuffer> VertexBuffer::createVertexBuffer(std::vector<Verte
 
 void VertexBuffer::cleanup()
 {
-	vkDestroyBuffer(m_device, m_buffer, nullptr);
-	vkFreeMemory(m_device, m_bufferMemory, nullptr);
+	if (m_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer(m_device, m_buffer, nullptr);
+		m_buffer = VK_NULL_HANDLE;
+	}
+	if (m_bufferMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, m_bufferMemory, nullptr);
+		m_bufferMemory = VK_NULL_HANDLE;
+	}
 }
 
 void VertexBuffer::bind(VkCommandBuffer commandBuffer)
@@ -161,8 +169,16 @@ std::unique_ptr<IndexBuffer> IndexBuffer::createIndexBuffer(std::vector<uint32_t
 
 void IndexBuffer::cleanup()
 {
-	vkDestroyBuffer(m_device, m_buffer, nullptr);
-	vkFreeMemory(m_device, m_bufferMemory, nullptr);
+	if (m_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer(m_device, m_buffer, nullptr);
+		m_buffer = VK_NULL_HANDLE;
+	}
+	if (m_bufferMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, m_bufferMemory, nullptr);
+		m_bufferMemory = VK_NULL_HANDLE;
+	}
 }
 
 void IndexBuffer::bind(VkCommandBuffer commandBuffer)
@@ -229,8 +245,16 @@ std::unique_ptr<ImageBuffer> ImageBuffer::createImageBufferFromMemory(const aiTe
 
 void ImageBuffer::cleanup()
 {
-	vkDestroyImage(m_device, textureImage, nullptr);
-	vkFreeMemory(m_device, textureImageMemory, nullptr);
+	if (textureImage != VK_NULL_HANDLE)
+	{
+		vkDestroyImage(m_device, textureImage, nullptr);
+		textureImage = VK_NULL_HANDLE;
+	}
+	if (textureImageMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, textureImageMemory, nullptr);
+		textureImageMemory = VK_NULL_HANDLE;
+	}
 }
 
 bool ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
@@ -677,8 +701,16 @@ std::shared_ptr<UniformBuffer> UniformBuffer::createUniformBuffer(VkDeviceSize b
 
 void UniformBuffer::cleanup()
 {
-	vkDestroyBuffer(m_device, m_buffer, nullptr);
-	vkFreeMemory(m_device, m_bufferMemory, nullptr);
+	if (m_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer(m_device, m_buffer, nullptr);
+		m_buffer = VK_NULL_HANDLE;
+	}
+	if (m_bufferMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, m_bufferMemory, nullptr);
+		m_bufferMemory = VK_NULL_HANDLE;
+	}
 }
 
 void UniformBuffer::updateUniformBuffer(void *data, VkDeviceSize size)

@@ -110,6 +110,10 @@ void Model::cleanup()
 	{
 		mesh->cleanup();
 	}
+	for (auto &material : m_materials)
+	{
+		material->cleanup();
+	}
 }
 
 void Model::draw(DrawInfo &drawInfo)
@@ -984,7 +988,6 @@ void Model::loadOBJModel(std::string path, std::shared_ptr<Material> &defaultMat
 	auto &mtlMap = objLoader->getMtlMap();
 	for (auto &map : subMeshMap)
 	{
-		std::cout << "Submesh: " << map.first << std::endl;
 		auto &subMesh = map.second;
 		auto &vertices = subMesh.vertices;
 		auto &indices = subMesh.indices;
