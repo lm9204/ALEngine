@@ -499,21 +499,26 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				std::shared_ptr<Model> model;
 				switch (mc.type)
 				{
-				case 0:
+				case 1:
 					model = m_Scene->getBoxModel();
 					break;
-				case 1:
+				case 2:
 					model = m_Scene->getSphereModel();
 					break;
-				case 2:
+				case 3:
 					model = m_Scene->getPlaneModel();
 					break;
-				case 3:
+				case 4:
 					model = m_Scene->getGroundModel();
 					break;
 				case 5:
+					model = m_Scene->getCapsuleModel();
+					break;
+				case 6:
+					model = m_Scene->getCylinderModel();
+					break;
+				case 7:
 					mc.path = meshComponent["Path"].as<std::string>();
-					AL_CORE_TRACE("{}", mc.path);
 					model = Model::createModel(mc.path, m_Scene->getDefaultMaterial());
 					break;
 				// 그 외의 이상한 값은 box로 임의로 처리
