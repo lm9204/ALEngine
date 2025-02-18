@@ -690,4 +690,12 @@ template <> void Scene::onComponentAdded<CylinderColliderComponent>(Entity entit
 template <> void Scene::onComponentAdded<ScriptComponent>(Entity entity, ScriptComponent &component)
 {
 }
+
+template <> void Scene::onComponentAdded<SkeletalAnimatorComponent>(Entity entity, SkeletalAnimatorComponent &component)
+{
+	auto& mr = entity.getComponent<MeshRendererComponent>();
+
+	component.sac = std::make_shared<SAComponent>(mr.m_RenderingComponent->getModel());
+	component.m_Repeats = component.sac->getRepeatAll();
+}
 } // namespace ale
