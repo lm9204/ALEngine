@@ -96,6 +96,18 @@ void SceneHierarchyPanel::onImGuiRender()
 			}
 			ImGui::EndPopup();
 		}
+
+		ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax())); // 높이 50의 빈 영역
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("EntityPayload"))
+			{
+				Entity *droppedEntity = (Entity *)payload->Data;
+				// 빈 영역에 드랍된 경우, 해당 엔티티를 최상위 엔티티로 만듭니다.
+				updateRelationship(*droppedEntity);
+			}
+			ImGui::EndDragDropTarget();
+		}
 	}
 	ImGui::End();
 
@@ -130,13 +142,13 @@ void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 	auto &childRelation = child.getComponent<RelationshipComponent>();
 	entt::entity oldParent = childRelation.parent;
 
-	// Memory pool needed
-	// if (oldParent != entt::null)
-	// {
-	// 	auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
-	// 	auto &siblings = oldParentRelation.children;
-	// 	siblings.erase(std::remove(siblings.begin(), siblings.end(), &child), siblings.end());
-	// }
+	if (oldParent != entt::null)
+	{
+		auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
+		auto &siblings = oldParentRelation.children;
+		// entt::entity e = (entt::entity)child;
+		siblings.erase(std::remove(siblings.begin(), siblings.end(), child), siblings.end());
+	}
 
 	// 2. 새 부모로 교체
 	childRelation.parent = (entt::entity)newParent;
@@ -156,15 +168,25 @@ void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 	// updateTransforms(newParent);
 }
 
+void SceneHierarchyPanel::updateRelationship(Entity &child)
+{
+	auto &childRelation = child.getComponent<RelationshipComponent>();
+	entt::entity oldParent = childRelation.parent;
+
+	if (oldParent != entt::null)
+	{
+		auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
+		auto &siblings = oldParentRelation.children;
+		entt::entity e = (entt::entity)child;
+		siblings.erase(std::remove(siblings.begin(), siblings.end(), e), siblings.end());
+	}
+
+	// 부모가 없으므로 null로 설정 (최상위 엔티티)
+	childRelation.parent = entt::null;
+}
+
 void SceneHierarchyPanel::updateTransforms(Entity entity)
 {
-	auto view = m_Context->m_Registry.view<RelationshipComponent, TransformComponent>();
-
-	auto &relate = entity.getComponent<RelationshipComponent>();
-	auto &tc = entity.getComponent<TransformComponent>();
-
-	// tc.m_WorldTransform = tc.getTransform();
-
 	entt::entity top = (entt::entity)entity;
 	while (true)
 	{
@@ -176,6 +198,21 @@ void SceneHierarchyPanel::updateTransforms(Entity entity)
 
 	Entity t{top, m_Context.get()};
 	updateTransformRecursive(t, glm::mat4(1.0f));
+}
+
+void SceneHierarchyPanel::updateActiveInfo(Entity &entity, bool parentEffectiveActive)
+{
+	auto &tc = entity.getComponent<TagComponent>();
+	// 자신의 effective 활성 상태는 부모의 활성 상태와 자신의 m_selfActive의 곱
+	tc.m_isActive = parentEffectiveActive && tc.m_selfActive;
+
+	auto &rc = entity.getComponent<RelationshipComponent>();
+	// 자식 엔티티에 대해 재귀 호출: 현재 엔티티의 m_isActive가 자식에게 부모 효과 상태로 전달됨
+	for (auto &child : rc.children)
+	{
+		Entity c{child, m_Context.get()};
+		updateActiveInfo(c, tc.m_isActive);
+	}
 }
 
 void SceneHierarchyPanel::updateTransformRecursive(Entity entity, const glm::mat4 &parentWorldTransform)
@@ -543,13 +580,30 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 {
 	if (entity.hasComponent<TagComponent>())
 	{
-		auto &tag = entity.getComponent<TagComponent>().m_Tag;
+		auto &tc = entity.getComponent<TagComponent>();
+		auto &tag = tc.m_Tag;
 
 		char buffer[256];
 		memset(buffer, 0, sizeof(buffer));
 		strncpy_s(buffer, sizeof(buffer), tag.c_str(), sizeof(buffer));
 
 		std::string label = "##Tag" + std::to_string(entity.getUUID());
+
+		if (ImGui::Checkbox("##Active", &tc.m_selfActive))
+		{
+			// 자식 엔티티일 경우 부모의 effective 활성 상태를 사용하여 업데이트
+			bool parentEffectiveActive = true;
+			auto &rc = entity.getComponent<RelationshipComponent>();
+			if (rc.parent != entt::null)
+			{
+				Entity parent{rc.parent, m_Context.get()};
+				parentEffectiveActive = parent.getComponent<TagComponent>().m_isActive;
+			}
+			updateActiveInfo(entity, parentEffectiveActive);
+		}
+
+		ImGui::SameLine();
+
 		// ## 뒤의 text는 ImGui 내부의 ID로 사용.
 		if (ImGui::InputText(label.c_str(), buffer, sizeof(buffer)))
 		{
