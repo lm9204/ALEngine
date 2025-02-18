@@ -20,7 +20,8 @@ void *StackAllocator::allocateStack(int32_t size)
 {
 	if (m_entryCount == MAX_STACK_ENTRY_SIZE)
 	{
-		return nullptr;
+		AL_CORE_ERROR("Requested size: {0}", size);
+		throw std::runtime_error("stack overflow");
 	}
 
 	StackEntry *entry = m_entries + m_entryCount;
@@ -28,7 +29,7 @@ void *StackAllocator::allocateStack(int32_t size)
 	if (m_index + size > STACK_SIZE)
 	{
 		AL_CORE_ERROR("Requested size: {0}", size);
-		throw std::runtime_error("stack over size");
+		throw std::runtime_error("stack overflow");
 	}
 	else
 	{
