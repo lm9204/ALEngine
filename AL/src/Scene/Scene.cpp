@@ -94,9 +94,7 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 		auto &mesh = dstRegistry.get<MeshRendererComponent>(entityHandle);
 		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));
 	}
-
 	newScene->initScene();
-
 	return newScene;
 }
 
@@ -302,7 +300,9 @@ void Scene::onUpdateRuntime(Timestep ts)
 	}
 	else
 	{
-		AL_CORE_ERROR("No Camera!");
+		// AL_CORE_ERROR("No Camera!");
+		Renderer &renderer = App::get().getRenderer();
+		renderer.biginNoCamScene();
 	}
 
 	// imguilayer::renderDrawData

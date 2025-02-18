@@ -98,8 +98,8 @@ class ImageBuffer : public Buffer
 	VkImage textureImage;
 	VkDeviceMemory textureImageMemory;
 
-	void initImageBuffer(std::string path, bool flipVertically);
-	void initMaterialImageBuffer(std::string path, bool flipVertically);
+	bool initImageBuffer(std::string path, bool flipVertically);
+	bool initMaterialImageBuffer(std::string path, bool flipVertically);
 	void initImageBufferFromMemory(const aiTexture *texture);
 	void initDefaultImageBuffer(glm::vec4 color);
 	void initDefaultSingleChannelImageBuffer(float value);
