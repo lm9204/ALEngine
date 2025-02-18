@@ -81,13 +81,17 @@ void SceneHierarchyPanel::onImGuiRender()
 			if (ImGui::BeginMenu("3D Object"))
 			{
 				if (ImGui::MenuItem("Box"))
-					;
+					m_Context->createPrimitiveMeshEntity("Box", 1);
 				if (ImGui::MenuItem("Sphere"))
-					;
+					m_Context->createPrimitiveMeshEntity("Sphere", 2);
+				if (ImGui::MenuItem("Plane"))
+					m_Context->createPrimitiveMeshEntity("Plane", 3);
+				if (ImGui::MenuItem("Ground"))
+					m_Context->createPrimitiveMeshEntity("Ground", 4);
 				if (ImGui::MenuItem("Capsule"))
-					;
+					m_Context->createPrimitiveMeshEntity("Capsule", 5);
 				if (ImGui::MenuItem("Cylinder"))
-					;
+					m_Context->createPrimitiveMeshEntity("Cylinder", 6);
 				ImGui::EndMenu();
 			}
 			ImGui::EndPopup();
@@ -644,7 +648,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		uint32_t meshType = component.type;
 		std::shared_ptr<RenderingComponent> rc = component.m_RenderingComponent;
 
-		const char *meshTypeStrings[] = {"Box", "Sphere", "Plane", "Ground", "None", "Model"};
+		const char *meshTypeStrings[] = {"None", "Box", "Sphere", "Plane", "Ground", "Capsule", "Cylinder", "Model"};
 		const char *currentMeshTypeString = meshTypeStrings[(int)meshType];
 
 		ImGui::Columns(2);
@@ -654,7 +658,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		ImGui::NextColumn();
 		if (ImGui::BeginCombo("##MeshTypeCombo", currentMeshTypeString))
 		{
-			for (int32_t i = 0; i < 6; ++i)
+			for (int32_t i = 0; i < 8; ++i)
 			{
 				bool isSelected = currentMeshTypeString == meshTypeStrings[i];
 
@@ -664,8 +668,12 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					// model 정보 바꾸기
 
 					component.type = i;
-					if (i == 4) // None
+					if (i == 0) // None
 					{
+					}
+					else if (i == 7)
+					{
+						break;
 					}
 					else
 					{
@@ -699,7 +707,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				{
 					std::shared_ptr<Model> model = Model::createModel(filePath.string(), scene->getDefaultMaterial());
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
-					component.type = 5;
+					component.type = 7;
 					component.path = filePath.string();
 					component.isMatChanged = false;
 				}
@@ -716,10 +724,6 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				if (filePath.extension().string() == ".gltf" || filePath.extension().string() == ".glb" ||
 					filePath.extension().string() == ".obj")
 				{
-					// std::shared_ptr<Model> model = Model::createModel(filePath.string(),
-					// scene->getDefaultMaterial()); component.m_RenderingComponent =
-					// RenderingComponent::createRenderingComponent(model);
-
 					component.m_RenderingComponent->updateMaterial(
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
 					component.matPath = filePath.string();

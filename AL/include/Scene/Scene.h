@@ -35,6 +35,8 @@ class Scene
 	void insertDestroyEntity(Entity entity);
 	void destroyEntities();
 
+	Entity createPrimitiveMeshEntity(const std::string &name, uint32_t idx);
+
 	void onRuntimeStart();
 	void onRuntimeStop();
 
@@ -87,6 +89,14 @@ class Scene
 	std::shared_ptr<Model> &getGroundModel()
 	{
 		return m_groundModel;
+	}
+	std::shared_ptr<Model> &getCapsuleModel()
+	{
+		return m_capsuleModel;
+	}
+	std::shared_ptr<Model> &getCylinderModel()
+	{
+		return m_cylinderModel;
 	}
 
 	std::shared_ptr<Model> getDefaultModel(int32_t idx);
@@ -143,6 +153,8 @@ class Scene
 	std::shared_ptr<Model> m_sphereModel;
 	std::shared_ptr<Model> m_planeModel;
 	std::shared_ptr<Model> m_groundModel;
+	std::shared_ptr<Model> m_capsuleModel;
+	std::shared_ptr<Model> m_cylinderModel;
 
 	World *m_World = nullptr;
 
