@@ -8,10 +8,6 @@ CapsuleToCapsuleContact::CapsuleToCapsuleContact(Fixture *fixtureA, Fixture *fix
 Contact *CapsuleToCapsuleContact::create(Fixture *fixtureA, Fixture *fixtureB, int32_t indexA, int32_t indexB)
 {
 	void *memory = PhysicsAllocator::m_blockAllocator.allocateBlock(sizeof(CapsuleToCapsuleContact));
-	if (memory == nullptr)
-	{
-		throw std::runtime_error("failed to allocate block");
-	}
 	return new (static_cast<CapsuleToCapsuleContact *>(memory))
 		CapsuleToCapsuleContact(fixtureA, fixtureB, indexA, indexB);
 }

@@ -8,10 +8,6 @@ SphereToBoxContact::SphereToBoxContact(Fixture *fixtureA, Fixture *fixtureB, int
 Contact *SphereToBoxContact::create(Fixture *fixtureA, Fixture *fixtureB, int32_t indexA, int32_t indexB)
 {
 	void *memory = PhysicsAllocator::m_blockAllocator.allocateBlock(sizeof(SphereToBoxContact));
-	if (memory == nullptr)
-	{
-		throw std::runtime_error("failed to allocate block");
-	}
 	return new (static_cast<SphereToBoxContact *>(memory)) SphereToBoxContact(fixtureA, fixtureB, indexA, indexB);
 }
 
