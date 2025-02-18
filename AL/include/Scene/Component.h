@@ -139,8 +139,8 @@ struct CameraComponent
 struct RigidbodyComponent
 {
 	// FLAG
-	glm::vec3 m_FreezePos;
-	glm::vec3 m_FreezeRot;
+	glm::vec3 m_FreezePos = {1, 1, 1};
+	glm::vec3 m_FreezeRot = {1, 1, 1};
 
 	void *body = nullptr;
 
