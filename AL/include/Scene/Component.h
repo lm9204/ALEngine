@@ -27,6 +27,8 @@ struct IDComponent
 struct TagComponent
 {
 	std::string m_Tag;
+	bool m_isActive = true;	  // 에디터 상 활성 여부
+	bool m_selfActive = true; // 부모와 관계없이 자신의 활성 여부
 
 	TagComponent() = default;
 	TagComponent(const TagComponent &) = default;
