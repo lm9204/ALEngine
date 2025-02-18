@@ -893,7 +893,62 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		drawCheckBox("Gravity", component.m_UseGravity);
 
 		// FreezePos
+		ImGui::Text("FreezePos");
+		ImGui::SameLine();
+		bool freezePosX = component.m_FreezePos.x == 1 ? false : true;
+		ImGui::PushID("PX");
+		if (ImGui::Checkbox("X", &freezePosX))
+		{
+			component.m_FreezePos.x = freezePosX ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezePosY = component.m_FreezePos.y == 1 ? false : true;
+		ImGui::PushID("PY");
+		if (ImGui::Checkbox("Y", &freezePosY))
+		{
+			component.m_FreezePos.y = freezePosY ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezePosZ = component.m_FreezePos.z == 1 ? false : true;
+		ImGui::PushID("PZ");
+		if (ImGui::Checkbox("Z", &freezePosZ))
+		{
+			component.m_FreezePos.z = freezePosZ ? 0 : 1;
+		}
+		ImGui::PopID();
+
 		// FreezeRot
+		ImGui::Text("FreezeRot");
+		ImGui::SameLine();
+		ImGui::PushID("RX");
+		bool freezeRotX = component.m_FreezeRot.x == 1 ? false : true;
+		if (ImGui::Checkbox("X", &freezeRotX))
+		{
+			component.m_FreezeRot.x = freezeRotX ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezeRotY = component.m_FreezeRot.y == 1 ? false : true;
+		ImGui::PushID("RY");
+		if (ImGui::Checkbox("Y", &freezeRotY))
+		{
+			component.m_FreezeRot.y = freezeRotY ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezeRotZ = component.m_FreezeRot.z == 1 ? false : true;
+		ImGui::PushID("RZ");
+		if (ImGui::Checkbox("Z", &freezeRotZ))
+		{
+			component.m_FreezeRot.z = freezeRotZ ? 0 : 1;
+		}
+		ImGui::PopID();
 		// BodyType
 
 		if (scene->isRunning())
