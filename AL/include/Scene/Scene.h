@@ -98,10 +98,16 @@ class Scene
 	{
 		return m_Registry.view<Components...>();
 	}
-
+	
 	template <typename... Components> auto &getComponent(entt::entity entity)
 	{
 		return m_Registry.get<Components...>(entity);
+	}
+
+	template <typename Component>
+	auto tryGet(entt::entity entity)
+	{
+		return m_Registry.try_get<Component>(entity);
 	}
 
 	// frustumCulling
