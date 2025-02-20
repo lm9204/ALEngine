@@ -99,4 +99,25 @@ bool AnimationStateManager::hasNoTransitionFor(float seconds) const
 	return (timeSinceLastTransition >= seconds);
 }
 
+void AnimationStateManager::setStates(std::unordered_map<std::string, AnimationState>& states)
+{
+	m_States = states;
+}
+
+void AnimationStateManager::setTransitions(std::vector<AnimationStateTransition>& transitions)
+{
+	m_Transitions = transitions;
+}
+
+std::vector<AnimationStateTransition> AnimationStateManager::getTransitions()
+{
+	return m_Transitions;
+}
+
+std::unordered_map<std::string, AnimationState> AnimationStateManager::getStates()
+{
+	return m_States;
+}
+
+
 }; //namespace ale

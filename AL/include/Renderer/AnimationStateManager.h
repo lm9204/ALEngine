@@ -46,11 +46,19 @@ public:
 public:
 	AnimationStateManager() = default;
 	AnimationState* getState(const std::string& stateName);
+	// TODO
+	void init();
+	void loadAnimationsToStates();
+	
 	void addState(const AnimationState& s) { m_States[s.stateName] = s; }
 	void addTransition(const AnimationStateTransition& t) { m_Transitions.push_back(t); }
 	void pushStateChangeRequest(const std::string& target) { m_RequestQueue.push({ target }); }
+	void setStates(std::unordered_map<std::string, AnimationState>& states);
+	void setTransitions(std::vector<AnimationStateTransition>& transitions);
 	void update(const Timestep& timestep);
 	bool hasNoTransitionFor(float seconds) const;
+	std::vector<AnimationStateTransition> getTransitions();
+	std::unordered_map<std::string, AnimationState> getStates();
 
 
 private:
