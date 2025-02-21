@@ -119,8 +119,10 @@ class Scene
 	// frustumCulling
 	void frustumCulling(const Frustum &frustum);
 	void initFrustumDrawFlag();
-	void removeEntityInCullTree(int32_t nodeId);
-	int32_t insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle);
+	void removeEntityInCullTree(Entity &entity);
+	void insertEntityInCullTree(Entity &entity);
+	void setNoneInCullTree(Entity &entity);
+	void unsetNoneInCullTree(Entity &entity);
 	void printCullTree();
 
   private:

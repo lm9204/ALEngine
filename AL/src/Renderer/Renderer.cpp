@@ -906,7 +906,7 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-		if (meshRendererComponent.renderEnabled == true)
+		if (meshRendererComponent.cullState == ECullState::RENDER)
 		{
 			// drawNum++;
 			meshRendererComponent.m_RenderingComponent->draw(drawInfo);
@@ -1117,7 +1117,7 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-		if (meshRendererComponent.renderEnabled == true)
+		if (meshRendererComponent.cullState == ECullState::RENDER)
 		{
 			meshRendererComponent.m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
 		}
@@ -1209,7 +1209,7 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-		if (meshRendererComponent.renderEnabled == true)
+		if (meshRendererComponent.cullState == ECullState::RENDER)
 		{
 			meshRendererComponent.m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
 		}

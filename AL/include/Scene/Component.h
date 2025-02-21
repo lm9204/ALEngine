@@ -92,9 +92,9 @@ struct MeshRendererComponent
 	bool isMatChanged = false;
 
 	// Culling
-	int32_t nodeId;
+	int32_t nodeId = NULL_NODE;
 	CullSphere cullSphere;
-	bool renderEnabled;
+	ECullState cullState;
 
 	MeshRendererComponent() = default;
 	MeshRendererComponent(const MeshRendererComponent &) = default;

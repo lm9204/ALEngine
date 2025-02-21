@@ -174,6 +174,7 @@ void Scene::destroyEntity(Entity entity)
 		}
 	}
 
+	removeEntityInCullTree(entity);
 	m_EntityMap.erase(entity.getUUID());
 	m_Registry.destroy(entity);
 }
@@ -187,16 +188,9 @@ Entity Scene::createPrimitiveMeshEntity(const std::string &name, uint32_t idx)
 
 	mc.type = idx;
 	mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
-
 	mc.cullSphere = mc.m_RenderingComponent->getCullSphere();
 
-	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
-
-	CullSphere sphere(transformComponent.getTransform() * glm::vec4(mc.cullSphere.center, 1.0f),
-					  mc.cullSphere.radius * transformComponent.getMaxScale());
-
-	// cullTree에 추가 sphere
-	mc.nodeId = insertEntityInCullTree(sphere, entity);
+	insertEntityInCullTree(entity);
 
 	return entity;
 }
@@ -584,9 +578,24 @@ Entity Scene::getEntityByUUID(UUID uuid)
 	return {};
 }
 
-int32_t Scene::insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle)
+void Scene::insertEntityInCullTree(Entity &entity)
 {
-	return m_cullTree.createNode(sphere, static_cast<uint32_t>(entityHandle));
+	if (!entity.hasComponent<MeshRendererComponent>())
+	{
+		return;
+	}
+
+	auto &mc = entity.getComponent<MeshRendererComponent>();
+	if (mc.m_RenderingComponent != nullptr && mc.nodeId == NULL_NODE)
+	{
+		TransformComponent &tc = entity.getComponent<TransformComponent>();
+
+		CullSphere sphere(tc.getTransform() * glm::vec4(mc.cullSphere.center, 1.0f),
+						  mc.cullSphere.radius * tc.getMaxScale());
+
+		mc.nodeId = m_cullTree.createNode(sphere, static_cast<uint32_t>(entity));
+		mc.cullState = ECullState::CULL;
+	}
 }
 
 void Scene::printCullTree()
@@ -594,9 +603,17 @@ void Scene::printCullTree()
 	m_cullTree.printCullTree(m_cullTree.getRootNodeId());
 }
 
-void Scene::removeEntityInCullTree(int32_t nodeId)
+void Scene::removeEntityInCullTree(Entity &entity)
 {
-	m_cullTree.destroyNode(nodeId);
+	if (entity.hasComponent<MeshRendererComponent>())
+	{
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		if (mc.m_RenderingComponent == nullptr)
+			return;
+
+		m_cullTree.destroyNode(mc.nodeId);
+		mc.nodeId = NULL_NODE;
+	}
 }
 
 void Scene::frustumCulling(const Frustum &frustum)
@@ -612,7 +629,11 @@ void Scene::frustumCulling(const Frustum &frustum)
 
 void Scene::initFrustumDrawFlag()
 {
-	m_cullTree.setRenderDisable(m_cullTree.getRootNodeId());
+	int32_t root = m_cullTree.getRootNodeId();
+	if (root != NULL_NODE)
+	{
+		m_cullTree.setRenderDisable(root);
+	}
 }
 
 void Scene::findMoveObject()
@@ -622,6 +643,8 @@ void Scene::findMoveObject()
 	{
 		auto &transform = view.get<TransformComponent>(e);
 		auto &mesh = view.get<MeshRendererComponent>(e);
+		if (mesh.m_RenderingComponent == nullptr)
+			continue;
 
 		float limit = transform.getMaxScale() * mesh.cullSphere.radius * 0.1f;
 		limit = limit * limit;
@@ -631,6 +654,24 @@ void Scene::findMoveObject()
 			transform.m_LastPosition = transform.m_Position;
 			transform.m_isMoved = true;
 		}
+	}
+}
+
+void Scene::setNoneInCullTree(Entity &entity)
+{
+	if (entity.hasComponent<MeshRendererComponent>() == false)
+	{
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		mc.cullState = (mc.cullState | ECullState::NONE);
+	}
+}
+
+void Scene::unsetNoneInCullTree(Entity &entity)
+{
+	if (entity.hasComponent<MeshRendererComponent>() == false)
+	{
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		mc.cullState = (mc.cullState & ECullState::RENDER);
 	}
 }
 
@@ -664,17 +705,7 @@ template <> void Scene::onComponentAdded<CameraComponent>(Entity entity, CameraC
 
 template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent &component)
 {
-	// component.type = 1;
-	// component.m_RenderingComponent = RenderingComponent::createRenderingComponent(getBoxModel());
-	// component.cullSphere = component.m_RenderingComponent->getCullSphere();
-
-	// TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
-
-	// CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
-	// 				  component.cullSphere.radius * transformComponent.getMaxScale());
-
-	// // cullTree에 추가 sphere
-	// component.nodeId = insertEntityInCullTree(sphere, entity);
+	component.type = 0;
 }
 
 template <> void Scene::onComponentAdded<ModelComponent>(Entity entity, ModelComponent &component)
