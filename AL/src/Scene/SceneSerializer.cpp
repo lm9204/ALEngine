@@ -529,11 +529,8 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
 
 				mc.cullSphere = mc.m_RenderingComponent->getCullSphere();
-				TransformComponent &transformComponent = m_Scene->getComponent<TransformComponent>(deserializedEntity);
-				CullSphere sphere(transformComponent.getTransform() * glm::vec4(mc.cullSphere.center, 1.0f),
-								  mc.cullSphere.radius * transformComponent.getMaxScale());
 				// cullTree에 추가 sphere
-				mc.nodeId = m_Scene->insertEntityInCullTree(sphere, deserializedEntity);
+				m_Scene->insertEntityInCullTree(deserializedEntity);
 
 				if (mc.isMatChanged)
 				{
