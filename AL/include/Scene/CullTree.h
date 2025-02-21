@@ -1,7 +1,7 @@
 #pragma once
 
-#include "Renderer/Common.h"
 #include "Core/Log.h"
+#include "Renderer/Common.h"
 
 namespace ale
 {
@@ -26,11 +26,9 @@ struct CullSphere
 
 	CullSphere() = default;
 
-	CullSphere(glm::vec3 &center, float radius)
-		: center(center), radius(radius) {};
+	CullSphere(glm::vec3 &center, float radius) : center(center), radius(radius) {};
 
-	CullSphere(glm::vec4 &center, float radius)
-		: center(center), radius(radius) {};
+	CullSphere(glm::vec4 &center, float radius) : center(center), radius(radius) {};
 
 	float getVolume()
 	{
