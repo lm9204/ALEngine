@@ -8,6 +8,17 @@ namespace ale
 
 #define NULL_NODE (-1)
 
+enum class ECullState
+{
+	CULL = 0,
+	RENDER = (1 << 0),
+	NONE = (1 << 1),
+	RENDER_AND_NONE = (1 << 0) | (1 << 1),
+};
+
+ECullState operator&(ECullState state1, ECullState state2);
+ECullState operator|(ECullState state1, ECullState state2);
+
 struct CullSphere
 {
 	glm::vec3 center;
