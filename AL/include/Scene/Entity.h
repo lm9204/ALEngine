@@ -44,8 +44,7 @@ class Entity
 	// 템플릿 완전 특수화
 	template <> void removeComponent<MeshRendererComponent>()
 	{
-		auto &component = m_Scene->getComponent<MeshRendererComponent>(m_EntityHandle);
-		m_Scene->removeEntityInCullTree(component.nodeId);
+		m_Scene->removeEntityInCullTree(*this);
 		m_Scene->m_Registry.remove<MeshRendererComponent>(m_EntityHandle);
 	}
 
