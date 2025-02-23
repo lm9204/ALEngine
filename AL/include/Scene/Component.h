@@ -5,6 +5,7 @@
 
 #include "Renderer/Model.h"
 #include "Renderer/Texture.h"
+#include "Renderer/SAComponent.h"
 
 #include "Scene/SceneCamera.h"
 
@@ -106,6 +107,22 @@ struct ModelComponent
 
 	ModelComponent() = default;
 	ModelComponent(const ModelComponent &) = default;
+};
+
+struct SkeletalAnimatorComponent
+{
+	std::shared_ptr<SAComponent> sac;
+
+	bool m_IsPlaying = false;
+	bool m_IsChanged = false;
+	float m_SpeedFactor = 1.0f;
+	std::vector<bool> m_Repeats;
+	std::map<std::string, std::function<bool()>> m_Methods;
+
+
+
+	SkeletalAnimatorComponent() = default;
+	SkeletalAnimatorComponent(const SkeletalAnimatorComponent &) = default;
 };
 
 struct TextureComponent
@@ -244,7 +261,7 @@ template <typename... Component> struct ComponentGroup
 using AllComponents =
 	ComponentGroup<TransformComponent, RelationshipComponent, MeshRendererComponent, TextureComponent, CameraComponent,
 				   ScriptComponent, LightComponent, RigidbodyComponent, BoxColliderComponent, SphereColliderComponent,
-				   CapsuleColliderComponent, CylinderColliderComponent>;
+				   CapsuleColliderComponent, CylinderColliderComponent, SkeletalAnimatorComponent>;
 
 } // namespace ale
 

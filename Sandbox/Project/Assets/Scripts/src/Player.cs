@@ -50,5 +50,32 @@ namespace Sandbox
             m_Rigidbody.addForce(velocity.XYZ);
         }
 
+        bool isMoveForward()
+        {
+            if (Input.isKeyDown(KeyCode.W))
+                return true;
+            return false;
+        }
+
+        bool isMoveBackward()
+        {
+            if (Input.isKeyDown(KeyCode.S))
+                return true;
+            return false;
+        }
+
+        bool isMoveRight()
+        {
+            if (Input.isKeyDown(KeyCode.D))
+                return true;
+            return false;
+        }
+
+        bool isMoveLeft()
+        {
+            if (Input.isKeyDown(KeyCode.A))
+                return true;
+            return false;
+        }
     }
 }
