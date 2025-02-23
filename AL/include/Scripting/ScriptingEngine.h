@@ -66,6 +66,7 @@ class ScriptClass
 	MonoObject *instantiate();
 	MonoMethod *getMethod(const std::string &name, int parameterCount);
 	MonoObject *invokeMethod(MonoObject *instance, MonoMethod *method, void **params = nullptr);
+	std::vector<std::string> getAllMethods();
 
 	const std::map<std::string, ScriptField> &getFields() const
 	{
@@ -89,6 +90,7 @@ class ScriptInstance
 
 	void invokeOnCreate();
 	void invokeOnUpdate(float ts);
+	std::map<std::string, std::function<bool()>> getAllBooleanMethods();
 
 	std::shared_ptr<ScriptClass> getScriptClass()
 	{
@@ -183,6 +185,7 @@ class ScriptingEngine
 	static bool entityClassExists(const std::string &fullClassName);
 	static void onCreateEntity(Entity entity);
 	static void onUpdateEntity(Entity entity, Timestep ts);
+	static std::map<std::string, std::function<bool()>> getBooleanMethods(Entity entity);
 
 	static Scene *getSceneContext();
 	static MonoImage *getCoreAssemblyImage();
