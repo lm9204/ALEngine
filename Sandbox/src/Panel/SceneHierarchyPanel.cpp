@@ -701,6 +701,12 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 	});
 
 	drawComponent<SkeletalAnimatorComponent>("Animator", entity, [this, &entity](auto &component) {
+		if (component.sac == nullptr)
+		{
+			ImGui::Text("Animator needs MeshRenderComponent");
+			return ;
+		}
+
 		SAComponent* sac = (SAComponent *)component.sac.get();
 		// 1. 현재 애니메이션 버튼/박스
 		ImGui::Text("Current Animation:");
@@ -794,7 +800,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		}
 		ImGui::SameLine();
 		// 현재 속도 텍스트 
-		float customVerticalPadding = 8.0f;
+		float customVerticalPadding = 5.0f;
 		ImVec2 currentPadding = ImGui::GetStyle().FramePadding;
 		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentPadding.x, customVerticalPadding));
 
@@ -1218,17 +1224,18 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
 					component.type = 7;
 					component.path = filePath.string();
-          component.isMatChanged = false;
+					component.isMatChanged = false;
 					scene->insertEntityInCullTree(entity);
-          
+
 					// SAC가 존재하는 경우 모델 갱신
 					if (entity.hasComponent<SkeletalAnimatorComponent>())
 					{
 						auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
-
 						auto* sac = sa.sac.get();
-						sac->setModel(component.m_RenderingComponent->getModel());
-					}			
+
+						if (component.m_RenderingComponent != nullptr)
+							sac->setModel(component.m_RenderingComponent->getModel());
+					}
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -1245,9 +1252,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				{
 					component.m_RenderingComponent->updateMaterial(
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
-					component.type = 4;
-					component.path = filePath.string();
-          component.matPath = filePath.string();
+					component.matPath = filePath.string();
 					component.isMatChanged = true;
 
 					// SAC가 존재하는 경우 모델 갱신
@@ -1256,7 +1261,8 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 						auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
 
 						auto* sac = sa.sac.get();
-						sac->setModel(component.m_RenderingComponent->getModel());
+						if (component.m_RenderingComponent != nullptr)
+							sac->setModel(component.m_RenderingComponent->getModel());
 					}
 				}
 			}
