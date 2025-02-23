@@ -77,5 +77,12 @@ namespace Sandbox
                 return true;
             return false;
         }
+
+        bool isMoved()
+        {
+            if (isMoveForward() || isMoveBackward() || isMoveLeft() || isMoveRight())
+                return true;
+            return false;
+        }
     }
 }
