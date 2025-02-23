@@ -28,6 +28,22 @@ SAComponent::SAComponent(std::shared_ptr<Model>& model) :
 
 		if (m_Animations->size() > 0)
 			m_CurrentAnimation = &(*m_Animations)[0]; // basic animation init
+
+		//init state-animation
+		if (m_StateManager->getStates().size() == 0)
+		{
+			for (size_t animationIndex = 0; animationIndex < m_Animations->size(); ++animationIndex)
+			{
+				std::string name = (*m_Animations)[animationIndex].getName();
+				m_StateManager->addState({
+					name,
+					name,
+					false,
+					false,
+					0.5f
+				});
+			}
+		}
 	}
 }
 
@@ -98,7 +114,7 @@ void SAComponent::setCurrentRepeat(bool repeat)
 {
 	if (m_CurrentAnimation)
 	{
-
+		m_Repeats[getAnimIndex(m_CurrentAnimation->getName())] = repeat;
 	}
 }
 

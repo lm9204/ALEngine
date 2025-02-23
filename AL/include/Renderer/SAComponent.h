@@ -50,9 +50,9 @@ public:
 	std::vector<bool> getRepeatAll() { return m_Repeats; };
 	std::vector<glm::mat4>& getCurrentPose() { return m_CurrentPose; };
 	std::shared_ptr<SkeletalAnimations> getAnimations() { return m_Animations; };
+	std::shared_ptr<AnimationStateManager> getStateManager() { return m_StateManager; };
 
 public:
-	std::shared_ptr<AnimationStateManager> m_StateManager;
 
 private:
 	SAComponent();
@@ -63,6 +63,7 @@ private:
 
 private:
 	SkeletalAnimation* m_CurrentAnimation;
+	std::shared_ptr<AnimationStateManager> m_StateManager;
 	std::shared_ptr<SkeletalAnimations> m_Animations;
 	std::shared_ptr<Armature::Skeleton> m_Skeleton;
 	std::shared_ptr<Model> m_Model;
