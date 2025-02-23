@@ -722,26 +722,14 @@ template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, M
 {
 	component.type = 0;
 
-// 	component.m_RenderingComponent =
-// 		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
-// 	component.cullSphere = component.m_RenderingComponent->getCullSphere();
-
-// 	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
-
-// 	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
-// 					  component.cullSphere.radius * transformComponent.getMaxScale());
-
-// 	// cullTree에 추가 sphere
-// 	component.nodeId = insertEntityInCullTree(sphere, entity);
-// 	// auto &bc = entity.addComponent<BoxColliderComponent>();
-
 	// 이미 SAC가 존재하는 경우 새로 생긴 모델 갱신
 	if (entity.hasComponent<SkeletalAnimatorComponent>())
 	{
 		auto& sa = entity.getComponent<SkeletalAnimatorComponent>();
 
 		auto* sac = sa.sac.get();
-		sac->setModel(component.m_RenderingComponent->getModel());
+		if (component.m_RenderingComponent != nullptr)
+			sac->setModel(component.m_RenderingComponent->getModel());
 	}
 }
 
@@ -791,10 +779,18 @@ template <> void Scene::onComponentAdded<ScriptComponent>(Entity entity, ScriptC
 
 template <> void Scene::onComponentAdded<SkeletalAnimatorComponent>(Entity entity, SkeletalAnimatorComponent &component)
 {
-	auto& mr = entity.getComponent<MeshRendererComponent>();
-
-	component.sac = std::make_shared<SAComponent>(mr.m_RenderingComponent->getModel());
+	component.sac = std::make_shared<SAComponent>();
 	component.m_Repeats = component.sac->getRepeatAll();
+
+	if (entity.hasComponent<MeshRendererComponent>())
+	{
+		auto& mr = entity.getComponent<MeshRendererComponent>();
+
+		if (mr.m_RenderingComponent != nullptr)
+		{
+			component.sac->setModel(mr.m_RenderingComponent->getModel());
+		}
+	}
 }
   
 void Scene::cleanup()
