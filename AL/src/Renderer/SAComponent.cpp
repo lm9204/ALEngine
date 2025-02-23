@@ -3,6 +3,20 @@
 namespace ale
 {
 
+SAComponent::SAComponent() :
+	m_SpeedFactor(1.0f)
+{
+	m_CurrentAnimation = nullptr;
+	m_StateManager = std::make_shared<AnimationStateManager>();
+	// Init Keyframe Data
+	for (unsigned int i = 0; i < 2; ++i)
+	{
+		m_Data[i].m_CurrentKeyFrameTime = 0.0f;
+		m_Data[i].m_FirstKeyFrameTime = 0.0f;
+		m_Data[i].m_LastKeyFrameTime = 0.0f;
+	}
+}
+
 SAComponent::SAComponent(std::shared_ptr<Model>& model) :
 	m_SpeedFactor(1.0f)
 {
@@ -31,19 +45,23 @@ SAComponent::SAComponent(std::shared_ptr<Model>& model) :
 
 		//init state-animation
 		if (m_StateManager->getStates().size() == 0)
-		{
-			for (size_t animationIndex = 0; animationIndex < m_Animations->size(); ++animationIndex)
-			{
-				std::string name = (*m_Animations)[animationIndex].getName();
-				m_StateManager->addState({
-					name,
-					name,
-					false,
-					false,
-					0.5f
-				});
-			}
-		}
+			initStateManager();
+	}
+}
+
+void SAComponent::initStateManager()
+{
+	m_StateManager->addState({"*", "*", false, false, 0.5f});
+	for (size_t animationIndex = 0; animationIndex < m_Animations->size(); ++animationIndex)
+	{
+		std::string name = (*m_Animations)[animationIndex].getName();
+		m_StateManager->addState({
+			name,
+			name,
+			false,
+			false,
+			0.5f
+		});
 	}
 }
 
@@ -61,6 +79,8 @@ void SAComponent::setModel(std::shared_ptr<Model>& model)
 
 		if (m_Animations->size() > 0)
 			m_CurrentAnimation = &(*m_Animations)[0]; // basic animation init
+
+		initStateManager();
 	}
 }
 
