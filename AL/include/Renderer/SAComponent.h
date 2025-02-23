@@ -21,7 +21,9 @@ public:
 
 	using Bones = std::vector<Armature::Bone>;
 
+	SAComponent();
 	SAComponent(std::shared_ptr<Model>& model);
+	void initStateManager();
 	void start(std::string const& animation);
 	void start(size_t index);
 	void start();
@@ -55,7 +57,6 @@ public:
 public:
 
 private:
-	SAComponent();
 	void init(SkeletalAnimation* animation);
 	void blendUpdate(const Timestep& timestep, Armature::Skeleton& skeleton, uint32_t currentFrame);
 	int getAnimIndex(const std::string& name);

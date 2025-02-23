@@ -28,7 +28,7 @@ void AnimationStateManager::processRequests()
 
 		for (auto& t : m_Transitions)
 		{
-			if ((t.fromState == "*" || t.fromState == currentState.stateName) &&
+			if ((t.fromState == "All" || t.fromState == currentState.stateName) &&
 				t.toState == req.targetState)
 			{
 				if ((!t.invertCondition && t.condition && t.condition()) ||
@@ -48,7 +48,7 @@ void AnimationStateManager::processTransitions()
 
 	for (auto& t : m_Transitions)
 	{
-		if ((t.fromState == "*" || t.fromState == currentState.stateName) &&
+		if ((t.fromState == "All" || t.fromState == currentState.stateName) &&
 			t.toState != currentState.stateName)
 		{
 			if ((!t.invertCondition && t.condition && t.condition()) ||
