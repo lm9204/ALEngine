@@ -51,7 +51,7 @@ SAComponent::SAComponent(std::shared_ptr<Model>& model) :
 
 void SAComponent::initStateManager()
 {
-	m_StateManager->addState({"*", "*", false, false, 0.5f});
+	m_StateManager->addState({"All", "All", false, false, 0.5f});
 	for (size_t animationIndex = 0; animationIndex < m_Animations->size(); ++animationIndex)
 	{
 		std::string name = (*m_Animations)[animationIndex].getName();
