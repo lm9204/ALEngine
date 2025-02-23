@@ -22,6 +22,16 @@ class EditorLayer : public Layer
 	void onImGuiRender() override;
 	void onEvent(Event &e) override;
 
+	// getters scene
+	std::shared_ptr<Scene> getEditorScene() const
+	{
+		return m_EditorScene;
+	}
+	std::shared_ptr<Scene> getActiveScene() const
+	{
+		return m_ActiveScene;
+	}
+
   private:
 	// EVENTS
 	bool onMouseButtonPressed(MouseButtonPressedEvent &e);
@@ -83,6 +93,8 @@ class EditorLayer : public Layer
 	ESceneState m_SceneState = ESceneState::EDIT;
 	std::shared_ptr<Texture> m_PlayIcon, m_PauseIcon, m_StepIcon;
 	ImTextureID playTextureID, pauseTextureID, stepTextureID;
+	VkDescriptorSetLayout iconDescriptorSetLayout;
+	VkDescriptorSet playDescriptorSet, pauseDescriptorSet, stepDescriptorSet;
 };
 
 } // namespace ale

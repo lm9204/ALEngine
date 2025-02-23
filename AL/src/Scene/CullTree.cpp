@@ -123,8 +123,7 @@ void CullTree::setRenderEnable(int32_t nodeId)
 	{
 		MeshRendererComponent &component =
 			m_scene->getComponent<MeshRendererComponent>(static_cast<entt::entity>(node.entityHandle));
-
-		component.renderEnabled = true;
+		component.cullState = (component.cullState | ECullState::RENDER);
 	}
 	else
 	{
@@ -141,7 +140,7 @@ void CullTree::setRenderDisable(int32_t nodeId)
 	{
 		MeshRendererComponent &component =
 			m_scene->getComponent<MeshRendererComponent>(static_cast<entt::entity>(node.entityHandle));
-		component.renderEnabled = false;
+		component.cullState = (component.cullState & ECullState::NONE);
 	}
 	else
 	{
@@ -160,6 +159,7 @@ void CullTree::frustumCulling(const Frustum &frustum, int32_t nodeId)
 	CullTreeNode &node = m_nodes[nodeId];
 
 	EFrustum result = frustum.cullingSphere(node.sphere);
+
 	if (result == EFrustum::INSIDE)
 	{
 		// AL_CORE_INFO("node {} INSIDE!!", nodeId);
@@ -376,17 +376,27 @@ float CullTree::getInsertionCost(const CullSphere &leafSphere, int32_t child, fl
 
 void CullTree::printCullTree(int32_t nodeId)
 {
+
 	if (nodeId == NULL_NODE)
 	{
 		return;
 	}
 
-	AL_CORE_INFO("nodeId: {}", nodeId);
-	AL_CORE_INFO("Sphere center: {}, {}, {}", m_nodes[nodeId].sphere.center.x, m_nodes[nodeId].sphere.center.y,
-				 m_nodes[nodeId].sphere.center.z);
-	AL_CORE_INFO("Sphere radius: {}", m_nodes[nodeId].sphere.radius);
+	AL_CORE_INFO("nodeId: {} start", nodeId);
+	// AL_CORE_INFO("Sphere center: {}, {}, {}", m_nodes[nodeId].sphere.center.x, m_nodes[nodeId].sphere.center.y,
+	// 			 m_nodes[nodeId].sphere.center.z);
+	// AL_CORE_INFO("Sphere radius: {}", m_nodes[nodeId].sphere.radius);
+	AL_CORE_INFO("entityHandle: {}", m_nodes[nodeId].entityHandle);
+	AL_CORE_INFO("child1: {}", m_nodes[nodeId].child1);
+	AL_CORE_INFO("child2: {}", m_nodes[nodeId].child2);
+	// AL_CORE_INFO("height: {}", m_nodes[nodeId].height);
 	printCullTree(m_nodes[nodeId].child1);
 	printCullTree(m_nodes[nodeId].child2);
+}
+
+int32_t CullTree::getSize()
+{
+	return m_nodeCount;
 }
 
 int32_t CullTree::balance(int32_t iA)
@@ -513,6 +523,25 @@ int32_t CullTree::balance(int32_t iA)
 		return iB;
 	}
 	return iA;
+}
+
+void CullTree::changeEntityHandle(int32_t nodeId, uint32_t entityHandle)
+{
+	m_nodes[nodeId].entityHandle = entityHandle;
+}
+
+ECullState operator&(ECullState state1, ECullState state2)
+{
+	int32_t s1 = static_cast<int32_t>(state1);
+	int32_t s2 = static_cast<int32_t>(state2);
+	return static_cast<ECullState>(s1 & s2);
+}
+
+ECullState operator|(ECullState state1, ECullState state2)
+{
+	int32_t s1 = static_cast<int32_t>(state1);
+	int32_t s2 = static_cast<int32_t>(state2);
+	return static_cast<ECullState>(s1 | s2);
 }
 
 } // namespace ale

@@ -69,4 +69,22 @@ CullSphere RenderingComponent::getCullSphere()
 	return m_model->initCullSphere();
 }
 
+void RenderingComponent::cleanup()
+{
+	// m_model->cleanup();
+	m_shaderResourceManager->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapResourceManager[i]->cleanup();
+	}
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowCubeMapResourceManager[i]->cleanup();
+	}
+	// for (size_t i = 0; i < m_materials.size(); i++)
+	// {
+	// 	m_materials[i]->cleanup();
+	// }
+}
+
 } // namespace ale

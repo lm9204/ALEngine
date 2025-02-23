@@ -42,7 +42,7 @@ void ImGuiLayer::onAttach()
 	io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;	  // Enable Docking
 	io.ConfigFlags |= ImGuiConfigFlags_ViewportsEnable;	  // Enable Multi-Viewport / Platform Windows
 
-	float fontSize = 15.0f;
+	float fontSize = 25.0f;
 	io.Fonts->AddFontFromFileTTF("Sandbox/assets/fonts/static/Roboto_SemiCondensed-Bold.ttf", fontSize);
 	io.FontDefault = io.Fonts->AddFontFromFileTTF("Sandbox/assets/fonts/static/Roboto_SemiCondensed-Regular.ttf",
 												  fontSize); // font 추가

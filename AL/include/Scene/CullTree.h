@@ -1,12 +1,23 @@
 #pragma once
 
-#include "Renderer/Common.h"
 #include "Core/Log.h"
+#include "Renderer/Common.h"
 
 namespace ale
 {
 
 #define NULL_NODE (-1)
+
+enum class ECullState
+{
+	CULL = 0,
+	RENDER = (1 << 0),
+	NONE = (1 << 1),
+	RENDER_AND_NONE = (1 << 0) | (1 << 1),
+};
+
+ECullState operator&(ECullState state1, ECullState state2);
+ECullState operator|(ECullState state1, ECullState state2);
 
 struct CullSphere
 {
@@ -15,11 +26,9 @@ struct CullSphere
 
 	CullSphere() = default;
 
-	CullSphere(glm::vec3 &center, float radius)
-		: center(center), radius(radius) {};
+	CullSphere(glm::vec3 &center, float radius) : center(center), radius(radius) {};
 
-	CullSphere(glm::vec4 &center, float radius)
-		: center(center), radius(radius) {};
+	CullSphere(glm::vec4 &center, float radius) : center(center), radius(radius) {};
 
 	float getVolume()
 	{
@@ -157,11 +166,13 @@ class CullTree
 	void setRenderEnable(int32_t nodeId);
 	void setRenderDisable(int32_t nodeId);
 	void frustumCulling(const Frustum &frustum, int32_t nodeId);
+	void changeEntityHandle(int32_t nodeId, uint32_t entityHandle);
 	int32_t createNode(const CullSphere &sphere, uint32_t entityHandle);
 
 	int32_t getRootNodeId();
 
 	void printCullTree(int32_t nodeId);
+	int32_t getSize();
 
 	// const AABB &getFatAABB(int32_t proxyId) const;
 

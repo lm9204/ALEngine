@@ -26,6 +26,9 @@ class ContentBrowserPanel
 	VkDescriptorPool descriptorPool;
 	VkDevice device;
 
+	VkDescriptorSetLayout iconDescriptorSetLayout;
+	VkDescriptorSet directoryDescriptorSet;
+	VkDescriptorSet fileDescriptorSet;
 	std::shared_ptr<Texture> m_DirectoryIcon;
 	std::shared_ptr<Texture> m_FileIcon;
 	ImTextureID directoryTextureID;

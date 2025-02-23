@@ -77,11 +77,42 @@ std::shared_ptr<Model> Model::createGroundModel(std::shared_ptr<Material> &defau
 	return model;
 }
 
+std::shared_ptr<Model> Model::createCapsuleModel(std::shared_ptr<Material> &defaultMaterial)
+{
+	auto &renderer = App::get().getRenderer();
+	auto &modelsMap = renderer.getModelsMap();
+	if (modelsMap.find("capsule") != modelsMap.end())
+	{
+		return modelsMap["capsule"];
+	}
+	std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
+	model->initCapsuleModel(defaultMaterial);
+	modelsMap["capsule"] = model;
+	return model;
+}
+std::shared_ptr<Model> Model::createCylinderModel(std::shared_ptr<Material> &defaultMaterial)
+{
+	auto &renderer = App::get().getRenderer();
+	auto &modelsMap = renderer.getModelsMap();
+	if (modelsMap.find("cylinder") != modelsMap.end())
+	{
+		return modelsMap["cylinder"];
+	}
+	std::shared_ptr<Model> model = std::shared_ptr<Model>(new Model());
+	model->initCylinderModel(defaultMaterial);
+	modelsMap["cylinder"] = model;
+	return model;
+}
+
 void Model::cleanup()
 {
 	for (auto &mesh : m_meshes)
 	{
 		mesh->cleanup();
+	}
+	for (auto &material : m_materials)
+	{
+		material->cleanup();
 	}
 }
 
@@ -104,7 +135,6 @@ void Model::draw(DrawInfo &drawInfo)
 		vertexUbo.heightFlag = drawInfo.materials[i]->getHeightMap().flag;
 		vertexUbo.heightScale = 0.1;
 		vertexUbo.padding = glm::vec2(0.0f);
-   
 		vertexUniformBuffers[index]->updateUniformBuffer(&vertexUbo, sizeof(vertexUbo));
 
 		GeometryPassFragmentUniformBufferObject fragmentUbo{};
@@ -201,6 +231,18 @@ void Model::initGroundModel(std::shared_ptr<Material> &defaultMaterial)
 	m_meshes.push_back(Mesh::createGround());
 }
 
+void Model::initCapsuleModel(std::shared_ptr<Material> &defaultMaterial)
+{
+	m_materials.push_back(defaultMaterial);
+	m_meshes.push_back(Mesh::createCapsule());
+}
+
+void Model::initCylinderModel(std::shared_ptr<Material> &defaultMaterial)
+{
+	m_materials.push_back(defaultMaterial);
+	m_meshes.push_back(Mesh::createCylinder());
+}
+
 void Model::loadModel(std::string path, std::shared_ptr<Material> &defaultMaterial)
 {
 	// gltf, obj 구별해서 로드하자
@@ -224,7 +266,11 @@ void Model::loadGLTFModel(std::string path, std::shared_ptr<Material> &defaultMa
 	if (!scene || scene->mFlags & AI_SCENE_FLAGS_INCOMPLETE || !scene->mRootNode)
 	{
 		std::cerr << "Failed to load GLTF model!" << std::endl;
-		throw std::runtime_error("Failed to load GLTF model!");
+		// box모델 로드
+		m_meshes.push_back(Mesh::createBox());
+		m_materials.push_back(defaultMaterial);
+		return;
+		// throw std::runtime_error("Failed to load GLTF model!");
 	}
 
 	// material부터 처리
@@ -566,11 +612,12 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 		// 정점에 본ids, 가중치 할당
 		for (unsigned int vertexIndex = 0; vertexIndex < mesh->mNumVertices; ++vertexIndex)
 		{
-			auto& bones = vertexBoneData[vertexIndex].bones;
+			auto &bones = vertexBoneData[vertexIndex].bones;
 
-			std::sort(bones.begin(), bones.end(), [](const std::pair<int, float>& a, const std::pair<int, float>& b) -> bool {
-				return a.second > b.second;
-			});
+			std::sort(bones.begin(), bones.end(),
+					  [](const std::pair<int, float> &a, const std::pair<int, float> &b) -> bool {
+						  return a.second > b.second;
+					  });
 
 			int numBones = std::min((int)bones.size(), 4);
 			float totalWeight = 0.0f;
@@ -603,7 +650,7 @@ std::shared_ptr<Mesh> Model::processGLTFMesh(aiMesh *mesh, const aiScene *scene,
 	return Mesh::createMesh(vertices, indices);
 }
 
-void Model::processGLTFSkeleton(const aiScene* scene)
+void Model::processGLTFSkeleton(const aiScene *scene)
 {
 	if (!scene || !scene->HasAnimations())
 	{
@@ -617,7 +664,7 @@ void Model::processGLTFSkeleton(const aiScene* scene)
 	m_Skeleton = std::make_shared<Armature::Skeleton>();
 
 	// 1) 본 정보 수집
-	std::vector<aiBone*> allAiBones;
+	std::vector<aiBone *> allAiBones;
 	collectAllBones(scene, allAiBones);
 
 	// unique 처리
@@ -629,24 +676,24 @@ void Model::processGLTFSkeleton(const aiScene* scene)
 	loadAnimations(scene);
 }
 
-void Model::collectAllBones(const aiScene* scene, std::vector<aiBone*>& outBones)
+void Model::collectAllBones(const aiScene *scene, std::vector<aiBone *> &outBones)
 {
 	for (size_t meshIndex = 0; meshIndex < scene->mNumMeshes; ++meshIndex)
 	{
-		aiMesh* mesh = scene->mMeshes[meshIndex];
+		aiMesh *mesh = scene->mMeshes[meshIndex];
 		for (size_t boneIndex = 0; boneIndex < mesh->mNumBones; ++boneIndex)
 		{
-			aiBone* bone = mesh->mBones[boneIndex];
+			aiBone *bone = mesh->mBones[boneIndex];
 			outBones.push_back(bone);
 		}
 	}
 }
 
-void Model::buildSkeletonBoneArray(const std::vector<aiBone*>& allAiBones)
+void Model::buildSkeletonBoneArray(const std::vector<aiBone *> &allAiBones)
 {
 	std::unordered_map<std::string, int> boneNameToIndex;
 
-	for (aiBone* bone : allAiBones)
+	for (aiBone *bone : allAiBones)
 	{
 		std::string boneName = bone->mName.C_Str();
 
@@ -666,7 +713,7 @@ void Model::buildSkeletonBoneArray(const std::vector<aiBone*>& allAiBones)
 	m_Skeleton->m_NodeNameToBoneIndex = boneNameToIndex;
 }
 
-void Model::loadBone(aiNode* node, int parentBoneIndex)
+void Model::loadBone(aiNode *node, int parentBoneIndex)
 {
 	if (!node)
 		return;
@@ -681,6 +728,7 @@ void Model::loadBone(aiNode* node, int parentBoneIndex)
 	if (it != m_Skeleton->m_NodeNameToBoneIndex.end())
 	{
 		currentBoneIndex = it->second;
+    
 		auto& bone = m_Skeleton->m_Bones[currentBoneIndex];
 
 		bone.m_ParentBone = parentBoneIndex;
@@ -693,28 +741,25 @@ void Model::loadBone(aiNode* node, int parentBoneIndex)
 		loadBone(node->mChildren[childIndex], currentBoneIndex);
 }
 
-void Model::loadAnimations(const aiScene* scene)
+void Model::loadAnimations(const aiScene *scene)
 {
 	size_t numberOfAnimations = scene->mNumAnimations;
 	for (size_t animationIndex = 0; animationIndex < numberOfAnimations; ++animationIndex)
 	{
-		aiAnimation* aiAnim = scene->mAnimations[animationIndex];
-		std::string animationName = (aiAnim->mName.length > 0
-									? std::string(aiAnim->mName.C_Str())
-									: ("Anim" + std::to_string(animationIndex)));
+		aiAnimation *aiAnim = scene->mAnimations[animationIndex];
+		std::string animationName =
+			(aiAnim->mName.length > 0 ? std::string(aiAnim->mName.C_Str()) : ("Anim" + std::to_string(animationIndex)));
 
-		std::shared_ptr<SkeletalAnimation> animation = 
-			std::make_shared<SkeletalAnimation>(animationName);
+		std::shared_ptr<SkeletalAnimation> animation = std::make_shared<SkeletalAnimation>(animationName);
 
 		double ticksPerSecond = (aiAnim->mTicksPerSecond != 0.0) ? aiAnim->mTicksPerSecond : 30.0;
 		double durationTicks = aiAnim->mDuration;
 
 		float durationSeconds = static_cast<float>(durationTicks / ticksPerSecond);
-
 		size_t numberOfChannels = aiAnim->mNumChannels;
 		for (size_t channelIndex = 0; channelIndex < numberOfChannels; ++channelIndex)
 		{
-			aiNodeAnim* nodeAnim = aiAnim->mChannels[channelIndex];
+			aiNodeAnim *nodeAnim = aiAnim->mChannels[channelIndex];
 			std::string nodeName = nodeAnim->mNodeName.C_Str();
 
 			// (A) Translation
@@ -722,7 +767,7 @@ void Model::loadAnimations(const aiScene* scene)
 			{
 				size_t numberOfKeys = nodeAnim->mNumPositionKeys;
 				SkeletalAnimation::Sampler samplerPos;
-				
+
 				samplerPos.m_Timestamps.resize(numberOfKeys);
 				samplerPos.m_TRSoutputValuesToBeInterpolated.resize(numberOfKeys);
 
@@ -730,17 +775,17 @@ void Model::loadAnimations(const aiScene* scene)
 				{
 					switch (nodeAnim->mPositionKeys[0].mInterpolation)
 					{
-						case 0:
-							samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
-							break;
-						case 1:
-							samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
-							break;
-						case 3:
-							samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
-						default:
-							AL_ERROR("Model::loadAnimations: No Support Interpolate");
-							return ;
+					case 0:
+						samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
+						break;
+					case 1:
+						samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+						break;
+					case 3:
+						samplerPos.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
+					default:
+						AL_ERROR("Model::loadAnimations: No Support Interpolate");
+						return;
 					}
 				}
 
@@ -777,17 +822,17 @@ void Model::loadAnimations(const aiScene* scene)
 				{
 					switch (nodeAnim->mRotationKeys[0].mInterpolation)
 					{
-						case 0:
-							samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
-							break;
-						case 1:
-							samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
-							break;
-						case 3:
-							samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
-						default:
-							AL_ERROR("Model::loadAnimations: No Support Interpolate");
-							return ;
+					case 0:
+						samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
+						break;
+					case 1:
+						samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+						break;
+					case 3:
+						samplerRot.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
+					default:
+						AL_ERROR("Model::loadAnimations: No Support Interpolate");
+						return;
 					}
 				}
 
@@ -824,17 +869,17 @@ void Model::loadAnimations(const aiScene* scene)
 				{
 					switch (nodeAnim->mScalingKeys[0].mInterpolation)
 					{
-						case 0:
-							samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
-							break;
-						case 1:
-							samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
-							break;
-						case 3:
-							samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
-						default:
-							AL_ERROR("Model::loadAnimations: No Support Interpolate");
-							return ;
+					case 0:
+						samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::STEP;
+						break;
+					case 1:
+						samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::LINEAR;
+						break;
+					case 3:
+						samplerScl.m_Interpolation = SkeletalAnimation::EInterpolationMethod::CUBICSPLINE;
+					default:
+						AL_ERROR("Model::loadAnimations: No Support Interpolate");
+						return;
 					}
 				}
 
@@ -862,7 +907,7 @@ void Model::loadAnimations(const aiScene* scene)
 
 		if (animation->m_Samplers.size() > 2)
 		{
-			auto& sampler = animation->m_Samplers[0];
+			auto &sampler = animation->m_Samplers[0];
 			// set duration
 			animation->setFirstKeyFrameTime(sampler.m_Timestamps[0]);
 			animation->setLastKeyFrameTime(sampler.m_Timestamps.back());
@@ -872,17 +917,12 @@ void Model::loadAnimations(const aiScene* scene)
 	}
 }
 
-glm::mat4 Model::convertMatrix(const aiMatrix4x4& m)
+glm::mat4 Model::convertMatrix(const aiMatrix4x4 &m)
 {
-	return glm::mat4(
-		m.a1, m.b1, m.c1, m.d1,
-		m.a2, m.b2, m.c2, m.d2,
-		m.a3, m.b3, m.c3, m.d3,
-		m.a4, m.b4, m.c4, m.d4
-	);
+	return glm::mat4(m.a1, m.b1, m.c1, m.d1, m.a2, m.b2, m.c2, m.d2, m.a3, m.b3, m.c3, m.d3, m.a4, m.b4, m.c4, m.d4);
 }
 
-void Model::setShaderData(const std::vector<glm::mat4>& shaderData)
+void Model::setShaderData(const std::vector<glm::mat4> &shaderData)
 {
 	m_ShaderData.m_FinalBonesMatrices = shaderData;
 }
@@ -896,14 +936,17 @@ void Model::loadOBJModel(std::string path, std::shared_ptr<Material> &defaultMat
 	if (!objLoader->getFlag())
 	{
 		std::cerr << "Failed to load OBJ model!" << std::endl;
-		throw std::runtime_error("Failed to load OBJ model!");
+		// box모델 로드
+		m_meshes.push_back(Mesh::createBox());
+		m_materials.push_back(defaultMaterial);
+		return;
+		// throw std::runtime_error("Failed to load OBJ model!");
 	}
 
 	auto &subMeshMap = objLoader->getSubMesh();
 	auto &mtlMap = objLoader->getMtlMap();
 	for (auto &map : subMeshMap)
 	{
-		std::cout << "Submesh: " << map.first << std::endl;
 		auto &subMesh = map.second;
 		auto &vertices = subMesh.vertices;
 		auto &indices = subMesh.indices;

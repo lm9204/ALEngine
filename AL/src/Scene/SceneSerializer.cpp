@@ -293,6 +293,9 @@ static void serializeEntity(YAML::Emitter &out, Entity entity, Scene *scene)
 		{
 			out << YAML::Key << "Path" << YAML::Value << mc.path;
 		}
+		out << YAML::Key << "MatPath" << YAML::Value << mc.matPath;
+		out << YAML::Key << "IsMatChanged" << YAML::Value << mc.isMatChanged;
+
 		out << YAML::EndMap;
 	}
 	// ScriptComponent
@@ -578,24 +581,32 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 			if (meshComponent)
 			{
 				auto &mc = deserializedEntity.addComponent<MeshRendererComponent>();
-
 				// type에 따라 Primitive Mesh 생성
 				mc.type = meshComponent["MeshType"].as<uint32_t>();
+				mc.isMatChanged = meshComponent["IsMatChanged"].as<bool>();
 				std::shared_ptr<Model> model;
 				switch (mc.type)
 				{
-				case 0:
+				case 1:
 					model = m_Scene->getBoxModel();
 					break;
-				case 1:
+				case 2:
 					model = m_Scene->getSphereModel();
 					break;
-				case 2:
+				case 3:
 					model = m_Scene->getPlaneModel();
 					break;
 				case 4:
+					model = m_Scene->getGroundModel();
+					break;
+				case 5:
+					model = m_Scene->getCapsuleModel();
+					break;
+				case 6:
+					model = m_Scene->getCylinderModel();
+					break;
+				case 7:
 					mc.path = meshComponent["Path"].as<std::string>();
-					AL_CORE_TRACE("{}", mc.path);
 					model = Model::createModel(mc.path, m_Scene->getDefaultMaterial());
 					break;
 				// 그 외의 이상한 값은 box로 임의로 처리
@@ -603,7 +614,19 @@ bool SceneSerializer::deserialize(const std::string &filepath)
 					model = m_Scene->getBoxModel();
 					break;
 				}
+				mc.matPath = meshComponent["MatPath"].as<std::string>();
+
 				mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+
+				mc.cullSphere = mc.m_RenderingComponent->getCullSphere();
+				// cullTree에 추가 sphere
+				m_Scene->insertEntityInCullTree(deserializedEntity);
+
+				if (mc.isMatChanged)
+				{
+					mc.m_RenderingComponent->updateMaterial(
+						Model::createModel(mc.matPath, m_Scene->getDefaultMaterial()));
+				}
 			}
 
 			auto lightComponent = entity["LightComponent"];

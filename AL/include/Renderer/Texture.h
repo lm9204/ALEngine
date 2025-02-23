@@ -20,6 +20,7 @@ class Texture : public Buffer
 	static VkSampler createShadowCubeMapSampler();
 	static VkSampler createSphericalMapSampler();
 	static VkSampler createBackgroundSampler();
+	void initTexture(std::string path, bool flipVertically = false);
 
 	~Texture() = default;
 
@@ -42,7 +43,6 @@ class Texture : public Buffer
 	VkImageView textureImageView;
 	VkSampler textureSampler;
 
-	void initTexture(std::string path, bool flipVertically = false);
 	void loadTexture(std::string path, bool flipVertically = false);
 	void createTextureImageView();
 	void createTextureSampler();

@@ -30,9 +30,13 @@ class Renderer
 	void loadScene(Scene *scene);
 	void beginScene(Scene *scene, EditorCamera &camera);
 	void beginScene(Scene *scene, Camera &camera);
+	void biginNoCamScene();
 	void drawFrame(Scene *scene);
+	void drawNoCamFrame();
 	void recreateSwapChain();
 	void recreateViewPort();
+
+	void updateSkybox(std::string path);
 
 	VkDevice getDevice()
 	{
@@ -114,10 +118,6 @@ class Renderer
 
 	// Descriptor Pool
 	VkDescriptorPool descriptorPool;
-
-	std::unique_ptr<ShaderResourceManager> m_geometryPassShaderResourceManager;
-	std::vector<VkDescriptorSet> geometryPassDescriptorSets;
-	std::vector<std::shared_ptr<UniformBuffer>> geometryPassUniformBuffers;
 
 	std::unique_ptr<ShaderResourceManager> m_lightingPassShaderResourceManager;
 	std::vector<VkDescriptorSet> lightingPassDescriptorSets;
@@ -223,13 +223,17 @@ class Renderer
 	VkImageView backgroundImageView;
 	VkSampler backgroundSampler;
 
+	std::shared_ptr<Texture> m_noCamTexture;
+	std::unique_ptr<ShaderResourceManager> m_noCamShaderResourceManager;
+	std::vector<VkDescriptorSet> noCamDescriptorSets;
+
 	bool firstFrame = true;
 
 	void init(GLFWwindow *window);
 
 	void recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex,
 											   uint32_t shadowMapIndex);
-	void recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex);
+	void recordImGuiCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex);
 	void recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, Light &lightInfo,
 									  uint32_t shadowMapIndex);
 	void recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, Light &lightInfo,

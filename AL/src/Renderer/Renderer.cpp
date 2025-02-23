@@ -50,7 +50,7 @@ void Renderer::init(GLFWwindow *window)
 	inFlightFences = m_syncObjects->getInFlightFences();
 #pragma endregion
 
-	m_sphericalMapTexture = Texture::createTexture("./textures/skybox_tmp.hdr");
+	m_sphericalMapTexture = Texture::createTexture("./Sandbox/assets/defaultSkybox.hdr");
 
 	m_sphericalMapRenderPass = RenderPass::createSphericalMapRenderPass();
 	sphericalMapRenderPass = m_sphericalMapRenderPass->getRenderPass();
@@ -206,6 +206,11 @@ void Renderer::init(GLFWwindow *window)
 		viewPortDescriptorSetLayout, viewPortImageView, viewPortSampler);
 	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
 
+	m_noCamTexture = Texture::createTexture("./Sandbox/assets/noCam.png");
+	m_noCamShaderResourceManager = ShaderResourceManager::createViewPortShaderResourceManager(
+		viewPortDescriptorSetLayout, m_noCamTexture->getImageView(), m_noCamTexture->getSampler());
+	noCamDescriptorSets = m_noCamShaderResourceManager->getDescriptorSets();
+
 	m_commandBuffers = CommandBuffers::createCommandBuffers();
 	commandBuffers = m_commandBuffers->getCommandBuffers();
 
@@ -214,19 +219,73 @@ void Renderer::init(GLFWwindow *window)
 
 void Renderer::cleanup()
 {
-	m_viewPortFrameBuffers->cleanup();
-	m_swapChain->cleanup();
+	// texture
+	m_sphericalMapTexture->cleanup();
+	m_noCamTexture->cleanup();
 
+	// framebuffer
+	m_viewPortFrameBuffers->cleanup();
+	m_ImGuiSwapChainFrameBuffers->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapFrameBuffers[i]->cleanup();
+		m_shadowCubeMapFrameBuffers[i]->cleanup();
+	}
+	m_sphericalMapFrameBuffers->cleanup();
+	m_backgroundFrameBuffers->cleanup();
+
+	// swapchain
+	m_swapChain->cleanup();
+	// model
+	for (auto &model : m_modelsMap)
+	{
+		model.second->cleanup();
+	}
+
+	// pipeline
 	m_geometryPassPipeline->cleanup();
 	m_lightingPassPipeline->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapPipeline[i]->cleanup();
+		m_shadowCubeMapPipeline[i]->cleanup();
+	}
+	m_sphericalMapPipeline->cleanup();
+	m_backgroundPipeline->cleanup();
 
+	// renderpass
 	m_deferredRenderPass->cleanup();
+	m_sphericalMapRenderPass->cleanup();
+	m_backgroundRenderPass->cleanup();
+	for (size_t i = 0; i < 4; i++)
+	{
+		m_shadowMapRenderPass[i]->cleanup();
+		m_shadowCubeMapRenderPass[i]->cleanup();
+	}
+	m_ImGuiRenderPass->cleanup();
 
-	m_geometryPassShaderResourceManager->cleanup();
+	// sampler
+	vkDestroySampler(device, sphericalMapSampler, nullptr);
+	vkDestroySampler(device, backgroundSampler, nullptr);
+	vkDestroySampler(device, shadowMapSampler, nullptr);
+	vkDestroySampler(device, shadowCubeMapSampler, nullptr);
+	vkDestroySampler(device, viewPortSampler, nullptr);
+
+	// shaderResourceManager
+	m_sphericalMapShaderResourceManager->cleanup();
+	m_backgroundShaderResourceManager->cleanup();
+	m_viewPortShaderResourceManager->cleanup();
+	m_noCamShaderResourceManager->cleanup();
 	m_lightingPassShaderResourceManager->cleanup();
 
+	// descriptorSetLayout
 	m_geometryPassDescriptorSetLayout->cleanup();
 	m_lightingPassDescriptorSetLayout->cleanup();
+	m_viewPortDescriptorSetLayout->cleanup();
+	m_shadowMapDescriptorSetLayout->cleanup();
+	m_shadowCubeMapDescriptorSetLayout->cleanup();
+	m_sphericalMapDescriptorSetLayout->cleanup();
+	m_backgroundDescriptorSetLayout->cleanup();
 
 	m_syncObjects->cleanup();
 	VulkanContext::getContext().cleanup();
@@ -283,6 +342,7 @@ void Renderer::recreateViewPort()
 
 	m_viewPortFrameBuffers->cleanup();
 	m_viewPortShaderResourceManager->cleanup();
+	m_noCamShaderResourceManager->cleanup();
 
 	m_backgroundShaderResourceManager->cleanup();
 	m_backgroundFrameBuffers->cleanup();
@@ -332,23 +392,82 @@ void Renderer::recreateViewPort()
 	m_viewPortShaderResourceManager->initViewPortShaderResourceManager(viewPortDescriptorSetLayout, viewPortImageView,
 																	   viewPortSampler);
 	viewPortDescriptorSets = m_viewPortShaderResourceManager->getDescriptorSets();
+	m_noCamShaderResourceManager->initViewPortShaderResourceManager(
+		viewPortDescriptorSetLayout, m_noCamTexture->getImageView(), m_noCamTexture->getSampler());
+	noCamDescriptorSets = m_noCamShaderResourceManager->getDescriptorSets();
+}
+
+void Renderer::updateSkybox(std::string path)
+{
+	vkDeviceWaitIdle(device);
+
+	// clean up은 초기화의 역순
+
+	m_lightingPassShaderResourceManager->cleanup();
+	m_backgroundShaderResourceManager->cleanup();
+	m_backgroundFrameBuffers->cleanup();
+	m_backgroundPipeline->cleanup();
+	m_backgroundRenderPass->cleanup();
+	m_sphericalMapShaderResourceManager->cleanup();
+	m_sphericalMapPipeline->cleanup();
+	m_sphericalMapFrameBuffers->cleanup();
+	m_sphericalMapRenderPass->cleanup();
+	m_sphericalMapTexture->cleanup();
+
+	// 새로운 텍스쳐 로드
+	m_sphericalMapTexture->initTexture(path);
+
+	m_sphericalMapRenderPass->initSphericalMapRenderPass();
+	sphericalMapRenderPass = m_sphericalMapRenderPass->getRenderPass();
+
+	m_sphericalMapFrameBuffers->initSphericalMapFrameBuffers(sphericalMapRenderPass);
+	sphericalMapFramebuffers = m_sphericalMapFrameBuffers->getFramebuffers();
+	sphericalMapImageView = m_sphericalMapFrameBuffers->getSphericalMapImageView();
+	// sphericalMapSampler = Texture::createSphericalMapSampler();
+	m_sphericalMapPipeline->initSphericalMapPipeline(sphericalMapRenderPass, sphericalMapDescriptorSetLayout);
+	sphericalMapPipelineLayout = m_sphericalMapPipeline->getPipelineLayout();
+	sphericalMapGraphicsPipeline = m_sphericalMapPipeline->getPipeline();
+
+	m_sphericalMapShaderResourceManager->initSphericalMapShaderResourceManager(
+		sphericalMapDescriptorSetLayout, m_sphericalMapTexture->getImageView(), m_sphericalMapTexture->getSampler());
+	sphericalMapDescriptorSets = m_sphericalMapShaderResourceManager->getDescriptorSets();
+	sphericalMapUniformBuffers = m_sphericalMapShaderResourceManager->getUniformBuffers();
+
+	recordSphericalMapCommandBuffer();
+	m_backgroundRenderPass->initBackgroundRenderPass();
+	backgroundRenderPass = m_backgroundRenderPass->getRenderPass();
+	m_backgroundPipeline->initBackgroundPipeline(backgroundRenderPass, backgroundDescriptorSetLayout);
+	backgroundPipelineLayout = m_backgroundPipeline->getPipelineLayout();
+	backgroundGraphicsPipeline = m_backgroundPipeline->getPipeline();
+
+	m_backgroundFrameBuffers->initBackgroundFrameBuffers(viewPortSize, backgroundRenderPass);
+	backgroundFramebuffers = m_backgroundFrameBuffers->getFramebuffers();
+	backgroundImageView = m_backgroundFrameBuffers->getBackgroundImageView();
+
+	m_backgroundShaderResourceManager->initBackgroundShaderResourceManager(backgroundDescriptorSetLayout,
+																		   sphericalMapImageView, sphericalMapSampler);
+	backgroundDescriptorSets = m_backgroundShaderResourceManager->getDescriptorSets();
+	backgroundUniformBuffers = m_backgroundShaderResourceManager->getUniformBuffers();
+
+	m_lightingPassShaderResourceManager->initLightingPassShaderResourceManager(
+		lightingPassDescriptorSetLayout, m_viewPortFrameBuffers->getPositionImageView(),
+		m_viewPortFrameBuffers->getNormalImageView(), m_viewPortFrameBuffers->getAlbedoImageView(),
+		m_viewPortFrameBuffers->getPbrImageView(), shadowMapImageViews, shadowMapSampler, shadowCubeMapImageViews,
+		shadowCubeMapSampler, backgroundImageView, backgroundSampler);
+
+	lightingPassDescriptorSets = m_lightingPassShaderResourceManager->getDescriptorSets();
+	lightingPassFragmentUniformBuffers = m_lightingPassShaderResourceManager->getFragmentUniformBuffers();
 }
 
 void Renderer::loadScene(Scene *scene)
-
 {
-	// this->scene = scene;
-	// m_geometryPassShaderResourceManager =
-	// 	ShaderResourceManager::createGeometryPassShaderResourceManager(scene, geometryPassDescriptorSetLayout);
-	// geometryPassDescriptorSets = m_geometryPassShaderResourceManager->getDescriptorSets();
-	// geometryPassUniformBuffers = m_geometryPassShaderResourceManager->getUniformBuffers();
 }
 
 void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 {
 	// frustum culling
 	// AL_CORE_INFO("frustum culling start");
-	// scene->frustumCulling(camera.getFrustum());
+	scene->frustumCulling(camera.getFrustum());
 	// AL_CORE_INFO("frustum culling finish");
 
 	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
@@ -359,7 +478,7 @@ void Renderer::beginScene(Scene *scene, EditorCamera &camera)
 
 	// AL_CORE_INFO("before init Frustum");
 	// scene->printCullTree();
-	// scene->initFrustumDrawFlag();
+	scene->initFrustumDrawFlag();
 	// AL_CORE_INFO("after init Frustum");
 	// scene->printCullTree();
 }
@@ -370,10 +489,17 @@ void Renderer::beginScene(Scene *scene, Camera &camera)
 	// projMatrix = glm::perspective(glm::radians(45.0f), viewPortSize.x / viewPortSize.y, 0.01f, 100.0f);
 	camera.setAspectRatio(viewPortSize.x / viewPortSize.y);
 	projMatrix = camera.getProjection();
-
 	viewMatirx = camera.getView();
 
+	scene->frustumCulling(camera.getFrustum());
 	drawFrame(scene);
+
+	scene->initFrustumDrawFlag();
+}
+
+void Renderer::biginNoCamScene()
+{
+	drawNoCamFrame();
 }
 
 void Renderer::drawFrame(Scene *scene)
@@ -442,11 +568,15 @@ void Renderer::drawFrame(Scene *scene)
 		throw std::runtime_error("failed to begin recording command buffer!");
 	}
 
-	auto view = scene->getAllEntitiesWith<LightComponent>();
+	auto view = scene->getAllEntitiesWith<LightComponent, TagComponent>();
 
 	uint32_t shadowMapIndex = 0;
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive)
+		{
+			continue;
+		}
 		std::shared_ptr<Light> light = view.get<LightComponent>(entity).m_Light;
 		if (light->onShadowMap == 1 && shadowMapIndex < 4)
 		{
@@ -478,7 +608,7 @@ void Renderer::drawFrame(Scene *scene)
 	vkCmdPipelineBarrier(commandBuffers[currentFrame], VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
 						 VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-	recordImGuiCommandBuffer(scene, commandBuffers[currentFrame], imageIndex);
+	recordImGuiCommandBuffer(commandBuffers[currentFrame], imageIndex);
 
 	if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS)
 	{
@@ -548,7 +678,143 @@ void Renderer::drawFrame(Scene *scene)
 	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
 }
 
-void Renderer::recordImGuiCommandBuffer(Scene *scene, VkCommandBuffer commandBuffer, uint32_t imageIndex)
+void Renderer::drawNoCamFrame()
+{
+	// [이전 GPU 작업 대기]
+	// 동시에 작업 가능한 최대 Frame 개수만큼 작업 중인 경우 대기 (가장 먼저 시작한 Frame 작업이 끝나서 Fence에 signal을
+	// 보내기를 기다림)
+	vkWaitForFences(device, 1, &inFlightFences[currentFrame], VK_TRUE, UINT64_MAX);
+
+	// [작업할 image 준비]
+	// 이번 Frame 에서 사용할 이미지 준비 및 해당 이미지 index 받아오기 (준비가 끝나면 signal 보낼 세마포어 등록)
+	// vkAcquireNextImageKHR 함수는 CPU에서 swapChain과 surface의 호환성을 확인하고 GPU에 이미지 준비 명령을 내리는 함수
+	// 만약 image가 프레젠테이션 큐에 작업이 진행 중이거나 대기 중이면 해당 image는 사용하지 않고 대기한다.
+	uint32_t imageIndex;
+	VkResult result = vkAcquireNextImageKHR(device, swapChain, UINT64_MAX, imageAvailableSemaphores[currentFrame],
+											VK_NULL_HANDLE, &imageIndex);
+
+	// image 준비 실패로 인한 오류 처리
+	if (result == VK_ERROR_OUT_OF_DATE_KHR)
+	{
+		// 스왑 체인이 surface 크기와 호환되지 않는 경우로(창 크기 변경), 스왑 체인 재생성 후 다시 draw
+		recreateSwapChain();
+		return;
+	}
+	else if (result != VK_SUCCESS && result != VK_SUBOPTIMAL_KHR)
+	{
+		// 진짜 오류 gg
+		throw std::runtime_error("failed to acquire swap chain image!");
+	}
+
+	if (firstFrame)
+	{
+		ImGui::Begin("ViewPort");
+		ImGui::Image(reinterpret_cast<ImTextureID>(noCamDescriptorSets[0]), ImVec2{viewPortSize.x, viewPortSize.y});
+		ImGui::End();
+		firstFrame = false;
+	}
+	else
+	{
+		ImGui::Begin("ViewPort");
+		ImVec2 guiViewPortSize = ImGui::GetContentRegionAvail();
+		if (guiViewPortSize.x != viewPortSize.x || guiViewPortSize.y != viewPortSize.y)
+		{
+			viewPortSize = glm::vec2(guiViewPortSize.x, guiViewPortSize.y);
+			recreateViewPort();
+		}
+		ImGui::Image(reinterpret_cast<ImTextureID>(noCamDescriptorSets[0]), ImVec2{viewPortSize.x, viewPortSize.y});
+		ImGui::End();
+	}
+
+	// [Fence 초기화]
+	// Fence signal 상태 not signaled 로 초기화
+	vkResetFences(device, 1, &inFlightFences[currentFrame]);
+
+	// [Command Buffer에 명령 기록]
+	// 커맨드 버퍼 초기화 및 명령 기록
+	vkResetCommandBuffer(
+		commandBuffers[currentFrame],
+		/*VkCommandBufferResetFlagBits*/ 0); // 두 번째 매개변수인 Flag 를 0으로 초기화하면 기본 초기화 진행
+
+	VkCommandBufferBeginInfo beginInfo{};
+	beginInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
+
+	if (vkBeginCommandBuffer(commandBuffers[currentFrame], &beginInfo) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to begin recording command buffer!");
+	}
+
+	recordImGuiCommandBuffer(commandBuffers[currentFrame], imageIndex);
+
+	if (vkEndCommandBuffer(commandBuffers[currentFrame]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to record deferred renderpass command buffer!");
+	}
+
+	// [렌더링 Command Buffer 제출]
+	// 렌더링 커맨드 버퍼 제출 정보 객체 생성
+	VkSubmitInfo submitInfo{};
+	submitInfo.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
+
+	// 작업 실행 신호를 받을 대기 세마포어 설정 (해당 세마포어가 signal 상태가 되기 전엔 대기)
+	VkSemaphore waitSemaphores[] = {imageAvailableSemaphores[currentFrame]};
+	VkPipelineStageFlags waitStages[] = {VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT};
+	submitInfo.waitSemaphoreCount = 1;			 // 대기 세마포어 개수
+	submitInfo.pWaitSemaphores = waitSemaphores; // 대기 세마포어 등록
+	submitInfo.pWaitDstStageMask = waitStages;	 // 대기할 시점 등록 (그 전까지는 세마포어 상관없이 그냥 진행)
+
+	// 커맨드 버퍼 등록
+	submitInfo.commandBufferCount = 1;							// 커맨드 버퍼 개수 등록
+	submitInfo.pCommandBuffers = &commandBuffers[currentFrame]; // 커매드 버퍼 등록
+
+	// 작업이 완료된 후 신호를 보낼 세마포어 설정 (작업이 끝나면 해당 세마포어 signal 상태로 변경)
+	VkSemaphore signalSemaphores[] = {renderFinishedSemaphores[currentFrame]};
+	submitInfo.signalSemaphoreCount = 1;			 // 작업 끝나고 신호를 보낼 세마포어 개수
+	submitInfo.pSignalSemaphores = signalSemaphores; // 작업 끝나고 신호를 보낼 세마포어 등록
+
+	// 커맨드 버퍼 제출
+	if (vkQueueSubmit(graphicsQueue, 1, &submitInfo, inFlightFences[currentFrame]) != VK_SUCCESS)
+	{
+		throw std::runtime_error("failed to submit draw command buffer!");
+	}
+
+	// [프레젠테이션 Command Buffer 제출]
+	// 프레젠테이션 커맨드 버퍼 제출 정보 객체 생성
+	VkPresentInfoKHR presentInfo{};
+	presentInfo.sType = VK_STRUCTURE_TYPE_PRESENT_INFO_KHR;
+
+	// 작업 실행 신호를 받을 대기 세마포어 설정
+	presentInfo.waitSemaphoreCount = 1;				// 대기 세마포어 개수
+	presentInfo.pWaitSemaphores = signalSemaphores; // 대기 세마포어 등록
+
+	// 제출할 스왑 체인 설정
+	VkSwapchainKHR swapChains[] = {swapChain};
+	presentInfo.swapchainCount = 1;			 // 스왑체인 개수
+	presentInfo.pSwapchains = swapChains;	 // 스왑체인 등록
+	presentInfo.pImageIndices = &imageIndex; // 스왑체인에서 표시할 이미지 핸들 등록
+
+	// 프레젠테이션 큐에 이미지 제출
+	result = vkQueuePresentKHR(presentQueue, &presentInfo);
+
+	// 프레젠테이션 실패 오류 발생 시
+	// if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR || framebufferResized) { <-
+	// framebufferResized는 명시적으로 해줄뿐 사실상 필요하지가 않음 나중에 수정할꺼면 하자
+	if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR)
+	{
+		// 스왑 체인 크기와 surface의 크기가 호환되지 않는 경우
+		recreateSwapChain(); // 변경된 surface에 맞는 SwapChain, ImageView, FrameBuffer 생성
+	}
+	else if (result != VK_SUCCESS)
+	{
+		// 진짜 오류 gg
+		throw std::runtime_error("failed to present swap chain image!");
+	}
+	// [프레임 인덱스 증가]
+	// 다음 작업할 프레임 변경
+	currentFrame = (currentFrame + 1) % MAX_FRAMES_IN_FLIGHT;
+}
+
+void Renderer::recordImGuiCommandBuffer(VkCommandBuffer commandBuffer, uint32_t imageIndex)
 {
 	// 렌더 패스 시작
 	VkRenderPassBeginInfo renderPassInfo{};
@@ -634,9 +900,13 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 		drawInfo.finalBonesMatrices[i] = glm::mat4(1.0f);
 
 	// int32_t drawNum = 0;
-	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
+	auto view = scene->getAllEntitiesWith<TransformComponent, TagComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive || view.get<MeshRendererComponent>(entity).type == 0)
+		{
+			continue;
+		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
 		if (auto* sa = scene->tryGet<SkeletalAnimatorComponent>(entity)) //SA 컴포넌트 있으면 데이터 전달
 		{
@@ -648,11 +918,11 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 		}
 		
 		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
-		// if (meshRendererComponent.renderEnabled == true)
-		// {
-		// drawNum++;
-		meshRendererComponent.m_RenderingComponent->draw(drawInfo);
-		// }
+		if (meshRendererComponent.cullState == ECullState::RENDER)
+		{
+			// drawNum++;
+			meshRendererComponent.m_RenderingComponent->draw(drawInfo);
+		}
 	}
 
 	// AL_CORE_INFO("draw Num = {}", drawNum);
@@ -715,10 +985,10 @@ void Renderer::recordDeferredRenderPassCommandBuffer(Scene *scene, VkCommandBuff
 			}
 			else if (light->type == 2)
 			{
-				lightPos = glm::vec3(0.0f) - lightDir * 15.0f;
+				lightPos = glm::vec3(0.0f) - lightDir * 10.0f;
 				lightingPassUbo.view[index][0] = glm::lookAt(lightPos, glm::vec3(0.0f), up);
-				float orthoSize = 15.0f;
-				lightingPassUbo.proj[index] = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, -15.0f, 30.0f);
+				float orthoSize = 10.0f;
+				lightingPassUbo.proj[index] = glm::ortho(-orthoSize, orthoSize, -orthoSize, orthoSize, -10.0f, 20.0f);
 				lightingPassUbo.proj[index][1][1] *= -1;
 			}
 			index++;
@@ -826,25 +1096,30 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 	}
 	else if (lightInfo.type == 2)
 	{												   // directional light
-		lightPos = glm::vec3(0.0f) - lightDir * 15.0f; // 광원을 기준으로 카메라처럼 뒤쪽으로 멀어짐
+		lightPos = glm::vec3(0.0f) - lightDir * 10.0f; // 광원을 기준으로 카메라처럼 뒤쪽으로 멀어짐
 		// View 행렬 계산
 		lightView = glm::lookAt(lightPos,		 // 광원이 가리키는 가상의 위치
 								glm::vec3(0.0f), // 광원이 비추는 중심 (월드 좌표계 원점)
 								up				 // 카메라의 상단 방향
 		);
 		// Projection 행렬 계산 (Orthographic)
-		float orthoSize = 15.0f;					  // 광원의 영향을 받는 영역의 크기
+		float orthoSize = 10.0f;					  // 광원의 영향을 받는 영역의 크기
 		lightProj = glm::ortho(-orthoSize, orthoSize, // 좌/우 클립 경계
 							   -orthoSize, orthoSize, // 아래/위 클립 경계
-							   -15.0f, 30.0f		  // 근/원 클립 경계
+							   -10.0f, 20.0f		  // 근/원 클립 경계
 		);
 		// Vulkan 좌표계 보정
 		lightProj[1][1] *= -1;
 	}
 
-	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
+	auto view = scene->getAllEntitiesWith<TransformComponent, TagComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive || view.get<MeshRendererComponent>(entity).type == 0)
+		{
+			continue;
+		}
+
 		ShadowMapDrawInfo drawInfo;
 		drawInfo.view = lightView;
 		drawInfo.projection = lightProj;
@@ -852,7 +1127,12 @@ void Renderer::recordShadowMapCommandBuffer(Scene *scene, VkCommandBuffer comman
 		drawInfo.pipelineLayout = shadowMapPipelineLayout[shadowMapIndex];
 		drawInfo.currentFrame = currentFrame;
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
+
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		if (meshRendererComponent.cullState == ECullState::RENDER)
+		{
+			meshRendererComponent.m_RenderingComponent->drawShadow(drawInfo, shadowMapIndex);
+		}
 	}
 
 	// Render Pass 종료
@@ -932,11 +1212,19 @@ void Renderer::recordShadowCubeMapCommandBuffer(Scene *scene, VkCommandBuffer co
 	drawInfo.pipelineLayout = shadowCubeMapPipelineLayout[shadowMapIndex];
 	drawInfo.currentFrame = currentFrame;
 
-	auto view = scene->getAllEntitiesWith<TransformComponent, MeshRendererComponent>();
+	auto view = scene->getAllEntitiesWith<TransformComponent, TagComponent, MeshRendererComponent>();
 	for (auto entity : view)
 	{
+		if (!view.get<TagComponent>(entity).m_isActive || view.get<MeshRendererComponent>(entity).type == 0)
+		{
+			continue;
+		}
 		drawInfo.model = view.get<TransformComponent>(entity).m_WorldTransform;
-		view.get<MeshRendererComponent>(entity).m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
+		MeshRendererComponent &meshRendererComponent = view.get<MeshRendererComponent>(entity);
+		if (meshRendererComponent.cullState == ECullState::RENDER)
+		{
+			meshRendererComponent.m_RenderingComponent->drawShadowCubeMap(drawInfo, shadowMapIndex);
+		}
 	}
 
 	// Render Pass 종료

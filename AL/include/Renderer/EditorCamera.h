@@ -17,7 +17,6 @@ class EditorCamera : public Camera
 	EditorCamera() = default;
 	EditorCamera(float fov, float aspect, float _near, float _far);
 	virtual ~EditorCamera() = default;
-	virtual const Frustum &getFrustum() override;
 
 	void onUpdate(Timestep ts);
 	void onEvent(Event &e);

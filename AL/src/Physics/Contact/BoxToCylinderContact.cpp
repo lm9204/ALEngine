@@ -8,10 +8,6 @@ BoxToCylinderContact::BoxToCylinderContact(Fixture *fixtureA, Fixture *fixtureB,
 Contact *BoxToCylinderContact::create(Fixture *fixtureA, Fixture *fixtureB, int32_t indexA, int32_t indexB)
 {
 	void *memory = PhysicsAllocator::m_blockAllocator.allocateBlock(sizeof(BoxToCylinderContact));
-	if (memory == nullptr)
-	{
-		throw std::runtime_error("failed to allocate block");
-	}
 	return new (static_cast<BoxToCylinderContact *>(memory)) BoxToCylinderContact(fixtureA, fixtureB, indexA, indexB);
 }
 

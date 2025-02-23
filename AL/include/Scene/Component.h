@@ -28,6 +28,8 @@ struct IDComponent
 struct TagComponent
 {
 	std::string m_Tag;
+	bool m_isActive = true;	  // 에디터 상 활성 여부
+	bool m_selfActive = true; // 부모와 관계없이 자신의 활성 여부
 
 	TagComponent() = default;
 	TagComponent(const TagComponent &) = default;
@@ -42,6 +44,8 @@ struct TransformComponent
 	glm::vec3 m_Position = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Rotation = {0.0f, 0.0f, 0.0f};
 	glm::vec3 m_Scale = {1.0f, 1.0f, 1.0f};
+	glm::vec3 m_LastPosition = {0.0f, 0.0f, 0.0f};
+
 	bool m_isMoved = false;
 
 	glm::mat4 m_WorldTransform = glm::mat4(1.0f);
@@ -49,7 +53,7 @@ struct TransformComponent
 	// 생성자
 	TransformComponent() = default;
 	TransformComponent(const TransformComponent &) = default;
-	TransformComponent(const glm::vec3 &position) : m_Position(position)
+	TransformComponent(const glm::vec3 &position) : m_Position(position), m_LastPosition(position)
 	{
 	}
 
@@ -84,12 +88,14 @@ struct MeshRendererComponent
 {
 	std::shared_ptr<RenderingComponent> m_RenderingComponent;
 	uint32_t type;
-	std::string path;
+	std::string path = "";
+	std::string matPath = "";
+	bool isMatChanged = false;
 
 	// Culling
-	int32_t nodeId;
+	int32_t nodeId = NULL_NODE;
 	CullSphere cullSphere;
-	bool renderEnabled;
+	ECullState cullState;
 
 	MeshRendererComponent() = default;
 	MeshRendererComponent(const MeshRendererComponent &) = default;
@@ -142,6 +148,7 @@ struct CameraComponent
 	SceneCamera m_Camera;
 	bool m_Primary = true;
 	bool m_FixedAspectRatio = false;
+	std::string skyboxPath = "";
 
 	CameraComponent() = default;
 	CameraComponent(const CameraComponent &) = default;
@@ -151,8 +158,8 @@ struct CameraComponent
 struct RigidbodyComponent
 {
 	// FLAG
-	glm::vec3 m_FreezePos;
-	glm::vec3 m_FreezeRot;
+	glm::vec3 m_FreezePos = {1, 1, 1};
+	glm::vec3 m_FreezeRot = {1, 1, 1};
 
 	void *body = nullptr;
 

@@ -35,6 +35,10 @@ class Scene
 	void insertDestroyEntity(Entity entity);
 	void destroyEntities();
 
+	void cleanup();
+
+	Entity createPrimitiveMeshEntity(const std::string &name, uint32_t idx);
+
 	void onRuntimeStart();
 	void onRuntimeStop();
 
@@ -88,6 +92,14 @@ class Scene
 	{
 		return m_groundModel;
 	}
+	std::shared_ptr<Model> &getCapsuleModel()
+	{
+		return m_capsuleModel;
+	}
+	std::shared_ptr<Model> &getCylinderModel()
+	{
+		return m_cylinderModel;
+	}
 
 	std::shared_ptr<Model> getDefaultModel(int32_t idx);
 
@@ -113,8 +125,10 @@ class Scene
 	// frustumCulling
 	void frustumCulling(const Frustum &frustum);
 	void initFrustumDrawFlag();
-	void removeEntityInCullTree(int32_t nodeId);
-	int32_t insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle);
+	void removeEntityInCullTree(Entity &entity);
+	void insertEntityInCullTree(Entity &entity);
+	void setNoneInCullTree(Entity &entity);
+	void unsetNoneInCullTree(Entity &entity);
 	void printCullTree();
 
   private:
@@ -124,6 +138,7 @@ class Scene
 	void renderScene(EditorCamera &camera);
 	void onPhysicsStart();
 	void onPhysicsStop();
+	void findMoveObject();
 
 	void setCamPos(glm::vec3 &pos)
 	{
@@ -149,6 +164,8 @@ class Scene
 	std::shared_ptr<Model> m_sphereModel;
 	std::shared_ptr<Model> m_planeModel;
 	std::shared_ptr<Model> m_groundModel;
+	std::shared_ptr<Model> m_capsuleModel;
+	std::shared_ptr<Model> m_cylinderModel;
 
 	World *m_World = nullptr;
 

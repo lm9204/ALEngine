@@ -65,7 +65,7 @@ VkCommandBuffer Buffer::beginSingleTimeCommands()
 	VkCommandBufferAllocateInfo allocInfo{};
 	allocInfo.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
 	allocInfo.level =
-		VK_COMMAND_BUFFER_LEVEL_PRIMARY; // PRIMARY LEVEL 등록 (해당 커맨드 버퍼가 큐에 단독으로 제출될 수 있음)
+		VK_COMMAND_BUFFER_LEVEL_PRIMARY;   // PRIMARY LEVEL 등록 (해당 커맨드 버퍼가 큐에 단독으로 제출될 수 있음)
 	allocInfo.commandPool = m_commandPool; // 커맨드 풀 지정
 	allocInfo.commandBufferCount = 1;	   // 커맨드 버퍼 개수 지정
 
@@ -111,8 +111,16 @@ std::unique_ptr<VertexBuffer> VertexBuffer::createVertexBuffer(std::vector<Verte
 
 void VertexBuffer::cleanup()
 {
-	vkDestroyBuffer(m_device, m_buffer, nullptr);
-	vkFreeMemory(m_device, m_bufferMemory, nullptr);
+	if (m_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer(m_device, m_buffer, nullptr);
+		m_buffer = VK_NULL_HANDLE;
+	}
+	if (m_bufferMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, m_bufferMemory, nullptr);
+		m_bufferMemory = VK_NULL_HANDLE;
+	}
 }
 
 void VertexBuffer::bind(VkCommandBuffer commandBuffer)
@@ -161,8 +169,16 @@ std::unique_ptr<IndexBuffer> IndexBuffer::createIndexBuffer(std::vector<uint32_t
 
 void IndexBuffer::cleanup()
 {
-	vkDestroyBuffer(m_device, m_buffer, nullptr);
-	vkFreeMemory(m_device, m_bufferMemory, nullptr);
+	if (m_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer(m_device, m_buffer, nullptr);
+		m_buffer = VK_NULL_HANDLE;
+	}
+	if (m_bufferMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, m_bufferMemory, nullptr);
+		m_bufferMemory = VK_NULL_HANDLE;
+	}
 }
 
 void IndexBuffer::bind(VkCommandBuffer commandBuffer)
@@ -203,14 +219,20 @@ void IndexBuffer::initIndexBuffer(std::vector<uint32_t> &indices)
 std::unique_ptr<ImageBuffer> ImageBuffer::createImageBuffer(std::string path, bool flipVertically)
 {
 	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
-	imageBuffer->initImageBuffer(path, flipVertically);
+	if (!imageBuffer->initImageBuffer(path, flipVertically))
+	{
+		return nullptr;
+	}
 	return imageBuffer;
 }
 
 std::unique_ptr<ImageBuffer> ImageBuffer::createMaterialImageBuffer(std::string path, bool flipVertically)
 {
 	std::unique_ptr<ImageBuffer> imageBuffer = std::unique_ptr<ImageBuffer>(new ImageBuffer());
-	imageBuffer->initMaterialImageBuffer(path, flipVertically);
+	if (!imageBuffer->initMaterialImageBuffer(path, flipVertically))
+	{
+		return nullptr;
+	}
 	return imageBuffer;
 }
 
@@ -223,11 +245,19 @@ std::unique_ptr<ImageBuffer> ImageBuffer::createImageBufferFromMemory(const aiTe
 
 void ImageBuffer::cleanup()
 {
-	vkDestroyImage(m_device, textureImage, nullptr);
-	vkFreeMemory(m_device, textureImageMemory, nullptr);
+	if (textureImage != VK_NULL_HANDLE)
+	{
+		vkDestroyImage(m_device, textureImage, nullptr);
+		textureImage = VK_NULL_HANDLE;
+	}
+	if (textureImageMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, textureImageMemory, nullptr);
+		textureImageMemory = VK_NULL_HANDLE;
+	}
 }
 
-void ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
+bool ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
 {
 	auto &context = VulkanContext::getContext();
 	m_device = context.getDevice();
@@ -241,9 +271,7 @@ void ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixels)
-	{
-		throw std::runtime_error("failed to load texture image! " + path);
-	}
+		return false;
 
 	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -272,9 +300,10 @@ void ImageBuffer::initImageBuffer(std::string path, bool flipVertically)
 	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 
 	generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_SRGB, texWidth, texHeight, mipLevels);
+	return true;
 }
 
-void ImageBuffer::initMaterialImageBuffer(std::string path, bool flipVertically)
+bool ImageBuffer::initMaterialImageBuffer(std::string path, bool flipVertically)
 {
 	auto &context = VulkanContext::getContext();
 	m_device = context.getDevice();
@@ -288,9 +317,7 @@ void ImageBuffer::initMaterialImageBuffer(std::string path, bool flipVertically)
 	VkDeviceSize imageSize = texWidth * texHeight * 4;
 
 	if (!pixels)
-	{
-		throw std::runtime_error("failed to load texture image!");
-	}
+		return false;
 
 	mipLevels = static_cast<uint32_t>(std::floor(std::log2(std::max(texWidth, texHeight)))) + 1;
 
@@ -320,6 +347,7 @@ void ImageBuffer::initMaterialImageBuffer(std::string path, bool flipVertically)
 	vkFreeMemory(m_device, stagingBufferMemory, nullptr);
 
 	generateMipmaps(textureImage, VK_FORMAT_R8G8B8A8_UNORM, texWidth, texHeight, mipLevels);
+	return true;
 }
 
 void ImageBuffer::initImageBufferFromMemory(const aiTexture *texture)
@@ -493,13 +521,13 @@ void ImageBuffer::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 	// 베리어 생성을 위한 구조체
 	VkImageMemoryBarrier barrier{};
 	barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-	barrier.oldLayout = oldLayout; // src 단계까지의 이미지 레이아웃
-	barrier.newLayout = newLayout; // src 단계 이후 적용시킬 새로운 이미지 레이아웃
+	barrier.oldLayout = oldLayout;						   // src 단계까지의 이미지 레이아웃
+	barrier.newLayout = newLayout;						   // src 단계 이후 적용시킬 새로운 이미지 레이아웃
 	barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // 베리어 전환 적용 후 리소스 소유권을 넘겨줄 src 큐 패밀리
 														   // (현재는 동일 큐 패밀리에서 실행)
 	barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED; // 리소스 소유권을 받을 dst 큐 패밀리로 dst 큐패밀리에는 큐
 														   // 전체에 동기화가 적용 (현재는 동일 큐 패밀리에서 실행)
-	barrier.image = image;											 // 배리어 적용할 이미지 객체
+	barrier.image = image;								   // 배리어 적용할 이미지 객체
 	barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // 전환 작업의 적용 대상을 color bit 으로 설정
 	barrier.subresourceRange.baseMipLevel = 0;						 // 전환 작업을 시작할 miplevel
 	barrier.subresourceRange.levelCount = mipLevels;				 // 전환 작업을 적용할 miplevel의 개수
@@ -515,8 +543,8 @@ void ImageBuffer::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 		barrier.srcAccessMask = 0;							  // 접근 제한 x
 		barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // 쓰기 권한 필요
 
-		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT; // Vulkan의 파이프라인에서 가장 상단에 위치한 첫 번째 단계로,
-														 // 어떠한 작업도 진행되지 않은 상태
+		sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;   // Vulkan의 파이프라인에서 가장 상단에 위치한 첫 번째 단계로,
+														   // 어떠한 작업도 진행되지 않은 상태
 		destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT; // 데이터 복사 단계
 	}
 	else if (oldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && newLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
@@ -537,10 +565,10 @@ void ImageBuffer::transitionImageLayout(VkImage image, VkFormat format, VkImageL
 	vkCmdPipelineBarrier(commandBuffer,					// 베리어를 기록할 커맨드 버퍼
 						 sourceStage, destinationStage, // sourceStage 단계가 끝나면 베리어 작업 시작, 베리어 작업이
 														// 끝나기 전에 destinationStage에 돌입한 다른 작업들 모두 대기
-						 0,			 // 의존성 플래그
-						 0, nullptr, // 메모리 베리어 (개수 + 베리어 포인터)
-						 0, nullptr, // 버퍼 베리어   (개수 + 베리어 포인터)
-						 1, &barrier // 이미지 베리어 (개수 + 베리어 포인터)
+						 0,								// 의존성 플래그
+						 0, nullptr,					// 메모리 베리어 (개수 + 베리어 포인터)
+						 0, nullptr,					// 버퍼 베리어   (개수 + 베리어 포인터)
+						 1, &barrier					// 이미지 베리어 (개수 + 베리어 포인터)
 	);
 
 	endSingleTimeCommands(commandBuffer); // 커맨드 버퍼 기록 종료
@@ -554,15 +582,15 @@ void ImageBuffer::copyBufferToImage(VkBuffer buffer, VkImage image, uint32_t wid
 
 	// 버퍼 -> 이미지 복사를 위한 정보
 	VkBufferImageCopy region{};
-	region.bufferOffset = 0; // 복사할 버퍼의 시작 위치 offset
-	region.bufferRowLength = 0; // 저장될 공간의 row 당 픽셀 수 (0으로 하면 이미지 너비에 자동으로 맞춰진다.)
+	region.bufferOffset = 0;	  // 복사할 버퍼의 시작 위치 offset
+	region.bufferRowLength = 0;	  // 저장될 공간의 row 당 픽셀 수 (0으로 하면 이미지 너비에 자동으로 맞춰진다.)
 	region.bufferImageHeight = 0; // 저장될 공간의 col 당 픽셀 수 (0으로 하면 이미지 높이에 자동으로 맞춰진다.)
 	region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT; // 이미지의 데이터 타입 (현재는 컬러값을 복사)
 	region.imageSubresource.mipLevel = 0;							// 이미지의 miplevel 설정
 	region.imageSubresource.baseArrayLayer = 0; // 이미지의 시작 layer 설정 (cubemap과 같은 경우 여러 레이어 존재)
-	region.imageSubresource.layerCount = 1; // 이미지 layer 개수
-	region.imageOffset = {0, 0, 0};			// 이미지의 저장할 시작 위치
-	region.imageExtent = {					// 이미지의 저장할 너비, 높이, 깊이
+	region.imageSubresource.layerCount = 1;		// 이미지 layer 개수
+	region.imageOffset = {0, 0, 0};				// 이미지의 저장할 시작 위치
+	region.imageExtent = {						// 이미지의 저장할 너비, 높이, 깊이
 						  width, height, 1};
 
 	// 커맨드 버퍼에 버퍼 -> 이미지로 데이터 복사하는 명령 기록
@@ -673,8 +701,16 @@ std::shared_ptr<UniformBuffer> UniformBuffer::createUniformBuffer(VkDeviceSize b
 
 void UniformBuffer::cleanup()
 {
-	vkDestroyBuffer(m_device, m_buffer, nullptr);
-	vkFreeMemory(m_device, m_bufferMemory, nullptr);
+	if (m_buffer != VK_NULL_HANDLE)
+	{
+		vkDestroyBuffer(m_device, m_buffer, nullptr);
+		m_buffer = VK_NULL_HANDLE;
+	}
+	if (m_bufferMemory != VK_NULL_HANDLE)
+	{
+		vkFreeMemory(m_device, m_bufferMemory, nullptr);
+		m_bufferMemory = VK_NULL_HANDLE;
+	}
 }
 
 void UniformBuffer::updateUniformBuffer(void *data, VkDeviceSize size)

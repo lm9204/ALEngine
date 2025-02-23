@@ -18,6 +18,7 @@ class LayerStack
 	void pushOverlay(Layer *overlay);
 	void popLayer(Layer *layer);
 	void popOverlay(Layer *overlay);
+	void onDetach();
 
 	std::vector<Layer *>::iterator begin()
 	{

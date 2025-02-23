@@ -55,6 +55,8 @@ class Material
 
 	~Material() = default;
 
+	void cleanup();
+
 	Albedo &getAlbedo()
 	{
 		return m_albedo;

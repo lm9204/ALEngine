@@ -86,9 +86,15 @@ std::shared_ptr<Scene> Scene::copyScene(std::shared_ptr<Scene> scene)
 	}
 	copyComponent(AllComponents{}, dstRegistry, srcRegistry, enttMap);
 
-	auto view = newScene->m_Registry.view<CameraComponent>();
-	newScene->initScene();
+	newScene->m_cullTree = scene->m_cullTree;
 
+	auto view = newScene->m_Registry.view<MeshRendererComponent>();
+	for (auto entityHandle : view)
+	{
+		auto &mesh = dstRegistry.get<MeshRendererComponent>(entityHandle);
+		newScene->m_cullTree.changeEntityHandle(mesh.nodeId, static_cast<uint32_t>(entityHandle));
+	}
+	newScene->initScene();
 	return newScene;
 }
 
@@ -168,8 +174,25 @@ void Scene::destroyEntity(Entity entity)
 		}
 	}
 
+	removeEntityInCullTree(entity);
 	m_EntityMap.erase(entity.getUUID());
 	m_Registry.destroy(entity);
+}
+
+Entity Scene::createPrimitiveMeshEntity(const std::string &name, uint32_t idx)
+{
+	Entity entity = createEntity(name);
+
+	auto &mc = entity.addComponent<MeshRendererComponent>();
+	std::shared_ptr<Model> &model = getDefaultModel(idx);
+
+	mc.type = idx;
+	mc.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
+	mc.cullSphere = mc.m_RenderingComponent->getCullSphere();
+
+	insertEntityInCullTree(entity);
+
+	return entity;
 }
 
 void Scene::onRuntimeStart()
@@ -203,6 +226,7 @@ void Scene::onRuntimeStop()
 void Scene::onUpdateEditor(EditorCamera &camera)
 {
 	setCamPos(camera.getPosition());
+	findMoveObject();
 	renderScene(camera);
 }
 
@@ -250,10 +274,6 @@ void Scene::onUpdateRuntime(Timestep ts)
 				tf.m_Position = body->getTransform().position;
 				tf.m_Rotation = glm::eulerAngles(body->getTransform().orientation);
 				tf.m_WorldTransform = tf.getTransform();
-				if (body->isMoved(mr.cullSphere.radius * tf.getMaxScale()) == true)
-				{
-					tf.m_isMoved = true;
-				}
 			}
 		}
 
@@ -295,11 +315,14 @@ void Scene::onUpdateRuntime(Timestep ts)
 	{
 		Renderer &renderer = App::get().getRenderer();
 		setCamPos(mainCamera->getPosition());
+		findMoveObject();
 		renderer.beginScene(this, *mainCamera);
 	}
 	else
 	{
-		AL_CORE_ERROR("No Camera!");
+		// AL_CORE_ERROR("No Camera!");
+		Renderer &renderer = App::get().getRenderer();
+		renderer.biginNoCamScene();
 	}
 
 	// imguilayer::renderDrawData
@@ -354,6 +377,8 @@ void Scene::initScene()
 	m_sphereModel = Model::createSphereModel(m_defaultMaterial);
 	m_planeModel = Model::createPlaneModel(m_defaultMaterial);
 	m_groundModel = Model::createGroundModel(m_defaultMaterial);
+	m_capsuleModel = Model::createCapsuleModel(m_defaultMaterial);
+	m_cylinderModel = Model::createCylinderModel(m_defaultMaterial);
 
 	m_cullTree.setScene(this);
 }
@@ -382,11 +407,13 @@ void Scene::onPhysicsStart()
 		BodyDef bdDef;
 		bdDef.m_type = EBodyType::DYNAMIC_BODY;
 		bdDef.m_position = tf.m_Position;
-		bdDef.m_orientation = glm::quat(glm::radians(tf.m_Rotation));
+		bdDef.m_orientation = glm::quat(tf.m_Rotation);
 		bdDef.m_linearDamping = rb.m_Damping;
 		bdDef.m_angularDamping = rb.m_AngularDamping;
 		bdDef.m_gravityScale = 15.0f;
 		bdDef.m_useGravity = rb.m_UseGravity;
+		bdDef.m_posFreeze = rb.m_FreezePos;
+		bdDef.m_rotFreeze = rb.m_FreezeRot;
 
 		// create body
 		Rigidbody *body = m_World->createBody(bdDef);
@@ -529,14 +556,18 @@ std::shared_ptr<Model> Scene::getDefaultModel(int32_t idx)
 	// ASSERT idx
 	switch (idx)
 	{
-	case 0:
-		return m_boxModel;
 	case 1:
-		return m_sphereModel;
+		return m_boxModel;
 	case 2:
-		return m_planeModel;
+		return m_sphereModel;
 	case 3:
+		return m_planeModel;
+	case 4:
 		return m_groundModel;
+	case 5:
+		return m_capsuleModel;
+	case 6:
+		return m_cylinderModel;
 	default:
 		return nullptr;
 	}
@@ -562,9 +593,24 @@ Entity Scene::getEntityByUUID(UUID uuid)
 	return {};
 }
 
-int32_t Scene::insertEntityInCullTree(const CullSphere &sphere, entt::entity entityHandle)
+void Scene::insertEntityInCullTree(Entity &entity)
 {
-	return m_cullTree.createNode(sphere, static_cast<uint32_t>(entityHandle));
+	if (!entity.hasComponent<MeshRendererComponent>())
+	{
+		return;
+	}
+
+	auto &mc = entity.getComponent<MeshRendererComponent>();
+	if (mc.m_RenderingComponent != nullptr && mc.nodeId == NULL_NODE)
+	{
+		TransformComponent &tc = entity.getComponent<TransformComponent>();
+
+		CullSphere sphere(tc.getTransform() * glm::vec4(mc.cullSphere.center, 1.0f),
+						  mc.cullSphere.radius * tc.getMaxScale());
+
+		mc.nodeId = m_cullTree.createNode(sphere, static_cast<uint32_t>(entity));
+		mc.cullState = ECullState::CULL;
+	}
 }
 
 void Scene::printCullTree()
@@ -572,9 +618,17 @@ void Scene::printCullTree()
 	m_cullTree.printCullTree(m_cullTree.getRootNodeId());
 }
 
-void Scene::removeEntityInCullTree(int32_t nodeId)
+void Scene::removeEntityInCullTree(Entity &entity)
 {
-	m_cullTree.destroyNode(nodeId);
+	if (entity.hasComponent<MeshRendererComponent>())
+	{
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		if (mc.m_RenderingComponent == nullptr)
+			return;
+
+		m_cullTree.destroyNode(mc.nodeId);
+		mc.nodeId = NULL_NODE;
+	}
 }
 
 void Scene::frustumCulling(const Frustum &frustum)
@@ -590,7 +644,50 @@ void Scene::frustumCulling(const Frustum &frustum)
 
 void Scene::initFrustumDrawFlag()
 {
-	m_cullTree.setRenderDisable(m_cullTree.getRootNodeId());
+	int32_t root = m_cullTree.getRootNodeId();
+	if (root != NULL_NODE)
+	{
+		m_cullTree.setRenderDisable(root);
+	}
+}
+
+void Scene::findMoveObject()
+{
+	auto view = m_Registry.view<MeshRendererComponent, TransformComponent>();
+	for (auto e : view)
+	{
+		auto &transform = view.get<TransformComponent>(e);
+		auto &mesh = view.get<MeshRendererComponent>(e);
+		if (mesh.m_RenderingComponent == nullptr)
+			continue;
+
+		float limit = transform.getMaxScale() * mesh.cullSphere.radius * 0.1f;
+		limit = limit * limit;
+
+		if (glm::length2(transform.m_Position - transform.m_LastPosition) > limit)
+		{
+			transform.m_LastPosition = transform.m_Position;
+			transform.m_isMoved = true;
+		}
+	}
+}
+
+void Scene::setNoneInCullTree(Entity &entity)
+{
+	if (entity.hasComponent<MeshRendererComponent>() == false)
+	{
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		mc.cullState = (mc.cullState | ECullState::NONE);
+	}
+}
+
+void Scene::unsetNoneInCullTree(Entity &entity)
+{
+	if (entity.hasComponent<MeshRendererComponent>() == false)
+	{
+		auto &mc = entity.getComponent<MeshRendererComponent>();
+		mc.cullState = (mc.cullState & ECullState::RENDER);
+	}
 }
 
 // 컴파일 타임에 조건 확인
@@ -624,18 +721,19 @@ template <> void Scene::onComponentAdded<CameraComponent>(Entity entity, CameraC
 template <> void Scene::onComponentAdded<MeshRendererComponent>(Entity entity, MeshRendererComponent &component)
 {
 	component.type = 0;
-	component.m_RenderingComponent =
-		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
-	component.cullSphere = component.m_RenderingComponent->getCullSphere();
 
-	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
+// 	component.m_RenderingComponent =
+// 		RenderingComponent::createRenderingComponent(Model::createBoxModel(this->getDefaultMaterial()));
+// 	component.cullSphere = component.m_RenderingComponent->getCullSphere();
 
-	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
-					  component.cullSphere.radius * transformComponent.getMaxScale());
+// 	TransformComponent &transformComponent = getComponent<TransformComponent>(entity);
 
-	// cullTree에 추가 sphere
-	component.nodeId = insertEntityInCullTree(sphere, entity);
-	// auto &bc = entity.addComponent<BoxColliderComponent>();
+// 	CullSphere sphere(transformComponent.getTransform() * glm::vec4(component.cullSphere.center, 1.0f),
+// 					  component.cullSphere.radius * transformComponent.getMaxScale());
+
+// 	// cullTree에 추가 sphere
+// 	component.nodeId = insertEntityInCullTree(sphere, entity);
+// 	// auto &bc = entity.addComponent<BoxColliderComponent>();
 
 	// 이미 SAC가 존재하는 경우 새로 생긴 모델 갱신
 	if (entity.hasComponent<SkeletalAnimatorComponent>())
@@ -698,4 +796,25 @@ template <> void Scene::onComponentAdded<SkeletalAnimatorComponent>(Entity entit
 	component.sac = std::make_shared<SAComponent>(mr.m_RenderingComponent->getModel());
 	component.m_Repeats = component.sac->getRepeatAll();
 }
+  
+void Scene::cleanup()
+{
+	// delete model
+	m_boxModel->cleanup();
+	m_sphereModel->cleanup();
+	m_planeModel->cleanup();
+	m_groundModel->cleanup();
+	m_capsuleModel->cleanup();
+	m_cylinderModel->cleanup();
+
+	m_defaultMaterial->cleanup();
+
+	auto view = m_Registry.view<MeshRendererComponent>();
+	for (auto e : view)
+	{
+		auto &mesh = view.get<MeshRendererComponent>(e);
+		mesh.m_RenderingComponent->cleanup();
+	}
+}
+
 } // namespace ale

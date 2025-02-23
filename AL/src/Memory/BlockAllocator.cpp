@@ -43,6 +43,7 @@ BlockAllocator::BlockAllocator()
 		{
 			if (j >= BLOCK_SIZE_COUNT)
 			{
+				AL_CORE_ERROR("BLOCK_SIZE_COUNT: {0}", BLOCK_SIZE_COUNT);
 				throw std::runtime_error("failed to initialize blockSizeLookup");
 			}
 
@@ -56,7 +57,7 @@ BlockAllocator::BlockAllocator()
 				s_blockSizeLookup[i] = static_cast<uint8_t>(j);
 			}
 		}
-
+		
 		s_blockSizeLookupInitialized = true;
 	}
 }

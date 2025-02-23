@@ -129,6 +129,153 @@ std::shared_ptr<Mesh> Mesh::createGround()
 	return createMesh(vertices, indices);
 }
 
+std::shared_ptr<Mesh> Mesh::createCapsule()
+{
+	std::vector<Vertex> vertices;
+	std::vector<uint32_t> indices;
+	uint32_t halfLatiSegmentCount = 8;
+	uint32_t latiSegmentCount = halfLatiSegmentCount * 2;
+	uint32_t longiSegmentCount = 20;
+	float radius = 0.5f;
+
+	uint32_t circleVertCount = longiSegmentCount + 1;
+	vertices.resize((halfLatiSegmentCount + 1) * circleVertCount * 2);
+
+	glm::vec3 moveVector(0.0f, -radius, 0.0f);
+	for (uint32_t i = 0; i <= halfLatiSegmentCount; i++)
+	{
+		float v = (float)i / (float)latiSegmentCount;
+		float phi = (v - 0.5f) * glm::pi<float>();
+		auto cosPhi = cosf(phi);
+		auto sinPhi = sinf(phi);
+		for (uint32_t j = 0; j <= longiSegmentCount; j++)
+		{
+			float u = (float)j / (float)longiSegmentCount;
+			float theta = u * glm::pi<float>() * 2.0f;
+			auto cosTheta = cosf(theta);
+			auto sinTheta = sinf(theta);
+			auto point = glm::vec3(cosPhi * cosTheta, sinPhi, -cosPhi * sinTheta);
+
+			vertices[i * circleVertCount + j] = Vertex{point * radius + moveVector, point, glm::vec2(u, v)};
+		}
+	}
+
+	moveVector = -moveVector;
+	for (uint32_t i = halfLatiSegmentCount; i <= latiSegmentCount; i++)
+	{
+		float v = (float)i / (float)latiSegmentCount;
+		float phi = (v - 0.5f) * glm::pi<float>();
+		auto cosPhi = cosf(phi);
+		auto sinPhi = sinf(phi);
+		for (uint32_t j = 0; j <= longiSegmentCount; j++)
+		{
+			float u = (float)j / (float)longiSegmentCount;
+			float theta = u * glm::pi<float>() * 2.0f;
+			auto cosTheta = cosf(theta);
+			auto sinTheta = sinf(theta);
+			auto point = glm::vec3(cosPhi * cosTheta, sinPhi, -cosPhi * sinTheta);
+
+			vertices[(i + 1) * circleVertCount + j] = Vertex{point * radius + moveVector, point, glm::vec2(u, v)};
+		}
+	}
+
+	indices.resize((latiSegmentCount + 1) * longiSegmentCount * 6);
+	for (uint32_t i = 0; i <= latiSegmentCount; i++)
+	{
+		for (uint32_t j = 0; j < longiSegmentCount; j++)
+		{
+			uint32_t vertexOffset = i * circleVertCount + j;
+			uint32_t indexOffset = (i * longiSegmentCount + j) * 6;
+			indices[indexOffset] = vertexOffset;
+			indices[indexOffset + 1] = vertexOffset + 1;
+			indices[indexOffset + 2] = vertexOffset + 1 + circleVertCount;
+			indices[indexOffset + 3] = vertexOffset;
+			indices[indexOffset + 4] = vertexOffset + 1 + circleVertCount;
+			indices[indexOffset + 5] = vertexOffset + circleVertCount;
+		}
+	}
+
+	return createMesh(vertices, indices);
+}
+
+std::shared_ptr<Mesh> Mesh::createCylinder()
+{
+	std::vector<Vertex> vertices;
+
+	int32_t segments = 20.0f;
+	float halfHeight = 0.5f;
+	float radius = 0.5f;
+
+	float angleStep = 2.0f * glm::pi<float>() / static_cast<float>(segments);
+
+	// Top cap center
+	glm::vec3 topCenter(0.0f, halfHeight, 0.0f);
+	vertices.push_back({topCenter, glm::vec3(0.0f, 1.0f, 0.0f), glm::vec2(0.5f, 0.5f)});
+
+	// Top cap vertices
+	for (int32_t i = 0; i <= segments; ++i)
+	{
+		float theta = i * angleStep;
+		glm::vec3 position(radius * cos(theta), halfHeight, radius * sin(theta));
+		glm::vec2 texCoord(0.5f + 0.5f * cos(theta), 0.5f + 0.5f * sin(theta));
+		vertices.push_back({position, glm::vec3(0.0f, 1.0f, 0.0f), texCoord});
+	}
+
+	// Bottom cap center
+	glm::vec3 bottomCenter(0.0f, -halfHeight, 0.0f);
+	vertices.push_back({bottomCenter, glm::vec3(0.0f, -1.0f, 0.0f), glm::vec2(0.5f, 0.5f)});
+
+	// Bottom cap vertices
+	for (int32_t i = 0; i <= segments; ++i)
+	{
+		float theta = i * angleStep;
+		glm::vec3 position(radius * cos(theta), -halfHeight, radius * sin(theta));
+		glm::vec2 texCoord(0.5f + 0.5f * cos(theta), 0.5f + 0.5f * sin(theta));
+		vertices.push_back({position, glm::vec3(0.0f, -1.0f, 0.0f), texCoord});
+	}
+
+	std::vector<uint32_t> indices;
+
+	// Top cap indices
+	uint32_t topCenterIndex = 0;
+	for (int32_t i = 1; i <= segments; ++i)
+	{
+		indices.push_back(topCenterIndex);
+		indices.push_back(i + 1);
+		indices.push_back(i);
+	}
+
+	// Bottom cap indices
+	uint32_t bottomCenterIndex = segments + 2;
+	for (int32_t i = 1; i <= segments; ++i)
+	{
+		indices.push_back(bottomCenterIndex);
+		indices.push_back(bottomCenterIndex + i);
+		indices.push_back(bottomCenterIndex + i + 1);
+	}
+
+	// Side indices
+	for (int32_t i = 1; i <= segments; ++i)
+	{
+		uint32_t top1 = topCenterIndex + i;
+		uint32_t top2 = topCenterIndex + i + 1;
+		uint32_t bottom1 = bottomCenterIndex + i;
+		uint32_t bottom2 = bottomCenterIndex + i + 1;
+
+		// First triangle
+		indices.push_back(top1);
+		indices.push_back(bottom2);
+		indices.push_back(bottom1);
+
+		// Second triangle
+		indices.push_back(bottom2);
+		indices.push_back(top1);
+		indices.push_back(top2);
+	}
+
+	return createMesh(vertices, indices);
+}
+
 void Mesh::cleanup()
 {
 	m_vertexBuffer->cleanup();

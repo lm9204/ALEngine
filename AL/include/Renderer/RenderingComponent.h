@@ -23,6 +23,8 @@ class RenderingComponent
 	void updateMaterial(std::shared_ptr<Model> model);
 	std::shared_ptr<Model> getModel() { return m_model; };
 
+	void cleanup();
+
 	CullSphere getCullSphere();
 
 	std::vector<std::shared_ptr<Material>> &getMaterials()

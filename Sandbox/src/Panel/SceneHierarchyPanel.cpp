@@ -16,6 +16,8 @@
 #include <glm/gtc/type_ptr.hpp>
 #include <glm/gtx/matrix_decompose.hpp>
 
+#include "Core/App.h"
+
 #include <cstring>
 
 /* The Microsoft C++ compiler is non-compliant with the C++ standard and needs
@@ -80,16 +82,32 @@ void SceneHierarchyPanel::onImGuiRender()
 			if (ImGui::BeginMenu("3D Object"))
 			{
 				if (ImGui::MenuItem("Box"))
-					;
+					m_Context->createPrimitiveMeshEntity("Box", 1);
 				if (ImGui::MenuItem("Sphere"))
-					;
+					m_Context->createPrimitiveMeshEntity("Sphere", 2);
+				if (ImGui::MenuItem("Plane"))
+					m_Context->createPrimitiveMeshEntity("Plane", 3);
+				if (ImGui::MenuItem("Ground"))
+					m_Context->createPrimitiveMeshEntity("Ground", 4);
 				if (ImGui::MenuItem("Capsule"))
-					;
+					m_Context->createPrimitiveMeshEntity("Capsule", 5);
 				if (ImGui::MenuItem("Cylinder"))
-					;
+					m_Context->createPrimitiveMeshEntity("Cylinder", 6);
 				ImGui::EndMenu();
 			}
 			ImGui::EndPopup();
+		}
+
+		ImGui::Dummy(ImVec2(ImGui::GetWindowContentRegionMax())); // 높이 50의 빈 영역
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("EntityPayload"))
+			{
+				Entity *droppedEntity = (Entity *)payload->Data;
+				// 빈 영역에 드랍된 경우, 해당 엔티티를 최상위 엔티티로 만듭니다.
+				updateRelationship(*droppedEntity);
+			}
+			ImGui::EndDragDropTarget();
 		}
 	}
 	ImGui::End();
@@ -125,13 +143,13 @@ void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 	auto &childRelation = child.getComponent<RelationshipComponent>();
 	entt::entity oldParent = childRelation.parent;
 
-	// Memory pool needed
-	// if (oldParent != entt::null)
-	// {
-	// 	auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
-	// 	auto &siblings = oldParentRelation.children;
-	// 	siblings.erase(std::remove(siblings.begin(), siblings.end(), &child), siblings.end());
-	// }
+	if (oldParent != entt::null)
+	{
+		auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
+		auto &siblings = oldParentRelation.children;
+		// entt::entity e = (entt::entity)child;
+		siblings.erase(std::remove(siblings.begin(), siblings.end(), child), siblings.end());
+	}
 
 	// 2. 새 부모로 교체
 	childRelation.parent = (entt::entity)newParent;
@@ -151,15 +169,25 @@ void SceneHierarchyPanel::updateRelationship(Entity &newParent, Entity &child)
 	// updateTransforms(newParent);
 }
 
+void SceneHierarchyPanel::updateRelationship(Entity &child)
+{
+	auto &childRelation = child.getComponent<RelationshipComponent>();
+	entt::entity oldParent = childRelation.parent;
+
+	if (oldParent != entt::null)
+	{
+		auto &oldParentRelation = m_Context->m_Registry.get<RelationshipComponent>(oldParent);
+		auto &siblings = oldParentRelation.children;
+		entt::entity e = (entt::entity)child;
+		siblings.erase(std::remove(siblings.begin(), siblings.end(), e), siblings.end());
+	}
+
+	// 부모가 없으므로 null로 설정 (최상위 엔티티)
+	childRelation.parent = entt::null;
+}
+
 void SceneHierarchyPanel::updateTransforms(Entity entity)
 {
-	auto view = m_Context->m_Registry.view<RelationshipComponent, TransformComponent>();
-
-	auto &relate = entity.getComponent<RelationshipComponent>();
-	auto &tc = entity.getComponent<TransformComponent>();
-
-	// tc.m_WorldTransform = tc.getTransform();
-
 	entt::entity top = (entt::entity)entity;
 	while (true)
 	{
@@ -171,6 +199,21 @@ void SceneHierarchyPanel::updateTransforms(Entity entity)
 
 	Entity t{top, m_Context.get()};
 	updateTransformRecursive(t, glm::mat4(1.0f));
+}
+
+void SceneHierarchyPanel::updateActiveInfo(Entity &entity, bool parentEffectiveActive)
+{
+	auto &tc = entity.getComponent<TagComponent>();
+	// 자신의 effective 활성 상태는 부모의 활성 상태와 자신의 m_selfActive의 곱
+	tc.m_isActive = parentEffectiveActive && tc.m_selfActive;
+
+	auto &rc = entity.getComponent<RelationshipComponent>();
+	// 자식 엔티티에 대해 재귀 호출: 현재 엔티티의 m_isActive가 자식에게 부모 효과 상태로 전달됨
+	for (auto &child : rc.children)
+	{
+		Entity c{child, m_Context.get()};
+		updateActiveInfo(c, tc.m_isActive);
+	}
 }
 
 void SceneHierarchyPanel::updateTransformRecursive(Entity entity, const glm::mat4 &parentWorldTransform)
@@ -538,13 +581,30 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 {
 	if (entity.hasComponent<TagComponent>())
 	{
-		auto &tag = entity.getComponent<TagComponent>().m_Tag;
+		auto &tc = entity.getComponent<TagComponent>();
+		auto &tag = tc.m_Tag;
 
 		char buffer[256];
 		memset(buffer, 0, sizeof(buffer));
 		strncpy_s(buffer, sizeof(buffer), tag.c_str(), sizeof(buffer));
 
 		std::string label = "##Tag" + std::to_string(entity.getUUID());
+
+		if (ImGui::Checkbox("##Active", &tc.m_selfActive))
+		{
+			// 자식 엔티티일 경우 부모의 effective 활성 상태를 사용하여 업데이트
+			bool parentEffectiveActive = true;
+			auto &rc = entity.getComponent<RelationshipComponent>();
+			if (rc.parent != entt::null)
+			{
+				Entity parent{rc.parent, m_Context.get()};
+				parentEffectiveActive = parent.getComponent<TagComponent>().m_isActive;
+			}
+			updateActiveInfo(entity, parentEffectiveActive);
+		}
+
+		ImGui::SameLine();
+
 		// ## 뒤의 text는 ImGui 내부의 ID로 사용.
 		if (ImGui::InputText(label.c_str(), buffer, sizeof(buffer)))
 		{
@@ -620,6 +680,24 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		float perspectiveFar = camera.getFar();
 		if (ImGui::DragFloat("Far", &perspectiveFar))
 			camera.setFar(perspectiveFar);
+
+		ImGui::Button("Skybox", ImVec2(200.0f, 0.0f));
+		if (ImGui::BeginDragDropTarget())
+		{
+			if (const ImGuiPayload *payload = ImGui::AcceptDragDropPayload("CONTENT_BROWSER_ITEM"))
+			{
+				const wchar_t *path = (const wchar_t *)payload->Data;
+				std::filesystem::path filePath(path);
+				if (filePath.extension().string() == ".hdr")
+				{
+					component.skyboxPath = filePath.string();
+					std::cout << "skybox: " << filePath.string() << '\n';
+					Renderer &renderer = App::get().getRenderer();
+					renderer.updateSkybox(filePath.string());
+				}
+			}
+			ImGui::EndDragDropTarget();
+		}
 	});
 
 	drawComponent<SkeletalAnimatorComponent>("Animator", entity, [this, &entity](auto &component) {
@@ -1071,7 +1149,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		uint32_t meshType = component.type;
 		std::shared_ptr<RenderingComponent> rc = component.m_RenderingComponent;
 
-		const char *meshTypeStrings[] = {"Box", "Sphere", "Plane", "Ground", "None", "Model"};
+		const char *meshTypeStrings[] = {"None", "Box", "Sphere", "Plane", "Ground", "Capsule", "Cylinder", "Model"};
 		const char *currentMeshTypeString = meshTypeStrings[(int)meshType];
 
 		ImGui::Columns(2);
@@ -1081,7 +1159,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		ImGui::NextColumn();
 		if (ImGui::BeginCombo("##MeshTypeCombo", currentMeshTypeString))
 		{
-			for (int32_t i = 0; i < 5; ++i)
+			for (int32_t i = 0; i < 8; ++i)
 			{
 				bool isSelected = currentMeshTypeString == meshTypeStrings[i];
 
@@ -1091,14 +1169,28 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					// model 정보 바꾸기
 
 					component.type = i;
-					if (i == 4) // None
+					if (i == 0) // None
 					{
+						component.path.clear();
+						component.matPath.clear();
+						component.isMatChanged = false;
+						// scene->insertEntityInCullTree(entity);
+						scene->removeEntityInCullTree(entity);
+						component.m_RenderingComponent = nullptr;
+						component.cullState = ECullState::NONE;
+					}
+					else if (i == 7)
+					{
+						break;
 					}
 					else
 					{
 						component.m_RenderingComponent =
 							RenderingComponent::createRenderingComponent(scene->getDefaultModel(i));
 						component.path.clear();
+						component.matPath.clear();
+						component.isMatChanged = false;
+						scene->insertEntityInCullTree(entity);
 					}
 				}
 				if (isSelected)
@@ -1124,9 +1216,11 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				{
 					std::shared_ptr<Model> model = Model::createModel(filePath.string(), scene->getDefaultMaterial());
 					component.m_RenderingComponent = RenderingComponent::createRenderingComponent(model);
-					component.type = 4;
+					component.type = 7;
 					component.path = filePath.string();
-
+          component.isMatChanged = false;
+					scene->insertEntityInCullTree(entity);
+          
 					// SAC가 존재하는 경우 모델 갱신
 					if (entity.hasComponent<SkeletalAnimatorComponent>())
 					{
@@ -1134,7 +1228,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 
 						auto* sac = sa.sac.get();
 						sac->setModel(component.m_RenderingComponent->getModel());
-					}
+					}			
 				}
 			}
 			ImGui::EndDragDropTarget();
@@ -1149,14 +1243,12 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 				if (filePath.extension().string() == ".gltf" || filePath.extension().string() == ".glb" ||
 					filePath.extension().string() == ".obj")
 				{
-					// std::shared_ptr<Model> model = Model::createModel(filePath.string(),
-					// scene->getDefaultMaterial()); component.m_RenderingComponent =
-					// RenderingComponent::createRenderingComponent(model);
-
 					component.m_RenderingComponent->updateMaterial(
 						Model::createModel(filePath.string(), scene->getDefaultMaterial()));
 					component.type = 4;
 					component.path = filePath.string();
+          component.matPath = filePath.string();
+					component.isMatChanged = true;
 
 					// SAC가 존재하는 경우 모델 갱신
 					if (entity.hasComponent<SkeletalAnimatorComponent>())
@@ -1170,10 +1262,16 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			}
 			ImGui::EndDragDropTarget();
 		}
-		auto &materials = rc->getMaterials();
-		if (materials.size() != 1)
+
+		if (rc != nullptr)
 		{
-			std::shared_ptr<Material> material = materials[1];
+			auto &materials = rc->getMaterials();
+
+			static int32_t idx = 0;
+			ImGui::DragInt("Material Index", &idx, 0.1f, 0, materials.size() - 1, "%d");
+			idx = std::clamp(idx, 0, static_cast<int32_t>(materials.size()) - 1);
+
+			std::shared_ptr<Material> &material = materials[idx];
 			Albedo &albedo = material->getAlbedo();
 			drawVec3Control("Albedo", albedo.albedo);
 			drawCheckBox("Albedo Flag", albedo.flag);
@@ -1337,7 +1435,62 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		drawCheckBox("Gravity", component.m_UseGravity);
 
 		// FreezePos
+		ImGui::Text("FreezePos");
+		ImGui::SameLine();
+		bool freezePosX = component.m_FreezePos.x == 1 ? false : true;
+		ImGui::PushID("PX");
+		if (ImGui::Checkbox("X", &freezePosX))
+		{
+			component.m_FreezePos.x = freezePosX ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezePosY = component.m_FreezePos.y == 1 ? false : true;
+		ImGui::PushID("PY");
+		if (ImGui::Checkbox("Y", &freezePosY))
+		{
+			component.m_FreezePos.y = freezePosY ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezePosZ = component.m_FreezePos.z == 1 ? false : true;
+		ImGui::PushID("PZ");
+		if (ImGui::Checkbox("Z", &freezePosZ))
+		{
+			component.m_FreezePos.z = freezePosZ ? 0 : 1;
+		}
+		ImGui::PopID();
+
 		// FreezeRot
+		ImGui::Text("FreezeRot");
+		ImGui::SameLine();
+		ImGui::PushID("RX");
+		bool freezeRotX = component.m_FreezeRot.x == 1 ? false : true;
+		if (ImGui::Checkbox("X", &freezeRotX))
+		{
+			component.m_FreezeRot.x = freezeRotX ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezeRotY = component.m_FreezeRot.y == 1 ? false : true;
+		ImGui::PushID("RY");
+		if (ImGui::Checkbox("Y", &freezeRotY))
+		{
+			component.m_FreezeRot.y = freezeRotY ? 0 : 1;
+		}
+		ImGui::PopID();
+
+		ImGui::SameLine();
+		bool freezeRotZ = component.m_FreezeRot.z == 1 ? false : true;
+		ImGui::PushID("RZ");
+		if (ImGui::Checkbox("Z", &freezeRotZ))
+		{
+			component.m_FreezeRot.z = freezeRotZ ? 0 : 1;
+		}
+		ImGui::PopID();
 		// BodyType
 
 		if (scene->isRunning())
