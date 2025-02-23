@@ -23,8 +23,20 @@ struct AnimationStateTransition
 {
 	std::string	fromState;
 	std::string	toState;
+	std::string conditionName;
 	std::function<bool()> condition;
 	float blendTime;
+	bool invertCondition = false;
+
+	bool operator==(const AnimationStateTransition& others)
+	{
+		if (fromState == others.fromState &&
+			toState == others.toState &&
+			conditionName == others.conditionName
+		)
+			return true;
+		return false;
+	}
 };
 
 struct AnimationStateChangeRequest
@@ -53,12 +65,13 @@ public:
 	void addState(const AnimationState& s) { m_States[s.stateName] = s; }
 	void addTransition(const AnimationStateTransition& t) { m_Transitions.push_back(t); }
 	void pushStateChangeRequest(const std::string& target) { m_RequestQueue.push({ target }); }
+	void deleteTransition(const AnimationStateTransition& t);
 	void setStates(std::unordered_map<std::string, AnimationState>& states);
 	void setTransitions(std::vector<AnimationStateTransition>& transitions);
 	void update(const Timestep& timestep);
 	bool hasNoTransitionFor(float seconds) const;
-	std::vector<AnimationStateTransition> getTransitions();
-	std::unordered_map<std::string, AnimationState> getStates();
+	std::vector<AnimationStateTransition>& getTransitions();
+	std::unordered_map<std::string, AnimationState>& getStates();
 
 
 private:
