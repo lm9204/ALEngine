@@ -622,7 +622,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			camera.setFar(perspectiveFar);
 	});
 
-	drawComponent<SkeletalAnimatorComponent>("Animator", entity, [](auto &component) {
+	drawComponent<SkeletalAnimatorComponent>("Animator", entity, [this, &entity](auto &component) {
 		SAComponent* sac = (SAComponent *)component.sac.get();
 		// 1. 현재 애니메이션 버튼/박스
 		ImGui::Text("Current Animation:");
@@ -715,23 +715,26 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			component.m_SpeedFactor = std::max(0.1f, component.m_SpeedFactor - 0.5f);
 		}
 		ImGui::SameLine();
-		// 현재 속도 텍스트 (더블클릭 시 입력 팝업)
-		ImGui::Text("Speed: %.1fx", component.m_SpeedFactor);
-		if (ImGui::IsItemHovered() && ImGui::IsMouseDoubleClicked(0))
-		{
-			ImGui::OpenPopup("SpeedEditPopup");
-		}
-		if (ImGui::BeginPopup("SpeedEditPopup"))
-		{
-			ImGui::InputFloat("Playback Speed", &component.m_SpeedFactor, 0.5f, 1.0f, "%.1f");
-			ImGui::EndPopup();
-		}
+		// 현재 속도 텍스트 
+		float customVerticalPadding = 8.0f;
+		ImVec2 currentPadding = ImGui::GetStyle().FramePadding;
+		ImGui::PushStyleVar(ImGuiStyleVar_FramePadding, ImVec2(currentPadding.x, customVerticalPadding));
+
+		ImGui::PushItemWidth(40.0f);
+		ImGui::DragFloat("##Speed", &component.m_SpeedFactor, 0.1f, 0.0f, 0.0f, "%.1f");
+		ImGui::PopItemWidth();
+
+		ImGui::PopStyleVar();
 		ImGui::SameLine();
+		ImGui::PushID(20);
 		if (ImGui::Button("+", ImVec2(30, 30)))
 		{
-			component.m_SpeedFactor += 0.5f;
+			if (component.m_SpeedFactor == 0.1f)
+				component.m_SpeedFactor = 0.5f;
+			else
+				component.m_SpeedFactor += 0.5f;
 		}
-
+		ImGui::PopID();
 		ImGui::Spacing();
 		ImGui::Separator();
 		ImGui::Spacing();
@@ -771,8 +774,7 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 		ImGui::Dummy(ImVec2(timelineWidth, timelineHeight));
 
 		ImGui::Spacing();
-		ImGui::Separator();
-		ImGui::Spacing();
+
 
 		// 5. 애니메이션 속성 (테스트용: 반복 체크박스)
 		bool repeat;
@@ -785,6 +787,283 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			ImGui::Checkbox("loop", &repeat);
 
 			sac->setRepeat(repeat, index);
+		}
+		
+		ImGui::Separator();
+		ImGui::Spacing();
+		//StateManager
+		if (entity.hasComponent<ScriptComponent>())
+		{
+			std::shared_ptr<AnimationStateManager> stateManager = sac->getStateManager();
+			auto& states = stateManager->getStates();
+			auto& transitions = stateManager->getTransitions();
+			
+			// 좌측: State 리스트
+			ImGui::BeginChild("StatesList", ImVec2(150, 150), true);
+			static std::string selectedStateKey;
+			for (auto& kv : states)
+			{
+				const std::string& key = kv.first;
+				// AnimationState& state = kv.second;
+				if (ImGui::Selectable(key.c_str(), selectedStateKey == key))
+				{
+					selectedStateKey = key;
+				}
+				if (ImGui::BeginDragDropSource())
+				{
+					std::string payload = key;
+					ImGui::SetDragDropPayload("STATE_ITEM", &payload, sizeof(std::string));
+					ImGui::Text("%s", key);
+					ImGui::EndDragDropSource();
+				}
+			}
+			ImGui::EndChild();
+			ImGui::SameLine();
+
+			// 우측: Transition 리스트
+			static int selectedTransitionIndex = -1;
+
+			ImGui::BeginChild("TransitionsList", ImVec2(150, 150), true);
+			
+			for (int i = 0; i < transitions.size(); i++)
+			{
+				AnimationStateTransition& trans = transitions[i];
+				char label[128];
+				snprintf(label, 128, "From:%s > To:%s", trans.fromState.c_str(), trans.toState.c_str());
+				if (ImGui::Selectable(label, selectedTransitionIndex == i))
+				{
+					selectedTransitionIndex = i;
+				}
+			}
+			ImGui::EndChild();
+
+			if (ImGui::Button("Add Transition", ImVec2(100, 30)))
+			{
+				AnimationStateTransition newTransition;
+				newTransition.fromState = "";
+				newTransition.toState   = "";
+				newTransition.blendTime = 0.5f;
+				newTransition.conditionName = "";
+				
+				transitions.push_back(newTransition);
+				selectedTransitionIndex = static_cast<int>(transitions.size()) - 1;
+			}
+			ImGui::SameLine();
+			if (ImGui::Button("Delete Transition", ImVec2(120, 30)))
+			{
+				stateManager->deleteTransition(transitions[selectedTransitionIndex]);
+				selectedTransitionIndex = -1;
+			}
+
+			ImGui::Separator();
+
+			// State 수정창
+			if (!selectedStateKey.empty())
+			{
+				AnimationState& state = states[selectedStateKey];
+				ImGui::Text("State Details:");
+				ImGui::Columns(2, "StateColumns", false);
+
+				// State Name
+				ImGui::Text("State Name:");
+				ImGui::NextColumn();
+				ImGui::SetNextItemWidth(-1);
+				{
+					char buf[256];
+					strncpy(buf, state.stateName.c_str(), sizeof(buf));
+					if (ImGui::InputText("##StateName", buf, sizeof(buf)))
+					{
+						std::string newVal(buf);
+						if (state.stateName != newVal)
+						{
+							state.stateName = newVal;
+							component.m_IsChanged = true;
+						}
+					}
+				}
+				ImGui::NextColumn();
+
+				// Animation Name (ReadOnly)
+				ImGui::Text("Animation Name:");
+				ImGui::NextColumn();
+				ImGui::SetNextItemWidth(-1);
+				{
+					char buf[256];
+					strncpy(buf, state.animationName.c_str(), sizeof(buf));
+					if (ImGui::InputText("##AnimationName", buf, sizeof(buf), ImGuiInputTextFlags_ReadOnly))
+					{
+						std::string newVal(buf);
+						if (state.animationName != newVal)
+						{
+							state.animationName = newVal;
+							component.m_IsChanged = true;
+						}
+					}
+				}
+				ImGui::NextColumn();
+
+				// Looping
+				ImGui::Text("Looping:");
+				ImGui::NextColumn();
+				if (ImGui::Checkbox("##Looping", &state.looping))
+					component.m_IsChanged = true;
+				ImGui::NextColumn();
+
+				// Interruptible
+				ImGui::Text("Interruptible:");
+				ImGui::NextColumn();
+				if (ImGui::Checkbox("##Interruptible", &state.interruptible))
+					component.m_IsChanged = true;
+				ImGui::NextColumn();
+
+				// Default Blend Time
+				ImGui::Text("Default Blend Time:");
+				ImGui::NextColumn();
+				ImGui::SetNextItemWidth(-1);
+				if (ImGui::InputFloat("##DefaultBlendTime", &state.defaultBlendTime, 0.0f, 0.0f, "%.2f"))
+					component.m_IsChanged = true;
+				ImGui::Columns(1);
+			}
+
+			// Transition 수정창
+			if (selectedTransitionIndex >= 0 && selectedTransitionIndex < transitions.size())
+			{
+				AnimationStateTransition& transition = transitions[selectedTransitionIndex];
+				ImGui::Text("Transition Details:");
+				ImGui::Columns(2, "TransitionColumns", false);
+
+				// From State (드래그앤드롭 타겟)
+				ImGui::Text("From State:");
+				ImGui::NextColumn();
+				{
+					std::string displayFrom = transition.fromState.empty() ? "From State" : transition.fromState;
+					if (ImGui::Button(displayFrom.c_str(), ImVec2(-1, 0)))
+					{
+						// 클릭 시 동작은 없고, 드래그앤드롭으로 값 할당
+					}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("STATE_ITEM"))
+						{
+							const char* payloadStr = (const char*)payload->Data;
+							if (transition.fromState != payloadStr)
+							{
+								transition.fromState = std::string(payloadStr);
+								component.m_IsChanged = true;
+							}
+						}
+						ImGui::EndDragDropTarget();
+					}
+				}
+				ImGui::NextColumn();
+
+				// To State (드래그앤드롭 타겟)
+				ImGui::Text("To State:");
+				ImGui::NextColumn();
+				{
+					std::string displayTo = transition.toState.empty() ? "To State" : transition.toState;
+					if (ImGui::Button(displayTo.c_str(), ImVec2(-1, 0)))
+					{
+						// 클릭 시 동작 없음
+					}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("STATE_ITEM"))
+						{
+							const char* payloadStr = (const char*)payload->Data;
+							if (transition.toState != payloadStr)
+							{
+								transition.toState = std::string(payloadStr);
+								component.m_IsChanged = true;
+							}
+						}
+						ImGui::EndDragDropTarget();
+					}
+				}
+				ImGui::NextColumn();
+
+				// Blend Time
+				ImGui::Text("Blend Time:");
+				ImGui::NextColumn();
+				ImGui::SetNextItemWidth(-1);
+				if (ImGui::InputFloat("##BlendTime", &transition.blendTime, 0.0f, 0.0f, "%.2f"))
+					component.m_IsChanged = true;
+				ImGui::NextColumn();
+
+				ImGui::Text("Invert Condition:");
+				ImGui::NextColumn();
+				// 버튼의 텍스트는 현재 invertCondition 값에 따라 "Enabled" 또는 "Disabled"로 표시
+				if (ImGui::Button(transition.invertCondition ? "Enabled" : "Disabled", ImVec2(60, 30)))
+				{
+					transition.invertCondition = !transition.invertCondition;
+					component.m_IsChanged = true;
+				}
+				ImGui::NextColumn();
+
+				// Condition (기존 방식, 드래그앤드롭으로 메소드 할당)
+				ImGui::Text("Condition:");
+				ImGui::NextColumn();
+				{
+					std::string condMethod = transition.conditionName.empty() ? "Drop Method Here" : transition.conditionName;
+					if (ImGui::Button(condMethod.c_str(), ImVec2(-1, 0)))
+					{
+						// 클릭 동작 없음
+					}
+					if (ImGui::BeginDragDropTarget())
+					{
+						if (const ImGuiPayload* payload = ImGui::AcceptDragDropPayload("METHOD_ITEM"))
+						{
+							std::string methodStr = std::string((const char*)payload->Data);
+							if (transition.conditionName != methodStr)
+							{
+								transition.conditionName = methodStr;
+								if (component.m_Methods.find(methodStr) != component.m_Methods.end())
+									transition.condition = component.m_Methods[methodStr];
+								component.m_IsChanged = true;
+							}
+						}
+						ImGui::EndDragDropTarget();
+					}
+				}
+				ImGui::Columns(1);
+			}
+
+			// (아래에서 component.m_IsChanged를 이용해 저장이나 후처리 작업을 진행할 수 있습니다.)
+			if (component.m_IsChanged)
+			{
+				AL_CORE_INFO("something is changed");
+				component.m_IsChanged = false;
+			}
+
+			ImGui::Separator();
+
+			// 하단: Methods 리스트 (드래그앤드롭 가능)
+			ImGui::Text("Available Methods:");
+			if (ImGui::Button("Reload", ImVec2(80, 20)))
+			{
+				component.m_Methods = ScriptingEngine::getBooleanMethods(entity);
+			}
+			ImGui::BeginChild("MethodsList", ImVec2(200, 150), true);
+			for (auto& pair : component.m_Methods)
+			{
+				ImGui::Selectable(pair.first.c_str());
+				if (ImGui::BeginDragDropSource(ImGuiDragDropFlags_None))
+				{
+					std::string payload = pair.first;
+					ImGui::SetDragDropPayload("METHOD_ITEM", &payload, payload.size());
+					ImGui::Text("%s", pair.first.c_str());
+					ImGui::EndDragDropSource();
+				}
+			}
+			ImGui::EndChild();
+		}
+		else
+		{
+			ImGui::Button("?##statemanager_help", ImVec2(20, 20));
+			if (ImGui::IsItemHovered())
+			{
+				ImGui::SetTooltip("StateManager is need ScriptComponent");
+			}
 		}
 	});
 
@@ -994,6 +1273,14 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 					{
 						float data = scriptInstance->getFieldValue<float>(name);
 						if (ImGui::DragFloat(name.c_str(), &data))
+						{
+							scriptInstance->setFieldValue(name, data);
+						}
+					}
+					if (field.m_Type == EScriptFieldType::BOOL)
+					{
+						bool data = scriptInstance->getFieldValue<bool>(name);
+						if (ImGui::Checkbox(name.c_str(), &data))
 						{
 							scriptInstance->setFieldValue(name, data);
 						}
