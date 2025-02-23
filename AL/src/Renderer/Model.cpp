@@ -678,11 +678,9 @@ void Model::loadBone(aiNode* node, int parentBoneIndex)
 	auto it = m_Skeleton->m_NodeNameToBoneIndex.find(nodeName);
 	int currentBoneIndex = -1;
 
-	AL_INFO("Model::loadBone: bone(node)Name: {0}, parentBoneID: {1}", nodeName, parentBoneIndex);
 	if (it != m_Skeleton->m_NodeNameToBoneIndex.end())
 	{
 		currentBoneIndex = it->second;
-		AL_INFO("Model::loadBone: Bone found | index: {0}, ", currentBoneIndex);
 		auto& bone = m_Skeleton->m_Bones[currentBoneIndex];
 
 		bone.m_ParentBone = parentBoneIndex;
@@ -690,8 +688,6 @@ void Model::loadBone(aiNode* node, int parentBoneIndex)
 		if (parentBoneIndex >= 0 && parentBoneIndex < static_cast<int>(m_Skeleton->m_Bones.size()))
 			m_Skeleton->m_Bones[parentBoneIndex].m_Children.emplace_back(currentBoneIndex);
 	}
-	else
-		AL_INFO("Model::loadBone: Bone not found");
 
 	for (size_t childIndex = 0; childIndex < node->mNumChildren; ++childIndex)
 		loadBone(node->mChildren[childIndex], currentBoneIndex);
@@ -714,10 +710,6 @@ void Model::loadAnimations(const aiScene* scene)
 		double durationTicks = aiAnim->mDuration;
 
 		float durationSeconds = static_cast<float>(durationTicks / ticksPerSecond);
-		std::cout << "Animation: " << aiAnim->mName.C_Str() 
-				<< ", TicksPerSecond: " << aiAnim->mTicksPerSecond
-				<< ", Duration(ticks): " << aiAnim->mDuration 
-				<< ", Duration(seconds): " << durationSeconds << std::endl;
 
 		size_t numberOfChannels = aiAnim->mNumChannels;
 		for (size_t channelIndex = 0; channelIndex < numberOfChannels; ++channelIndex)
