@@ -108,8 +108,12 @@ struct SkeletalAnimatorComponent
 	std::shared_ptr<SAComponent> sac;
 
 	bool m_IsPlaying = false;
+	bool m_IsChanged = false;
 	float m_SpeedFactor = 1.0f;
 	std::vector<bool> m_Repeats;
+	std::map<std::string, std::function<bool()>> m_Methods;
+
+
 
 	SkeletalAnimatorComponent() = default;
 	SkeletalAnimatorComponent(const SkeletalAnimatorComponent &) = default;
