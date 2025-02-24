@@ -42,6 +42,7 @@ class Scene
 	void onRuntimeStart();
 	void onRuntimeStop();
 
+	void preRenderEditor(const Timestep& ts);
 	void onUpdateEditor(EditorCamera &camera);
 	void onUpdateRuntime(Timestep ts);
 	void onViewportResize(uint32_t width, uint32_t height);
