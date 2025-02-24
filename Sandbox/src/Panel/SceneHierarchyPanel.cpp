@@ -841,7 +841,10 @@ void SceneHierarchyPanel::drawComponents(Entity entity)
 			// 진행률에 따른 현재시간 업데이트
 			keyframe.m_CurrentKeyFrameTime = keyframe.m_FirstKeyFrameTime + timelineProgress * totalDuration;
 			sac->setData(0, keyframe);
+			component.m_IsTimelineDrag = true;
 		}
+		if (ImGui::IsItemDeactivated())
+			component.m_IsTimelineDrag = false;
 
 		// 타임라인 버튼(원형)의 위치 계산
 		float buttonRadius = timelineHeight * 0.3f;
