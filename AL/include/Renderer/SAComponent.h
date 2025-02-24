@@ -23,6 +23,9 @@ public:
 
 	SAComponent();
 	SAComponent(std::shared_ptr<Model>& model);
+	void init();
+	void initAnimation(SkeletalAnimation* animation);
+	void initKeyFrame();
 	void initStateManager();
 	void start(std::string const& animation);
 	void start(size_t index);
@@ -34,31 +37,33 @@ public:
 	void setRepeatAll(const std::vector<bool> repeats) { m_Repeats = repeats; };
 	void setCurrentRepeat(bool repeat);
 	void setData(uint16_t currentFrame, const SAData& data, unsigned int index = 0);
+	void setDataAll(std::vector<SAData> datas);
 	void setSpeedFactor(float factor);
 	void setCurrentFrame(uint32_t currentFrame) { m_FrameCounter = currentFrame; };
 	void setCurrentAnimation(SkeletalAnimation* animation);
 	void updateAnimation(const Timestep& timestep, uint32_t currentFrame);
+	void updateAnimationWithoutTransition(const Timestep& timestep);
 	bool isRunning() const;
 	bool willExpire(const Timestep& timestep) const;
 	int getCurrentAnimationIndex();
 	bool getRepeat(int index = -1);
 	float getDuration();
 	float getCurrentTime();
-	float getSpeedFactor() { return m_SpeedFactor; };
 	Bones blendBones(Bones& to, Bones& from, float blendFactor);
-	struct SAData getData(unsigned int index = 0) const;
+	SAData getData(unsigned int index = 0) const;
 	uint16_t getCurrentFrame() { return m_FrameCounter; };
 	std::string getCurrentAnimationName();
 	std::vector<bool> getRepeatAll() { return m_Repeats; };
 	std::vector<glm::mat4>& getCurrentPose() { return m_CurrentPose; };
+	std::vector<SAData> getDatas() { return m_Data; };
 	std::shared_ptr<SkeletalAnimations> getAnimations() { return m_Animations; };
 	std::shared_ptr<AnimationStateManager> getStateManager() { return m_StateManager; };
 
 public:
 
 private:
-	void init(SkeletalAnimation* animation);
 	void blendUpdate(const Timestep& timestep, Armature::Skeleton& skeleton, uint32_t currentFrame);
+	void flush();
 	int getAnimIndex(const std::string& name);
 	bool getAnimRepeat(SkeletalAnimation* animation);
 
@@ -69,16 +74,14 @@ private:
 	std::shared_ptr<Armature::Skeleton> m_Skeleton;
 	std::shared_ptr<Model> m_Model;
 
-	// save
-	float	m_SpeedFactor;
 	std::vector<bool> m_Repeats;
 
-	// non-save
 	uint32_t m_FrameCounter;
 	Bones m_CapturedPose;
 	std::vector<glm::mat4> m_CurrentPose;
 
-	struct SAData m_Data[2];
+	std::vector<SAData> m_Data;
+	// struct SAData m_Data[2];
 };
 } //namespace ale
 
