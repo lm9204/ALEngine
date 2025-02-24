@@ -4,6 +4,12 @@
 namespace ale
 {
 
+AnimationStateManager::AnimationStateManager() :
+	inTransition(false),
+	isTransitionFinish(false)
+{
+}
+
 void AnimationStateManager::update(const Timestep& timestep)
 {
 	if (inTransition)
@@ -135,5 +141,14 @@ std::unordered_map<std::string, AnimationState>& AnimationStateManager::getState
 	return m_States;
 }
 
+AnimationState* AnimationStateManager::getStateFromAnimName(const std::string& animationName)
+{
+	for (auto& it : m_States)
+	{
+		if (it.second.animationName == animationName)
+			return &(it.second);
+	}
+	return nullptr;
+}
 
 }; //namespace ale

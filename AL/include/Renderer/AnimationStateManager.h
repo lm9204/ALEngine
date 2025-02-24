@@ -56,12 +56,10 @@ public:
 	float timeSinceLastTransition = 0.0f;
 
 public:
-	AnimationStateManager() = default;
+	AnimationStateManager();
 	AnimationState* getState(const std::string& stateName);
-	// TODO
+	AnimationState* getStateFromAnimName(const std::string& animationName);
 	void init();
-	void loadAnimationsToStates();
-	
 	void addState(const AnimationState& s) { m_States[s.stateName] = s; }
 	void addTransition(const AnimationStateTransition& t) { m_Transitions.push_back(t); }
 	void pushStateChangeRequest(const std::string& target) { m_RequestQueue.push({ target }); }
